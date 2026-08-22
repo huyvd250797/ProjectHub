@@ -55,3 +55,7 @@
 - Member/PM/Admin may update ISSUE.
 - Archive is restricted to PM/Admin in API.
 - No service-role key is exposed to the browser.
+
+### Deploy fix
+- Fixed TypeScript control-flow narrowing in `components/issues/issue-workspace.tsx`: nested `renderCell()` now uses a stable non-null `currentData` reference instead of nullable React state `data`.
+- Ignore/remove `*.tsbuildinfo` so local incremental TypeScript cache is not packaged or committed.

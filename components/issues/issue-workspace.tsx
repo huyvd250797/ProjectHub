@@ -358,18 +358,22 @@ export function IssueWorkspace() {
   if (!data && error) return <div className="tech-panel rounded-2xl border-rose-300/10 p-6"><div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 size-5 text-rose-200" /><div><div className="text-sm font-semibold text-rose-100">Không tải được ISSUE</div><div className="mt-1 text-xs leading-5 text-slate-500">{error}</div><button onClick={() => setReloadKey((k) => k + 1)} className="mt-4 flex items-center gap-2 rounded-xl border border-white/[0.08] px-3 py-2 text-xs text-slate-300"><RefreshCw className="size-3.5" /> Tải lại</button></div></div></div>;
   if (!data) return null;
 
-  const allCurrentSelected = data.rows.length > 0 && data.rows.every((row) => selectedIds.has(row.id));
+  // Capture the narrowed value before entering nested callbacks/functions.
+  // TypeScript does not preserve control-flow narrowing of a mutable React state
+  // variable inside closures because the closure may run later.
+  const currentData = data;
+  const allCurrentSelected = currentData.rows.length > 0 && currentData.rows.every((row) => selectedIds.has(row.id));
 
   function renderCell(issue: IssueRow, id: IssueColumnId) {
-    const editingDisabled = !data.canEdit || data.source === "demo" || savingId === issue.id;
+    const editingDisabled = !currentData.canEdit || currentData.source === "demo" || savingId === issue.id;
     if (id === "issueNo") return <span className="font-mono text-[10px] text-cyan-300/65">#{issue.issueNo ?? "—"}</span>;
     if (id === "content") return <div><div className="line-clamp-2 font-medium leading-5 text-slate-300 group-hover:text-white">{issue.content}</div>{issue.requesterName ? <div className="mt-1 text-[9px] text-slate-700">YC: {issue.requesterName}</div> : null}</div>;
-    if (id === "status") return <FloatingSelect ariaLabel="Trạng thái" compact disabled={editingDisabled} value={issue.statusCode} options={data.lookups.statuses} onChange={(value) => inlineUpdate(issue, "statusCode", value)} tone={statusTone(issue.statusCode)} />;
-    if (id === "customerStatus") return <FloatingSelect ariaLabel="Trạng thái khách hàng" compact disabled={editingDisabled} value={issue.customerStatusCode} options={data.lookups.customerStatuses} onChange={(value) => inlineUpdate(issue, "customerStatusCode", value)} placeholder="Chưa bàn giao" />;
-    if (id === "priority") return <FloatingSelect ariaLabel="Ưu tiên" compact disabled={editingDisabled} value={issue.priorityCode} options={data.lookups.priorities} onChange={(value) => inlineUpdate(issue, "priorityCode", value)} tone={priorityTone(issue.priorityCode)} />;
-    if (id === "module") return <FloatingSelect ariaLabel="Module" compact disabled={editingDisabled} value={issue.moduleId} options={data.lookups.modules} onChange={(value) => inlineUpdate(issue, "moduleId", value)} placeholder="Chưa Module" />;
-    if (id === "department") return <FloatingSelect ariaLabel="Phòng ban" compact disabled={editingDisabled} value={issue.departmentId} options={data.lookups.departments} onChange={(value) => inlineUpdate(issue, "departmentId", value)} placeholder="Chưa phòng ban" />;
-    if (id === "assignee") return <FloatingSelect ariaLabel="Phụ trách" compact disabled={editingDisabled} value={issue.assigneeId} options={data.lookups.assignees} onChange={(value) => inlineUpdate(issue, "assigneeId", value)} placeholder="Chưa phụ trách" />;
+    if (id === "status") return <FloatingSelect ariaLabel="Trạng thái" compact disabled={editingDisabled} value={issue.statusCode} options={currentData.lookups.statuses} onChange={(value) => inlineUpdate(issue, "statusCode", value)} tone={statusTone(issue.statusCode)} />;
+    if (id === "customerStatus") return <FloatingSelect ariaLabel="Trạng thái khách hàng" compact disabled={editingDisabled} value={issue.customerStatusCode} options={currentData.lookups.customerStatuses} onChange={(value) => inlineUpdate(issue, "customerStatusCode", value)} placeholder="Chưa bàn giao" />;
+    if (id === "priority") return <FloatingSelect ariaLabel="Ưu tiên" compact disabled={editingDisabled} value={issue.priorityCode} options={currentData.lookups.priorities} onChange={(value) => inlineUpdate(issue, "priorityCode", value)} tone={priorityTone(issue.priorityCode)} />;
+    if (id === "module") return <FloatingSelect ariaLabel="Module" compact disabled={editingDisabled} value={issue.moduleId} options={currentData.lookups.modules} onChange={(value) => inlineUpdate(issue, "moduleId", value)} placeholder="Chưa Module" />;
+    if (id === "department") return <FloatingSelect ariaLabel="Phòng ban" compact disabled={editingDisabled} value={issue.departmentId} options={currentData.lookups.departments} onChange={(value) => inlineUpdate(issue, "departmentId", value)} placeholder="Chưa phòng ban" />;
+    if (id === "assignee") return <FloatingSelect ariaLabel="Phụ trách" compact disabled={editingDisabled} value={issue.assigneeId} options={currentData.lookups.assignees} onChange={(value) => inlineUpdate(issue, "assigneeId", value)} placeholder="Chưa phụ trách" />;
     if (id === "dueDate") return <span className={cn("text-[10px]", isOverdue(issue.dueDate) ? "font-semibold text-rose-300/80" : "text-slate-600")}>{formatDate(issue.dueDate)}</span>;
     return issue.jiraUrl ? <a href={issue.jiraUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] px-2 py-1 text-[9px] text-cyan-300/60 hover:border-cyan-300/18 hover:text-cyan-200"><ExternalLink className="size-3" /> Jira</a> : <span className="text-slate-800">—</span>;
   }
