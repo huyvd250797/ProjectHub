@@ -48,7 +48,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
           Secure Project Workspace
         </div>
         <h1 className="text-2xl font-semibold tracking-[-0.04em] text-white">
-          Đăng nhập Project Hub
+          Đăng nhập ASC WORKING
         </h1>
         <p className="mt-2 text-sm leading-6 text-slate-500">
           Truy cập Project Workspace và các dự án bạn được phân quyền.
@@ -114,10 +114,10 @@ export function LoginForm({ configured }: { configured: boolean }) {
       {!configured ? (
         <div className="mt-6 border-t border-white/[0.06] pt-5">
           <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300/70">
-            V0.2.0 Demo Mode
+            V0.3.0 Demo Mode
           </div>
           <p className="mb-4 text-xs leading-5 text-slate-500">
-            Chưa có biến môi trường Supabase. Bạn vẫn có thể xem toàn bộ skeleton giao diện.
+            Chưa có biến môi trường Supabase. Bạn vẫn có thể xem toàn bộ Dashboard và giao diện workspace.
           </p>
           <Link
             href="/dashboard"

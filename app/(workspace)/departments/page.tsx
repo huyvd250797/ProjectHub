@@ -16,7 +16,7 @@ export default function DepartmentsPage() {
       <PageHeader
         eyebrow="Stakeholder Matrix"
         title="Phòng ban"
-        description="Theo dõi tổng yêu cầu, mức xử lý và mức bàn giao theo đơn vị. Tên phòng ban thật sẽ được chuẩn hóa từ workbook trong V0.2.0."
+        description="Theo dõi tổng yêu cầu, mức xử lý và mức bàn giao theo đơn vị. Dữ liệu phòng ban trên Dashboard đã sẵn sàng đọc theo project; màn hình này sẽ hoàn thiện ở V0.5.0."
       />
 
       <div className="tech-panel overflow-hidden rounded-2xl">

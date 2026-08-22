@@ -134,7 +134,7 @@ export function inspectProjectWorkbook(
   const resourceSheet = sheets.get("LinkRemoteServer");
 
   // Current EPU template uses ISSUE row 4 as the official data boundary.
-  // This is a template rule, not a global Project Hub assumption; future
+  // This is a template rule, not a global ASC WORKING assumption; future
   // template versions can make the boundary configurable.
   const issueRows = collectRows(issueSheet, 4, 2);
   if (issueSheet && text(cell(issueSheet, 3, 2))) {

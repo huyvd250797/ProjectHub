@@ -1,5 +1,5 @@
--- Project Hub V0.2.0 seed
--- EPU is the first project only. Project Hub itself is a multi-project workspace.
+-- ASC WORKING V0.2.0 seed
+-- EPU is the first project only. ASC WORKING itself is a multi-project workspace.
 insert into public.projects (id, code, slug, name, organization_name, status)
 values (
   '00000000-0000-0000-0000-0000000000e1',

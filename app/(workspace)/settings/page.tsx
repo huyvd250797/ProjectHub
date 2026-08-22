@@ -32,7 +32,7 @@ export default function SettingsPage() {
       <PageHeader
         eyebrow="System Foundation"
         title="Thiết lập Project Workspace"
-        description="V0.2.0 bổ sung nền tảng database đa dự án và Import POC. EPU là project đầu tiên; không phải tên của workspace."
+        description="ASC WORKING là Project Workspace đa dự án. V0.3.0 bổ sung Dashboard đọc dữ liệu Supabase thật theo project đang chọn; EPU chỉ là project đầu tiên."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -67,7 +67,7 @@ export default function SettingsPage() {
           <FileSpreadsheet className="size-5 text-amber-200/80" />
         </div>
         <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300/60">V0.2.0 Tool</div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300/60">Data Tool</div>
           <div className="mt-1 text-sm font-semibold text-slate-200">Data Import POC</div>
           <div className="mt-1 text-xs leading-5 text-slate-600">Upload workbook dự án, kiểm tra cấu trúc sheet, record count, mapping và cảnh báo dữ liệu trước khi Apply Import.</div>
         </div>
@@ -80,11 +80,11 @@ export default function SettingsPage() {
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Release</div>
         <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-lg font-semibold text-white">Project Hub V0.2.0</div>
-            <div className="mt-1 text-xs text-slate-500">Data Model + Import POC</div>
+            <div className="text-lg font-semibold text-white">ASC WORKING V0.3.0</div>
+            <div className="mt-1 text-xs text-slate-500">Dashboard / Real Project Data</div>
           </div>
           <span className="w-fit rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-200">
-            Multi-project Ready
+            Live Project Dashboard
           </span>
         </div>
       </div>

@@ -10,7 +10,7 @@ export default function ResourcesPage() {
       <PageHeader
         eyebrow="Secure Infrastructure"
         title="Link Remote Server"
-        description="Kho tài nguyên của project đang chọn theo hướng secure-by-default. V0.2.0 chỉ chuẩn hóa metadata và tuyệt đối không đưa credential thật vào source code."
+        description="Kho tài nguyên của project đang chọn theo hướng secure-by-default. Credential thật vẫn không được đưa vào source; lớp bảo mật Reveal/Copy sẽ hoàn thiện ở V0.8.0."
       />
 
       <div className="mb-4 rounded-2xl border border-amber-300/15 bg-amber-300/[0.05] p-4">

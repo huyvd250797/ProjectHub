@@ -10,6 +10,8 @@ type ProjectContextValue = {
 };
 
 const ProjectContext = createContext<ProjectContextValue | null>(null);
+const STORAGE_KEY = "asc-working:selected-project-id";
+const LEGACY_STORAGE_KEY = "project-hub:selected-project-id";
 
 export function ProjectProvider({
   projects,
@@ -22,9 +24,11 @@ export function ProjectProvider({
   const [selectedId, setSelectedId] = useState(firstProject?.id ?? "");
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("project-hub:selected-project-id");
+    const stored = window.localStorage.getItem(STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_STORAGE_KEY);
     if (stored && projects.some((project) => project.id === stored)) {
       setSelectedId(stored);
+      window.localStorage.setItem(STORAGE_KEY, stored);
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
       return;
     }
     if (firstProject) setSelectedId(firstProject.id);
@@ -36,7 +40,7 @@ export function ProjectProvider({
   );
 
   if (!selectedProject) {
-    throw new Error("Project Workspace requires at least one accessible project.");
+    throw new Error("ASC WORKING requires at least one accessible project.");
   }
 
   return (
@@ -47,7 +51,7 @@ export function ProjectProvider({
         selectProject(projectId: string) {
           if (!projects.some((project) => project.id === projectId)) return;
           setSelectedId(projectId);
-          window.localStorage.setItem("project-hub:selected-project-id", projectId);
+          window.localStorage.setItem(STORAGE_KEY, projectId);
         },
       }}
     >

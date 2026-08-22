@@ -1,4 +1,4 @@
-# Supabase setup — Project Hub V0.2.0
+# Supabase setup — ASC WORKING V0.2.0
 
 ## 1. Keep your existing Auth user
 This migration does not delete or recreate `auth.users`. Existing Supabase Auth users are backfilled into `public.profiles`.
