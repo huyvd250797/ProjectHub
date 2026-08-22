@@ -3,10 +3,15 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "ASC-Working | EPU",
-    template: "%s | ASC-Working",
+    default: "Project Hub | Project Workspace",
+    template: "%s | Project Hub",
   },
-  description: "Project workspace for ASC software implementation projects.",
+  description: "Multi-project workspace for software implementation projects.",
+  icons: {
+    icon: "/branding/hv-logo.jpg",
+    shortcut: "/branding/hv-logo.jpg",
+    apple: "/branding/hv-logo.jpg",
+  },
 };
 
 export default function RootLayout({

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { ChevronLeft, X } from "lucide-react";
 import { navigation, secondaryNavigation } from "@/lib/navigation";
 import { Logo } from "@/components/logo";
+import { useProject } from "@/components/project-context";
 import { cn } from "@/lib/utils";
 
 export function Sidebar({
@@ -19,6 +20,7 @@ export function Sidebar({
   onCloseMobile: () => void;
 }) {
   const pathname = usePathname();
+  const { selectedProject } = useProject();
 
   const navContent = (
     <>
@@ -41,7 +43,7 @@ export function Sidebar({
             collapsed && "text-center text-[0px]",
           )}
         >
-          Workspace
+          Project Workspace
         </p>
         <nav className="space-y-1">
           {navigation.map((item) => {
@@ -80,7 +82,7 @@ export function Sidebar({
         <nav className="space-y-1">
           {secondaryNavigation.map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.href;
+            const active = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <Link
                 key={item.href}
@@ -109,8 +111,9 @@ export function Sidebar({
               <span className="relative inline-flex size-2.5 rounded-full bg-emerald-400" />
             </span>
             <div className={cn("min-w-0", collapsed && "hidden")}>
-              <div className="text-[11px] font-medium text-slate-300">EPU Workspace</div>
-              <div className="mt-0.5 text-[9px] uppercase tracking-[0.15em] text-slate-600">V0.1.0 Foundation</div>
+              <div className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-600">Project hiện tại</div>
+              <div className="mt-1 truncate text-[11px] font-semibold text-slate-300">{selectedProject.code} • {selectedProject.organizationName || selectedProject.name}</div>
+              <div className="mt-1 text-[9px] uppercase tracking-[0.15em] text-slate-700">V0.2.0 • Multi-project ready</div>
             </div>
           </div>
         </div>

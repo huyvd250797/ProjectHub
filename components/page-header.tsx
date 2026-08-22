@@ -7,8 +7,8 @@ export function PageHeader({
   actions,
 }: {
   eyebrow: string;
-  title: string;
-  description: string;
+  title: ReactNode;
+  description: ReactNode;
   actions?: ReactNode;
 }) {
   return (
@@ -21,9 +21,9 @@ export function PageHeader({
         <h1 className="text-2xl font-semibold tracking-[-0.04em] text-white md:text-[30px]">
           {title}
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+        <div className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
           {description}
-        </p>
+        </div>
       </div>
       {actions ? <div className="shrink-0">{actions}</div> : null}
     </div>
