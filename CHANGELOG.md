@@ -1,5 +1,24 @@
 # Changelog
 
+## V0.4.0 — PLHĐ Unified View
+
+### Added
+- Real project-scoped PLHĐ API using `get_project_contract`.
+- Unified overview/detail contract screen.
+- Virtualized detail tree for 5,000+ nodes.
+- Contract search, filters, focus-by-module, expand/collapse.
+- Module issue/handover aggregates and drill-down links.
+- Detail drawer and mapping state.
+- Professional custom themed select/combobox.
+
+### Fixed
+- App logo now reloads current page when clicked.
+- Login spinner remains active until successful redirect unmounts the login page.
+- Project selector no longer uses the browser-native unthemed dropdown.
+
+### Database
+- Added `202608220003_v040_contract_rpc.sql`.
+
 ## V0.3.0 — Dashboard / Real Project Data
 
 ### Branding
