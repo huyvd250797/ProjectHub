@@ -53,6 +53,52 @@ type Task = {
   blockedReason: string;
 };
 
+type IssueStatus = "Chờ khách hàng" | "Không xử lý" | "Chờ xử lý" | "Đang xử lý" | "Đã xử lý" | "Đã Release" | "Không khả thi";
+type CustomerIssueStatus = "Chưa bàn giao" | "Đã bàn giao";
+type ModuleDeliveryStatus = "Đã khảo sát" | "Sẵn sàng tập huấn" | "Đã tập huấn" | "Sẵn sàng nghiệm thu" | "Đã nghiệm thu";
+type AcceptanceStep = "Khảo sát" | "Đào tạo/Tập huấn" | "Xác nhận hoàn thành";
+
+type ProjectModule = {
+  id: string;
+  projectId: string;
+  department: string;
+  subsystem: string;
+  moduleName: string;
+  totalIssues: number;
+  deliveredIssues: number;
+  owner: string;
+  status: ModuleDeliveryStatus;
+  surveyDone: boolean;
+  trainingDone: boolean;
+  acceptanceDone: boolean;
+};
+
+type ProjectIssue = {
+  id: string;
+  projectId: string;
+  moduleName: string;
+  department: string;
+  content: string;
+  status: IssueStatus;
+  customerStatus: CustomerIssueStatus;
+  priority: "A" | "B" | "C" | "D";
+  phase: "Giai đoạn 1" | "Giai đoạn 2" | "Giai đoạn 3";
+  releaseDate: string;
+  dueDate: string;
+  assignee: string;
+};
+
+type AcceptanceRecord = {
+  id: string;
+  projectId: string;
+  department: string;
+  moduleName: string;
+  step: AcceptanceStep;
+  status: "Chưa bắt đầu" | "Đang thực hiện" | "Hoàn tất";
+  owner: string;
+  evidence: string;
+};
+
 type AuditLog = {
   id: string;
   at: string;
@@ -67,10 +113,13 @@ type ProjectHubState = {
   projects: Project[];
   milestones: Milestone[];
   tasks: Task[];
+  modules: ProjectModule[];
+  issues: ProjectIssue[];
+  acceptanceRecords: AcceptanceRecord[];
   auditLogs: AuditLog[];
 };
 
-const STORAGE_KEY = "asc-projecthub-v0.5.0";
+const STORAGE_KEY = "asc-projecthub-v0.5.1";
 
 const statusLabel: Record<ProjectStatus, string> = {
   Planning: "Lập kế hoạch",
@@ -103,6 +152,26 @@ const taskColumns: { key: TaskStatus; label: string }[] = [
   { key: "Waiting", label: "Chờ khách hàng" },
   { key: "Done", label: "Hoàn tất" },
 ];
+
+const issueStatuses: IssueStatus[] = ["Chờ khách hàng", "Không xử lý", "Chờ xử lý", "Đang xử lý", "Đã xử lý", "Đã Release", "Không khả thi"];
+
+const issueTone: Record<IssueStatus, string> = {
+  "Chờ khách hàng": "border-amber-200 bg-amber-50 text-amber-800",
+  "Không xử lý": "border-slate-200 bg-slate-50 text-slate-700",
+  "Chờ xử lý": "border-sky-200 bg-sky-50 text-sky-800",
+  "Đang xử lý": "border-blue-200 bg-blue-50 text-blue-800",
+  "Đã xử lý": "border-emerald-200 bg-emerald-50 text-emerald-800",
+  "Đã Release": "border-violet-200 bg-violet-50 text-violet-800",
+  "Không khả thi": "border-rose-200 bg-rose-50 text-rose-800",
+};
+
+const moduleTone: Record<ModuleDeliveryStatus, string> = {
+  "Đã khảo sát": "border-sky-200 bg-sky-50 text-sky-800",
+  "Sẵn sàng tập huấn": "border-blue-200 bg-blue-50 text-blue-800",
+  "Đã tập huấn": "border-indigo-200 bg-indigo-50 text-indigo-800",
+  "Sẵn sàng nghiệm thu": "border-violet-200 bg-violet-50 text-violet-800",
+  "Đã nghiệm thu": "border-emerald-200 bg-emerald-50 text-emerald-800",
+};
 
 const seedState: ProjectHubState = {
   customers: [
@@ -220,6 +289,192 @@ const seedState: ProjectHubState = {
       blockedReason: "",
     },
   ],
+  modules: [
+    {
+      id: "module-epu-1",
+      projectId: "project-epu",
+      department: "Phòng quản lý đào tạo",
+      subsystem: "Quản lý đào tạo",
+      moduleName: "Quản lý chứng chỉ, chuẩn đầu ra, xét tốt nghiệp",
+      totalIssues: 24,
+      deliveredIssues: 18,
+      owner: "Đầu mối Phòng đào tạo",
+      status: "Sẵn sàng nghiệm thu",
+      surveyDone: true,
+      trainingDone: true,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-epu-2",
+      projectId: "project-epu",
+      department: "Phòng khảo thí & Bảo đảm chất lượng",
+      subsystem: "Tổ chức thi",
+      moduleName: "Tổ chức thi tập trung",
+      totalIssues: 12,
+      deliveredIssues: 11,
+      owner: "Đầu mối Phòng khảo thí",
+      status: "Đã tập huấn",
+      surveyDone: true,
+      trainingDone: true,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-epu-3",
+      projectId: "project-epu",
+      department: "Phòng công tác sinh viên",
+      subsystem: "Công tác sinh viên",
+      moduleName: "Quản lý lớp học và hồ sơ người học",
+      totalIssues: 21,
+      deliveredIssues: 14,
+      owner: "Đầu mối Phòng công tác sinh viên",
+      status: "Sẵn sàng tập huấn",
+      surveyDone: true,
+      trainingDone: false,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-epu-4",
+      projectId: "project-epu",
+      department: "Phòng tổ chức - hành chính",
+      subsystem: "Nhân sự",
+      moduleName: "Quản lý Hồ sơ nhân sự",
+      totalIssues: 23,
+      deliveredIssues: 15,
+      owner: "Đầu mối Phòng tổ chức",
+      status: "Đã khảo sát",
+      surveyDone: true,
+      trainingDone: false,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-hcmue-1",
+      projectId: "project-hcmue",
+      department: "Trung tâm CNTT",
+      subsystem: "Cổng sinh viên",
+      moduleName: "Cổng thông tin sinh viên",
+      totalIssues: 9,
+      deliveredIssues: 7,
+      owner: "Trung tâm CNTT",
+      status: "Đã tập huấn",
+      surveyDone: true,
+      trainingDone: true,
+      acceptanceDone: false,
+    },
+  ],
+  issues: [
+    {
+      id: "issue-epu-1",
+      projectId: "project-epu",
+      moduleName: "Quản lý chứng chỉ, chuẩn đầu ra, xét tốt nghiệp",
+      department: "Phòng quản lý đào tạo",
+      content: "Chứng chỉ sinh viên quá hạn cần hiển thị đúng trạng thái trên trang sinh viên.",
+      status: "Đã xử lý",
+      customerStatus: "Đã bàn giao",
+      priority: "A",
+      phase: "Giai đoạn 1",
+      releaseDate: "2026-08-12",
+      dueDate: "2026-08-20",
+      assignee: "Data team",
+    },
+    {
+      id: "issue-epu-2",
+      projectId: "project-epu",
+      moduleName: "Tổ chức thi tập trung",
+      department: "Phòng khảo thí & Bảo đảm chất lượng",
+      content: "Bổ sung bộ lọc theo số báo danh trong danh sách trộn lịch thi.",
+      status: "Đã Release",
+      customerStatus: "Đã bàn giao",
+      priority: "B",
+      phase: "Giai đoạn 1",
+      releaseDate: "2026-08-19",
+      dueDate: "2026-08-21",
+      assignee: "Dev team",
+    },
+    {
+      id: "issue-epu-3",
+      projectId: "project-epu",
+      moduleName: "Quản lý lớp học và hồ sơ người học",
+      department: "Phòng công tác sinh viên",
+      content: "Đối soát dữ liệu lớp, trạng thái sinh viên và hồ sơ nhập học trực tuyến.",
+      status: "Đang xử lý",
+      customerStatus: "Chưa bàn giao",
+      priority: "A",
+      phase: "Giai đoạn 2",
+      releaseDate: "",
+      dueDate: "2026-08-28",
+      assignee: "PM",
+    },
+    {
+      id: "issue-epu-4",
+      projectId: "project-epu",
+      moduleName: "Quản lý Hồ sơ nhân sự",
+      department: "Phòng tổ chức - hành chính",
+      content: "Chuẩn hóa dữ liệu nhân sự trước khi chuyển sang môi trường vận hành.",
+      status: "Chờ khách hàng",
+      customerStatus: "Chưa bàn giao",
+      priority: "C",
+      phase: "Giai đoạn 2",
+      releaseDate: "",
+      dueDate: "2026-08-30",
+      assignee: "Khách hàng",
+    },
+    {
+      id: "issue-hcmue-1",
+      projectId: "project-hcmue",
+      moduleName: "Cổng thông tin sinh viên",
+      department: "Trung tâm CNTT",
+      content: "Tối ưu màn hình thông báo và lịch học trên mobile.",
+      status: "Đã Release",
+      customerStatus: "Đã bàn giao",
+      priority: "B",
+      phase: "Giai đoạn 1",
+      releaseDate: "2026-08-15",
+      dueDate: "2026-08-18",
+      assignee: "Frontend",
+    },
+  ],
+  acceptanceRecords: [
+    {
+      id: "accept-epu-1",
+      projectId: "project-epu",
+      department: "Phòng quản lý đào tạo",
+      moduleName: "Quản lý chứng chỉ, chuẩn đầu ra, xét tốt nghiệp",
+      step: "Khảo sát",
+      status: "Hoàn tất",
+      owner: "PM",
+      evidence: "Biên bản khảo sát đã xác nhận",
+    },
+    {
+      id: "accept-epu-2",
+      projectId: "project-epu",
+      department: "Phòng quản lý đào tạo",
+      moduleName: "Quản lý chứng chỉ, chuẩn đầu ra, xét tốt nghiệp",
+      step: "Đào tạo/Tập huấn",
+      status: "Hoàn tất",
+      owner: "PM",
+      evidence: "Danh sách tập huấn đã chốt",
+    },
+    {
+      id: "accept-epu-3",
+      projectId: "project-epu",
+      department: "Phòng quản lý đào tạo",
+      moduleName: "Quản lý chứng chỉ, chuẩn đầu ra, xét tốt nghiệp",
+      step: "Xác nhận hoàn thành",
+      status: "Đang thực hiện",
+      owner: "Khách hàng",
+      evidence: "Chờ xác nhận nghiệm thu",
+    },
+    {
+      id: "accept-hcmue-1",
+      projectId: "project-hcmue",
+      department: "Trung tâm CNTT",
+      moduleName: "Cổng thông tin sinh viên",
+      step: "Đào tạo/Tập huấn",
+      status: "Hoàn tất",
+      owner: "PM",
+      evidence: "Hoàn tất đào tạo nhóm admin",
+    },
+  ],
   auditLogs: [
     {
       id: "log-1",
@@ -227,7 +482,7 @@ const seedState: ProjectHubState = {
       actor: "June",
       action: "Khởi tạo",
       entity: "Version",
-      detail: "Tạo dữ liệu seed cho ASC ProjectHub V0.5.0 Core MVP.",
+      detail: "Tạo dữ liệu seed cho ASC ProjectHub V0.5.1 Sheet-Inspired Working View.",
     },
   ],
 };
@@ -274,7 +529,19 @@ function readState(): ProjectHubState {
   const raw = window.localStorage.getItem(STORAGE_KEY);
   if (!raw) return seedState;
   try {
-    return JSON.parse(raw) as ProjectHubState;
+    const parsed = JSON.parse(raw) as Partial<ProjectHubState>;
+    return {
+      ...seedState,
+      ...parsed,
+      customers: parsed.customers ?? seedState.customers,
+      projects: parsed.projects ?? seedState.projects,
+      milestones: parsed.milestones ?? seedState.milestones,
+      tasks: parsed.tasks ?? seedState.tasks,
+      modules: parsed.modules ?? seedState.modules,
+      issues: parsed.issues ?? seedState.issues,
+      acceptanceRecords: parsed.acceptanceRecords ?? seedState.acceptanceRecords,
+      auditLogs: parsed.auditLogs ?? seedState.auditLogs,
+    };
   } catch {
     return seedState;
   }
@@ -319,6 +586,9 @@ export default function Home() {
   const selectedCustomer = state.customers.find((customer) => customer.id === selectedProject?.customerId);
   const projectMilestones = state.milestones.filter((milestone) => milestone.projectId === selectedProject?.id);
   const projectTasks = state.tasks.filter((task) => task.projectId === selectedProject?.id);
+  const projectModules = state.modules.filter((module) => module.projectId === selectedProject?.id);
+  const projectIssues = state.issues.filter((issue) => issue.projectId === selectedProject?.id);
+  const projectAcceptanceRecords = state.acceptanceRecords.filter((record) => record.projectId === selectedProject?.id);
 
   const filteredProjects = useMemo(() => {
     const text = query.trim().toLowerCase();
@@ -484,13 +754,13 @@ export default function Home() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-blue-700">ASC ProjectHub</p>
-              <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">V0.5.0 Core MVP - quản lý dự án có dữ liệu thao tác thật</h1>
+              <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">V0.5.1 Working View - nhìn trạng thái từng dự án như sheet vận hành</h1>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                Bản này đã có CRUD nội bộ bằng local storage, nền phân quyền, audit log và cấu trúc dữ liệu bám theo kế hoạch Supabase. Khi có Supabase URL/key, có thể thay lớp lưu trữ local bằng database thật.
+                Bản này bổ sung góc nhìn lấy cảm hứng từ file ASC-Working: hợp đồng, kế hoạch, issue, module, phòng ban, biên bản khảo sát/tập huấn/nghiệm thu. Dữ liệu nhạy cảm trong sheet không được đưa vào app mẫu.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Pill className="border-blue-200 bg-blue-50 text-blue-800">Đã xây: V0.5.0</Pill>
+              <Pill className="border-blue-200 bg-blue-50 text-blue-800">Đã xây: V0.5.1</Pill>
               <Pill className="border-slate-200 bg-white text-slate-700">Portable Next.js</Pill>
               <Pill className="border-amber-200 bg-amber-50 text-amber-800">Next: V0.8.0 Customer Collaboration</Pill>
             </div>
@@ -617,7 +887,7 @@ export default function Home() {
 
               <div className="border-b border-slate-200 px-4">
                 <div className="flex gap-2 overflow-x-auto py-3">
-                  {["Tổng quan", "Kế hoạch", "Milestone", "Task", "Audit log", "Supabase"].map((tab) => (
+                  {["Tổng quan", "Working sheet", "Kế hoạch", "Milestone", "Task", "Audit log", "Supabase"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
@@ -632,6 +902,15 @@ export default function Home() {
               <div className="p-4">
                 {activeTab === "Tổng quan" && (
                   <Overview project={selectedProject} customer={selectedCustomer} milestones={projectMilestones} tasks={projectTasks} onUpdateProject={updateProject} />
+                )}
+                {activeTab === "Working sheet" && (
+                  <WorkingSheetView
+                    project={selectedProject}
+                    customer={selectedCustomer}
+                    modules={projectModules}
+                    issues={projectIssues}
+                    acceptanceRecords={projectAcceptanceRecords}
+                  />
                 )}
                 {activeTab === "Kế hoạch" && <PlanView milestones={projectMilestones} tasks={projectTasks} />}
                 {activeTab === "Milestone" && (
@@ -695,6 +974,231 @@ function Kpi({ label, value, note }: { label: string; value: string; note: strin
       <p className="mt-2 text-2xl font-semibold text-slate-950">{value}</p>
       <p className="mt-1 text-xs text-slate-500">{note}</p>
     </article>
+  );
+}
+
+function daysBetween(from: string, to: string) {
+  if (!from || !to) return 0;
+  const start = new Date(from).getTime();
+  const end = new Date(to).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end)) return 0;
+  return Math.max(0, Math.ceil((end - start) / 86400000));
+}
+
+function percent(part: number, total: number) {
+  if (!total) return 0;
+  return Math.round((part / total) * 100);
+}
+
+function WorkingSheetView({
+  project,
+  customer,
+  modules,
+  issues,
+  acceptanceRecords,
+}: {
+  project: Project;
+  customer?: Customer;
+  modules: ProjectModule[];
+  issues: ProjectIssue[];
+  acceptanceRecords: AcceptanceRecord[];
+}) {
+  const deliveredIssues = issues.filter((issue) => issue.customerStatus === "Đã bàn giao").length;
+  const issueCompletion = percent(deliveredIssues, issues.length);
+  const totalModuleIssues = modules.reduce((sum, item) => sum + item.totalIssues, 0);
+  const deliveredModuleIssues = modules.reduce((sum, item) => sum + item.deliveredIssues, 0);
+  const moduleCompletion = percent(deliveredModuleIssues, totalModuleIssues);
+  const projectDays = daysBetween(project.startDate, project.endDate);
+  const elapsedDays = daysBetween(project.startDate, new Date().toISOString().slice(0, 10));
+  const remainingDays = Math.max(0, projectDays - elapsedDays);
+  const departmentRows = Array.from(
+    modules.reduce((map, item) => {
+      const row = map.get(item.department) ?? { total: 0, delivered: 0, modules: 0 };
+      row.total += item.totalIssues;
+      row.delivered += item.deliveredIssues;
+      row.modules += 1;
+      map.set(item.department, row);
+      return map;
+    }, new Map<string, { total: number; delivered: number; modules: number }>()),
+  );
+
+  return (
+    <div className="space-y-4">
+      <section className="rounded-lg border border-slate-200 bg-amber-50/60 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-800">Project working sheet</p>
+            <h3 className="mt-1 text-xl font-semibold text-slate-950">{customer?.name ?? project.name}</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              {project.code} | PM: {project.pm} | Trạng thái: {statusLabel[project.status]}
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center text-sm">
+            <MiniMetric label="Issue" value={`${deliveredIssues}/${issues.length}`} />
+            <MiniMetric label="Module" value={`${deliveredModuleIssues}/${totalModuleIssues}`} />
+            <MiniMetric label="Còn lại" value={`${remainingDays} ngày`} />
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr]">
+          <div className="rounded-md border border-slate-200 bg-white p-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-semibold text-slate-800">Timeline dự án</span>
+              <span className="text-slate-500">{project.startDate} - {project.endDate || "Chưa chốt"}</span>
+            </div>
+            <div className="mt-3 grid gap-2">
+              <ProgressLine label="Ngày đã qua" value={percent(elapsedDays, projectDays)} note={`${elapsedDays}/${projectDays} ngày`} />
+              <ProgressLine label="Issue bàn giao" value={issueCompletion} note={`${issueCompletion}%`} />
+              <ProgressLine label="Module bàn giao" value={moduleCompletion} note={`${moduleCompletion}%`} />
+            </div>
+          </div>
+          <div className="rounded-md border border-slate-200 bg-white p-3">
+            <h4 className="text-sm font-semibold text-slate-800">Checklist biên bản</h4>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              {(["Khảo sát", "Đào tạo/Tập huấn", "Xác nhận hoàn thành"] as AcceptanceStep[]).map((step) => {
+                const done = acceptanceRecords.filter((record) => record.step === step && record.status === "Hoàn tất").length;
+                const total = acceptanceRecords.filter((record) => record.step === step).length || modules.length;
+                return <MiniMetric key={step} label={step} value={`${done}/${total}`} />;
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+        <div className="rounded-lg border border-slate-200 bg-white">
+          <div className="border-b border-slate-200 p-4">
+            <h3 className="text-base font-semibold">Issue theo trạng thái</h3>
+            <p className="mt-1 text-sm text-slate-600">Mô phỏng bảng `ISSUE` và `TrangThai` trong sheet.</p>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {issueStatuses.map((status) => {
+              const count = issues.filter((issue) => issue.status === status).length;
+              return (
+                <div key={status} className="grid grid-cols-[1fr_64px] items-center gap-3 px-4 py-3">
+                  <Pill className={issueTone[status]}>{status}</Pill>
+                  <span className="text-right text-sm font-semibold text-slate-950">{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-white">
+          <div className="border-b border-slate-200 p-4">
+            <h3 className="text-base font-semibold">Phòng ban phụ trách</h3>
+            <p className="mt-1 text-sm text-slate-600">Tổng hợp giống sheet `Phòng ban`: tổng yêu cầu, đã bàn giao và còn lại.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-50 text-slate-600">
+                <tr>
+                  {["Phòng ban", "Module", "Tổng YC", "Đã bàn giao", "Còn lại", "%"].map((head) => (
+                    <th key={head} className="border-b border-slate-200 px-3 py-3 font-semibold">{head}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {departmentRows.map(([department, row]) => (
+                  <tr key={department} className="border-b border-slate-100">
+                    <td className="px-3 py-3 font-medium text-slate-950">{department}</td>
+                    <td className="px-3 py-3 text-slate-600">{row.modules}</td>
+                    <td className="px-3 py-3 text-slate-600">{row.total}</td>
+                    <td className="px-3 py-3 text-slate-600">{row.delivered}</td>
+                    <td className="px-3 py-3 text-slate-600">{Math.max(0, row.total - row.delivered)}</td>
+                    <td className="px-3 py-3 font-semibold text-slate-950">{percent(row.delivered, row.total)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 p-4">
+          <h3 className="text-base font-semibold">Module và biên bản triển khai</h3>
+          <p className="mt-1 text-sm text-slate-600">Theo dõi khảo sát, tập huấn và nghiệm thu từng module như sheet `Theo dõi biên bản`.</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-slate-50 text-slate-600">
+              <tr>
+                {["Phòng ban", "Module", "Yêu cầu", "Đã giao", "Khảo sát", "Tập huấn", "Nghiệm thu", "Trạng thái"].map((head) => (
+                  <th key={head} className="border-b border-slate-200 px-3 py-3 font-semibold">{head}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {modules.map((item) => (
+                <tr key={item.id} className="border-b border-slate-100">
+                  <td className="px-3 py-3 text-slate-600">{item.department}</td>
+                  <td className="min-w-72 px-3 py-3 font-medium text-slate-950">{item.moduleName}</td>
+                  <td className="px-3 py-3 text-slate-600">{item.totalIssues}</td>
+                  <td className="px-3 py-3 text-slate-600">{item.deliveredIssues}</td>
+                  <td className="px-3 py-3">{item.surveyDone ? "Hoàn tất" : "Chưa"}</td>
+                  <td className="px-3 py-3">{item.trainingDone ? "Hoàn tất" : "Chưa"}</td>
+                  <td className="px-3 py-3">{item.acceptanceDone ? "Hoàn tất" : "Chưa"}</td>
+                  <td className="px-3 py-3"><Pill className={moduleTone[item.status]}>{item.status}</Pill></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 p-4">
+          <h3 className="text-base font-semibold">Danh sách yêu cầu nổi bật</h3>
+          <p className="mt-1 text-sm text-slate-600">Bảng rút gọn từ ý tưởng `ISSUE`: nội dung, trạng thái ASC, trạng thái khách hàng, ưu tiên, release và phòng ban.</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-slate-50 text-slate-600">
+              <tr>
+                {["Nội dung yêu cầu", "Module", "ASC", "KH", "Ưu tiên", "Release", "Phòng ban"].map((head) => (
+                  <th key={head} className="border-b border-slate-200 px-3 py-3 font-semibold">{head}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {issues.map((issue) => (
+                <tr key={issue.id} className="border-b border-slate-100 align-top">
+                  <td className="min-w-80 px-3 py-3 font-medium text-slate-950">{issue.content}</td>
+                  <td className="min-w-56 px-3 py-3 text-slate-600">{issue.moduleName}</td>
+                  <td className="px-3 py-3"><Pill className={issueTone[issue.status]}>{issue.status}</Pill></td>
+                  <td className="px-3 py-3 text-slate-600">{issue.customerStatus}</td>
+                  <td className="px-3 py-3 font-semibold text-slate-950">{issue.priority}</td>
+                  <td className="px-3 py-3 text-slate-600">{issue.releaseDate || "Chưa release"}</td>
+                  <td className="min-w-48 px-3 py-3 text-slate-600">{issue.department}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
+      <p className="text-xs font-medium text-slate-500">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-slate-950">{value}</p>
+    </div>
+  );
+}
+
+function ProgressLine({ label, value, note }: { label: string; value: number; note: string }) {
+  return (
+    <div>
+      <div className="mb-1 flex justify-between text-xs">
+        <span className="font-medium text-slate-600">{label}</span>
+        <span className="font-semibold text-slate-900">{note}</span>
+      </div>
+      <ProgressBar value={value} />
+    </div>
   );
 }
 

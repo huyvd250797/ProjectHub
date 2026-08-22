@@ -1,4 +1,4 @@
--- ASC ProjectHub V0.5.0 Core MVP
+-- ASC ProjectHub V0.5.1 Sheet-Inspired Working View
 -- Run this in Supabase SQL Editor when moving from local-first mode to real database mode.
 
 create table if not exists organizations (
@@ -84,6 +84,57 @@ create table if not exists tasks (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists project_modules (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  department text not null,
+  subsystem text,
+  module_name text not null,
+  total_issues int not null default 0 check (total_issues >= 0),
+  delivered_issues int not null default 0 check (delivered_issues >= 0),
+  owner text,
+  status text not null check (status in ('Đã khảo sát', 'Sẵn sàng tập huấn', 'Đã tập huấn', 'Sẵn sàng nghiệm thu', 'Đã nghiệm thu')),
+  survey_done boolean not null default false,
+  training_done boolean not null default false,
+  acceptance_done boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists project_issues (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  module_name text,
+  department text,
+  content text not null,
+  status text not null check (status in ('Chờ khách hàng', 'Không xử lý', 'Chờ xử lý', 'Đang xử lý', 'Đã xử lý', 'Đã Release', 'Không khả thi')),
+  customer_status text not null check (customer_status in ('Chưa bàn giao', 'Đã bàn giao')),
+  priority text check (priority in ('A', 'B', 'C', 'D')),
+  phase text,
+  release_date date,
+  due_date date,
+  assignee text,
+  jira_url text,
+  customer_feedback text,
+  note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists acceptance_records (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  department text not null,
+  module_name text not null,
+  step text not null check (step in ('Khảo sát', 'Đào tạo/Tập huấn', 'Xác nhận hoàn thành')),
+  status text not null check (status in ('Chưa bắt đầu', 'Đang thực hiện', 'Hoàn tất')),
+  owner text,
+  evidence text,
+  completed_at date,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists attachments (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references projects(id) on delete cascade,
@@ -116,10 +167,13 @@ alter table customers enable row level security;
 alter table projects enable row level security;
 alter table milestones enable row level security;
 alter table tasks enable row level security;
+alter table project_modules enable row level security;
+alter table project_issues enable row level security;
+alter table acceptance_records enable row level security;
 alter table attachments enable row level security;
 alter table activity_logs enable row level security;
 
--- V0.5.0 policy baseline.
+-- V0.5.1 policy baseline.
 -- Tighten these in V0.5.x after confirming the exact auth/member workflow.
 create policy "members can read organization projects"
 on projects for select
