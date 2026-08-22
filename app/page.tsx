@@ -53,6 +53,111 @@ type Task = {
   blockedReason: string;
 };
 
+type IssueStatus = "Chờ khách hàng" | "Không xử lý" | "Chờ xử lý" | "Đang xử lý" | "Đã xử lý" | "Đã Release" | "Không khả thi";
+type CustomerIssueStatus = "Chưa bàn giao" | "Đã bàn giao";
+type ModuleDeliveryStatus = "Đã khảo sát" | "Sẵn sàng tập huấn" | "Đã tập huấn" | "Sẵn sàng nghiệm thu" | "Đã nghiệm thu";
+type AcceptanceStep = "Khảo sát" | "Đào tạo/Tập huấn" | "Xác nhận hoàn thành";
+
+type ProjectModule = {
+  id: string;
+  projectId: string;
+  department: string;
+  subsystem: string;
+  moduleName: string;
+  totalIssues: number;
+  deliveredIssues: number;
+  owner: string;
+  status: ModuleDeliveryStatus;
+  surveyDone: boolean;
+  trainingDone: boolean;
+  acceptanceDone: boolean;
+};
+
+type ProjectIssue = {
+  id: string;
+  projectId: string;
+  moduleName: string;
+  department: string;
+  content: string;
+  status: IssueStatus;
+  customerStatus: CustomerIssueStatus;
+  priority: "A" | "B" | "C" | "D";
+  phase: "Giai đoạn 1" | "Giai đoạn 2" | "Giai đoạn 3";
+  releaseDate: string;
+  dueDate: string;
+  assignee: string;
+};
+
+type ProjectIssueSummary = {
+  projectId: string;
+  status: string;
+  quantity: number;
+  emphasized?: boolean;
+};
+
+type AcceptanceRecord = {
+  id: string;
+  projectId: string;
+  department: string;
+  moduleName: string;
+  step: AcceptanceStep;
+  status: "Chưa bắt đầu" | "Đang thực hiện" | "Hoàn tất";
+  owner: string;
+  evidence: string;
+};
+
+type ContractInfo = {
+  projectId: string;
+  number: string;
+  valuation: number;
+  contractDate: string;
+  status: "Running" | "Paused" | "Closed";
+  beginDate: string;
+  dueDate: string;
+  masterPlanDays: number;
+  passedDays: number;
+  remainDays: number;
+};
+
+type ProjectStage = {
+  id: string;
+  projectId: string;
+  code: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  networkDays: number;
+};
+
+type ProjectMember = {
+  id: string;
+  projectId: string;
+  name: string;
+  position: string;
+  issueTotal: number;
+  doneTotal: number;
+};
+
+type ProjectPortal = {
+  id: string;
+  projectId: string;
+  name: string;
+  link: string;
+  username: string;
+  passwordHint: string;
+  environment: "Production" | "Test";
+};
+
+type ProjectServer = {
+  id: string;
+  projectId: string;
+  name: string;
+  remote: string;
+  username: string;
+  passwordHint: string;
+  environment: "Main" | "Test";
+};
+
 type AuditLog = {
   id: string;
   at: string;
@@ -67,10 +172,19 @@ type ProjectHubState = {
   projects: Project[];
   milestones: Milestone[];
   tasks: Task[];
+  modules: ProjectModule[];
+  issues: ProjectIssue[];
+  issueSummaries: ProjectIssueSummary[];
+  acceptanceRecords: AcceptanceRecord[];
+  contracts: ContractInfo[];
+  stages: ProjectStage[];
+  members: ProjectMember[];
+  portals: ProjectPortal[];
+  servers: ProjectServer[];
   auditLogs: AuditLog[];
 };
 
-const STORAGE_KEY = "asc-projecthub-v0.5.0";
+const STORAGE_KEY = "asc-projecthub-v0.5.3";
 
 const statusLabel: Record<ProjectStatus, string> = {
   Planning: "Lập kế hoạch",
@@ -128,11 +242,11 @@ const seedState: ProjectHubState = {
       name: "Triển khai OneUni EPU",
       customerId: "customer-epu",
       pm: "Huy Vo",
-      status: "At Risk",
-      progress: 64,
-      startDate: "2026-08-05",
-      endDate: "2026-09-30",
-      healthNote: "Dữ liệu tuyển sinh cần đối soát thêm trước khi chốt UAT.",
+      status: "In Progress",
+      progress: 75,
+      startDate: "2025-07-23",
+      endDate: "2026-04-30",
+      healthNote: "Đang theo dõi triển khai tổng thể: hợp đồng, giai đoạn, issue, module, thành viên và cổng vận hành.",
     },
     {
       id: "project-hcmue",
@@ -220,6 +334,483 @@ const seedState: ProjectHubState = {
       blockedReason: "",
     },
   ],
+  modules: [
+    {
+      id: "module-epu-1",
+      projectId: "project-epu",
+      department: "Trung tâm CNTT",
+      subsystem: "Quản trị hệ thống",
+      moduleName: "Quản trị hệ thống và phân quyền người dùng",
+      totalIssues: 1,
+      deliveredIssues: 0,
+      owner: "Đầu mối Phòng đào tạo",
+      status: "Sẵn sàng nghiệm thu",
+      surveyDone: true,
+      trainingDone: true,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-epu-2",
+      projectId: "project-epu",
+      department: "Phòng quản lý đào tạo",
+      subsystem: "Đào tạo",
+      moduleName: "Phân hệ quản lý đào tạo các hệ và các bậc đào tạo",
+      totalIssues: 33,
+      deliveredIssues: 0,
+      owner: "Đầu mối Phòng khảo thí",
+      status: "Đã tập huấn",
+      surveyDone: true,
+      trainingDone: true,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-epu-3",
+      projectId: "project-epu",
+      department: "Phòng tổ chức - hành chính",
+      subsystem: "Nhân sự",
+      moduleName: "Phân hệ quản lý nhân sự, quản lý đánh giá nhân sự và thù lao giảng dạy",
+      totalIssues: 14,
+      deliveredIssues: 0,
+      owner: "Đầu mối Phòng công tác sinh viên",
+      status: "Sẵn sàng tập huấn",
+      surveyDone: true,
+      trainingDone: false,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-epu-4",
+      projectId: "project-epu",
+      department: "Phòng tổ chức - hành chính",
+      subsystem: "Hành chính",
+      moduleName: "Phân hệ hành chính điện tử",
+      totalIssues: 8,
+      deliveredIssues: 0,
+      owner: "Đầu mối Phòng tổ chức",
+      status: "Đã khảo sát",
+      surveyDone: true,
+      trainingDone: false,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-epu-5",
+      projectId: "project-epu",
+      department: "Phòng Nghiên cứu khoa học - Hợp tác quốc tế",
+      subsystem: "Nghiên cứu khoa học",
+      moduleName: "Phân hệ quản lý khoa học và tạp chí điện tử",
+      totalIssues: 5,
+      deliveredIssues: 0,
+      owner: "Đầu mối NCKH",
+      status: "Đã khảo sát",
+      surveyDone: true,
+      trainingDone: false,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-epu-6",
+      projectId: "project-epu",
+      department: "Phòng Nghiên cứu khoa học - Hợp tác quốc tế",
+      subsystem: "Hợp tác quốc tế",
+      moduleName: "Phân hệ quản lý Hợp tác quốc tế",
+      totalIssues: 4,
+      deliveredIssues: 0,
+      owner: "Đầu mối HTQT",
+      status: "Đã khảo sát",
+      surveyDone: true,
+      trainingDone: false,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-epu-7",
+      projectId: "project-epu",
+      department: "Quản trị - Dịch vụ",
+      subsystem: "Tài sản",
+      moduleName: "Phân hệ quản lý tài sản và cơ sở vật chất",
+      totalIssues: 11,
+      deliveredIssues: 0,
+      owner: "Đầu mối quản trị",
+      status: "Đã khảo sát",
+      surveyDone: true,
+      trainingDone: false,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-epu-8",
+      projectId: "project-epu",
+      department: "Quản trị - Dịch vụ",
+      subsystem: "Ký túc xá",
+      moduleName: "Phân hệ quản lý ký túc xá",
+      totalIssues: 6,
+      deliveredIssues: 0,
+      owner: "Đầu mối ký túc xá",
+      status: "Đã khảo sát",
+      surveyDone: true,
+      trainingDone: false,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-epu-9",
+      projectId: "project-epu",
+      department: "Ban giám hiệu",
+      subsystem: "Điều hành",
+      moduleName: "Hệ thống thông tin hỗ trợ chỉ đạo điều hành",
+      totalIssues: 9,
+      deliveredIssues: 0,
+      owner: "Đầu mối điều hành",
+      status: "Đã khảo sát",
+      surveyDone: true,
+      trainingDone: false,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-epu-10",
+      projectId: "project-epu",
+      department: "Trung tâm thư viện",
+      subsystem: "Thư viện",
+      moduleName: "Tích hợp phần mềm quản lý thư viện Libol",
+      totalIssues: 5,
+      deliveredIssues: 0,
+      owner: "Đầu mối thư viện",
+      status: "Đã khảo sát",
+      surveyDone: true,
+      trainingDone: false,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-epu-11",
+      projectId: "project-epu",
+      department: "Thanh tra - Pháp chế",
+      subsystem: "Thanh tra",
+      moduleName: "Phân hệ quản lý công tác thanh tra, pháp chế",
+      totalIssues: 9,
+      deliveredIssues: 0,
+      owner: "Đầu mối pháp chế",
+      status: "Đã khảo sát",
+      surveyDone: true,
+      trainingDone: false,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-epu-12",
+      projectId: "project-epu",
+      department: "Phòng kế hoạch tài chính",
+      subsystem: "Tài chính",
+      moduleName: "Tích hợp dữ liệu thu học phí với phần mềm tài chính kế toán",
+      totalIssues: 1,
+      deliveredIssues: 0,
+      owner: "Đầu mối tài chính",
+      status: "Đã khảo sát",
+      surveyDone: true,
+      trainingDone: false,
+      acceptanceDone: false,
+    },
+    {
+      id: "module-hcmue-1",
+      projectId: "project-hcmue",
+      department: "Trung tâm CNTT",
+      subsystem: "Cổng sinh viên",
+      moduleName: "Cổng thông tin sinh viên",
+      totalIssues: 9,
+      deliveredIssues: 7,
+      owner: "Trung tâm CNTT",
+      status: "Đã tập huấn",
+      surveyDone: true,
+      trainingDone: true,
+      acceptanceDone: false,
+    },
+  ],
+  issues: [
+    {
+      id: "issue-epu-1",
+      projectId: "project-epu",
+      moduleName: "Quản lý chứng chỉ, chuẩn đầu ra, xét tốt nghiệp",
+      department: "Phòng quản lý đào tạo",
+      content: "Chứng chỉ sinh viên quá hạn cần hiển thị đúng trạng thái trên trang sinh viên.",
+      status: "Đã xử lý",
+      customerStatus: "Đã bàn giao",
+      priority: "A",
+      phase: "Giai đoạn 1",
+      releaseDate: "2026-08-12",
+      dueDate: "2026-08-20",
+      assignee: "Data team",
+    },
+    {
+      id: "issue-epu-2",
+      projectId: "project-epu",
+      moduleName: "Tổ chức thi tập trung",
+      department: "Phòng khảo thí & Bảo đảm chất lượng",
+      content: "Bổ sung bộ lọc theo số báo danh trong danh sách trộn lịch thi.",
+      status: "Đã Release",
+      customerStatus: "Đã bàn giao",
+      priority: "B",
+      phase: "Giai đoạn 1",
+      releaseDate: "2026-08-19",
+      dueDate: "2026-08-21",
+      assignee: "Dev team",
+    },
+    {
+      id: "issue-epu-3",
+      projectId: "project-epu",
+      moduleName: "Quản lý lớp học và hồ sơ người học",
+      department: "Phòng công tác sinh viên",
+      content: "Đối soát dữ liệu lớp, trạng thái sinh viên và hồ sơ nhập học trực tuyến.",
+      status: "Đang xử lý",
+      customerStatus: "Chưa bàn giao",
+      priority: "A",
+      phase: "Giai đoạn 2",
+      releaseDate: "",
+      dueDate: "2026-08-28",
+      assignee: "PM",
+    },
+    {
+      id: "issue-epu-4",
+      projectId: "project-epu",
+      moduleName: "Quản lý Hồ sơ nhân sự",
+      department: "Phòng tổ chức - hành chính",
+      content: "Chuẩn hóa dữ liệu nhân sự trước khi chuyển sang môi trường vận hành.",
+      status: "Chờ khách hàng",
+      customerStatus: "Chưa bàn giao",
+      priority: "C",
+      phase: "Giai đoạn 2",
+      releaseDate: "",
+      dueDate: "2026-08-30",
+      assignee: "Khách hàng",
+    },
+    {
+      id: "issue-hcmue-1",
+      projectId: "project-hcmue",
+      moduleName: "Cổng thông tin sinh viên",
+      department: "Trung tâm CNTT",
+      content: "Tối ưu màn hình thông báo và lịch học trên mobile.",
+      status: "Đã Release",
+      customerStatus: "Đã bàn giao",
+      priority: "B",
+      phase: "Giai đoạn 1",
+      releaseDate: "2026-08-15",
+      dueDate: "2026-08-18",
+      assignee: "Frontend",
+    },
+  ],
+  issueSummaries: [
+    { projectId: "project-epu", status: "Chờ khách hàng", quantity: 0 },
+    { projectId: "project-epu", status: "Không xử lý", quantity: 0 },
+    { projectId: "project-epu", status: "Chờ xử lý", quantity: 0 },
+    { projectId: "project-epu", status: "Đang xử lý", quantity: 0 },
+    { projectId: "project-epu", status: "Đã xử lý", quantity: 0 },
+    { projectId: "project-epu", status: "Đã Release", quantity: 0 },
+    { projectId: "project-epu", status: "Đã bàn giao", quantity: 234, emphasized: true },
+    { projectId: "project-epu", status: "Hoàn thành (%)", quantity: 75, emphasized: true },
+    { projectId: "project-hcmue", status: "Chờ khách hàng", quantity: 1 },
+    { projectId: "project-hcmue", status: "Đã Release", quantity: 7, emphasized: true },
+    { projectId: "project-hcmue", status: "Đã bàn giao", quantity: 7, emphasized: true },
+  ],
+  acceptanceRecords: [
+    {
+      id: "accept-epu-1",
+      projectId: "project-epu",
+      department: "Phòng quản lý đào tạo",
+      moduleName: "Quản lý chứng chỉ, chuẩn đầu ra, xét tốt nghiệp",
+      step: "Khảo sát",
+      status: "Hoàn tất",
+      owner: "PM",
+      evidence: "Biên bản khảo sát đã xác nhận",
+    },
+    {
+      id: "accept-epu-2",
+      projectId: "project-epu",
+      department: "Phòng quản lý đào tạo",
+      moduleName: "Quản lý chứng chỉ, chuẩn đầu ra, xét tốt nghiệp",
+      step: "Đào tạo/Tập huấn",
+      status: "Hoàn tất",
+      owner: "PM",
+      evidence: "Danh sách tập huấn đã chốt",
+    },
+    {
+      id: "accept-epu-3",
+      projectId: "project-epu",
+      department: "Phòng quản lý đào tạo",
+      moduleName: "Quản lý chứng chỉ, chuẩn đầu ra, xét tốt nghiệp",
+      step: "Xác nhận hoàn thành",
+      status: "Đang thực hiện",
+      owner: "Khách hàng",
+      evidence: "Chờ xác nhận nghiệm thu",
+    },
+    {
+      id: "accept-hcmue-1",
+      projectId: "project-hcmue",
+      department: "Trung tâm CNTT",
+      moduleName: "Cổng thông tin sinh viên",
+      step: "Đào tạo/Tập huấn",
+      status: "Hoàn tất",
+      owner: "PM",
+      evidence: "Hoàn tất đào tạo nhóm admin",
+    },
+  ],
+  contracts: [
+    {
+      projectId: "project-epu",
+      number: "272/2025/HĐ-ASC-PVCOMBANK-EPU",
+      valuation: 13848000000,
+      contractDate: "2025-07-23",
+      status: "Running",
+      beginDate: "2025-07-23",
+      dueDate: "2026-04-30",
+      masterPlanDays: 202,
+      passedDays: 283,
+      remainDays: -81,
+    },
+    {
+      projectId: "project-hcmue",
+      number: "ASC/HCMUE/2026",
+      valuation: 0,
+      contractDate: "2026-07-15",
+      status: "Running",
+      beginDate: "2026-07-15",
+      dueDate: "2026-09-05",
+      masterPlanDays: 38,
+      passedDays: 25,
+      remainDays: 13,
+    },
+  ],
+  stages: [
+    {
+      id: "stage-epu-1",
+      projectId: "project-epu",
+      code: "Stage 1",
+      name: "Khởi động dự án",
+      startDate: "2026-04-28",
+      endDate: "2026-05-11",
+      networkDays: 2,
+    },
+    {
+      id: "stage-epu-2",
+      projectId: "project-epu",
+      code: "Stage 2",
+      name: "Khảo sát / tư vấn nghiệp vụ và Chốt tài liệu đặc tả nghiệp vụ",
+      startDate: "2026-05-13",
+      endDate: "2026-06-22",
+      networkDays: 30,
+    },
+    {
+      id: "stage-epu-3",
+      projectId: "project-epu",
+      code: "Stage 3",
+      name: "Thực hiện hiệu chỉnh, cài đặt và tập huấn",
+      startDate: "2026-06-27",
+      endDate: "2026-07-13",
+      networkDays: 15,
+    },
+    {
+      id: "stage-epu-4",
+      projectId: "project-epu",
+      code: "Stage 4",
+      name: "Hỗ trợ vận hành (Golive)",
+      startDate: "2026-07-13",
+      endDate: "2026-07-27",
+      networkDays: 10,
+    },
+    {
+      id: "stage-epu-5",
+      projectId: "project-epu",
+      code: "Stage 5",
+      name: "Đánh giá và nghiệm thu hệ thống phần mềm",
+      startDate: "2026-07-27",
+      endDate: "2026-08-11",
+      networkDays: 3,
+    },
+    {
+      id: "stage-hcmue-1",
+      projectId: "project-hcmue",
+      code: "Stage 1",
+      name: "Khởi động và rà soát phạm vi",
+      startDate: "2026-07-15",
+      endDate: "2026-07-20",
+      networkDays: 4,
+    },
+    {
+      id: "stage-hcmue-2",
+      projectId: "project-hcmue",
+      code: "Stage 2",
+      name: "Hiệu chỉnh và UAT",
+      startDate: "2026-07-21",
+      endDate: "2026-08-25",
+      networkDays: 26,
+    },
+  ],
+  members: [
+    { id: "member-epu-1", projectId: "project-epu", name: "Võ Đức Huy", position: "PM", issueTotal: 178, doneTotal: 165 },
+    { id: "member-epu-2", projectId: "project-epu", name: "Nguyễn Đức Huy", position: "BA/Dev", issueTotal: 55, doneTotal: 35 },
+    { id: "member-epu-3", projectId: "project-epu", name: "Nguyễn Phi Long", position: "Dev", issueTotal: 42, doneTotal: 7 },
+    { id: "member-epu-4", projectId: "project-epu", name: "Lê Đăng Trường", position: "Support", issueTotal: 7, doneTotal: 7 },
+    { id: "member-epu-5", projectId: "project-epu", name: "Nguyễn Phúc Vĩnh Nguyên", position: "Support", issueTotal: 9, doneTotal: 9 },
+    { id: "member-hcmue-1", projectId: "project-hcmue", name: "Mai Anh", position: "PM", issueTotal: 9, doneTotal: 7 },
+  ],
+  portals: [
+    {
+      id: "portal-epu-1",
+      projectId: "project-epu",
+      name: "Trang giảng viên",
+      link: "https://eoffice.epu.edu.vn/HeThong",
+      username: "admin",
+      passwordHint: "Đã che - lưu trong vault/env, không ghi vào source",
+      environment: "Production",
+    },
+    {
+      id: "portal-epu-2",
+      projectId: "project-epu",
+      name: "Trang sinh viên",
+      link: "https://sv.epu.edu.vn",
+      username: "",
+      passwordHint: "Chưa cập nhật",
+      environment: "Production",
+    },
+    {
+      id: "portal-epu-3",
+      projectId: "project-epu",
+      name: "Đăng ký học phần",
+      link: "https://dkhp.epu.edu.vn/",
+      username: "",
+      passwordHint: "Chưa cập nhật",
+      environment: "Production",
+    },
+    {
+      id: "portal-epu-4",
+      projectId: "project-epu",
+      name: "Giảng viên test",
+      link: "https://gv-epu.ascvn.vn/",
+      username: "",
+      passwordHint: "Đã che",
+      environment: "Test",
+    },
+    {
+      id: "portal-epu-5",
+      projectId: "project-epu",
+      name: "Sinh viên test",
+      link: "https://sv-epu.ascvn.vn/",
+      username: "",
+      passwordHint: "Đã che",
+      environment: "Test",
+    },
+  ],
+  servers: [
+    {
+      id: "server-epu-1",
+      projectId: "project-epu",
+      name: "Database",
+      remote: "Đã che thông tin kết nối",
+      username: "epusql_asc_***",
+      passwordHint: "Đã che - không lưu mật khẩu trong source",
+      environment: "Main",
+    },
+    {
+      id: "server-epu-2",
+      projectId: "project-epu",
+      name: "WEB",
+      remote: "Chưa cập nhật",
+      username: "",
+      passwordHint: "Chưa cập nhật",
+      environment: "Main",
+    },
+  ],
   auditLogs: [
     {
       id: "log-1",
@@ -227,7 +818,7 @@ const seedState: ProjectHubState = {
       actor: "June",
       action: "Khởi tạo",
       entity: "Version",
-      detail: "Tạo dữ liệu seed cho ASC ProjectHub V0.5.0 Core MVP.",
+      detail: "Tạo dữ liệu seed cho ASC ProjectHub V0.5.3 Project Dashboard as Main Screen.",
     },
   ],
 };
@@ -274,7 +865,25 @@ function readState(): ProjectHubState {
   const raw = window.localStorage.getItem(STORAGE_KEY);
   if (!raw) return seedState;
   try {
-    return JSON.parse(raw) as ProjectHubState;
+    const parsed = JSON.parse(raw) as Partial<ProjectHubState>;
+    return {
+      ...seedState,
+      ...parsed,
+      customers: parsed.customers ?? seedState.customers,
+      projects: parsed.projects ?? seedState.projects,
+      milestones: parsed.milestones ?? seedState.milestones,
+      tasks: parsed.tasks ?? seedState.tasks,
+      modules: parsed.modules ?? seedState.modules,
+      issues: parsed.issues ?? seedState.issues,
+      issueSummaries: parsed.issueSummaries ?? seedState.issueSummaries,
+      acceptanceRecords: parsed.acceptanceRecords ?? seedState.acceptanceRecords,
+      contracts: parsed.contracts ?? seedState.contracts,
+      stages: parsed.stages ?? seedState.stages,
+      members: parsed.members ?? seedState.members,
+      portals: parsed.portals ?? seedState.portals,
+      servers: parsed.servers ?? seedState.servers,
+      auditLogs: parsed.auditLogs ?? seedState.auditLogs,
+    };
   } catch {
     return seedState;
   }
@@ -319,6 +928,14 @@ export default function Home() {
   const selectedCustomer = state.customers.find((customer) => customer.id === selectedProject?.customerId);
   const projectMilestones = state.milestones.filter((milestone) => milestone.projectId === selectedProject?.id);
   const projectTasks = state.tasks.filter((task) => task.projectId === selectedProject?.id);
+  const projectModules = state.modules.filter((module) => module.projectId === selectedProject?.id);
+  const projectIssues = state.issues.filter((issue) => issue.projectId === selectedProject?.id);
+  const projectIssueSummaries = state.issueSummaries.filter((issue) => issue.projectId === selectedProject?.id);
+  const projectContract = state.contracts.find((contract) => contract.projectId === selectedProject?.id);
+  const projectStages = state.stages.filter((stage) => stage.projectId === selectedProject?.id);
+  const projectMembers = state.members.filter((member) => member.projectId === selectedProject?.id);
+  const projectPortals = state.portals.filter((portal) => portal.projectId === selectedProject?.id);
+  const projectServers = state.servers.filter((server) => server.projectId === selectedProject?.id);
 
   const filteredProjects = useMemo(() => {
     const text = query.trim().toLowerCase();
@@ -484,13 +1101,13 @@ export default function Home() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-blue-700">ASC ProjectHub</p>
-              <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">V0.5.0 Core MVP - quản lý dự án có dữ liệu thao tác thật</h1>
+              <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">V0.5.3 Project Dashboard - dashboard là màn hình chính của từng dự án</h1>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                Bản này đã có CRUD nội bộ bằng local storage, nền phân quyền, audit log và cấu trúc dữ liệu bám theo kế hoạch Supabase. Khi có Supabase URL/key, có thể thay lớp lưu trữ local bằng database thật.
+                Bản này tách ý tưởng ASC-Working thành màn hình nghiệp vụ: dashboard dự án, hợp đồng, kế hoạch thời gian, timeline, milestone, issue, module, member, portal và server có kiểm soát bảo mật.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Pill className="border-blue-200 bg-blue-50 text-blue-800">Đã xây: V0.5.0</Pill>
+              <Pill className="border-blue-200 bg-blue-50 text-blue-800">Đã xây: V0.5.3</Pill>
               <Pill className="border-slate-200 bg-white text-slate-700">Portable Next.js</Pill>
               <Pill className="border-amber-200 bg-amber-50 text-amber-800">Next: V0.8.0 Customer Collaboration</Pill>
             </div>
@@ -588,8 +1205,9 @@ export default function Home() {
           </section>
 
           {selectedProject ? (
-            <section className="rounded-lg border border-slate-200 bg-white">
-              <div className="border-b border-slate-200 p-4">
+            <section className="space-y-5">
+              <section className="rounded-lg border border-slate-200 bg-white">
+                <div className="p-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium text-slate-500">{selectedProject.code}</p>
@@ -614,8 +1232,23 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+              </section>
 
-              <div className="border-b border-slate-200 px-4">
+              <ProjectDashboardView
+                project={selectedProject}
+                customer={selectedCustomer}
+                contract={projectContract}
+                stages={projectStages}
+                modules={projectModules}
+                issues={projectIssues}
+                issueSummaries={projectIssueSummaries}
+                members={projectMembers}
+                portals={projectPortals}
+                servers={projectServers}
+              />
+
+              <section className="rounded-lg border border-slate-200 bg-white">
+                <div className="border-b border-slate-200 px-4">
                 <div className="flex gap-2 overflow-x-auto py-3">
                   {["Tổng quan", "Kế hoạch", "Milestone", "Task", "Audit log", "Supabase"].map((tab) => (
                     <button
@@ -649,6 +1282,7 @@ export default function Home() {
                 {activeTab === "Audit log" && <AuditLogView logs={state.auditLogs} />}
                 {activeTab === "Supabase" && <SupabaseReadiness />}
               </div>
+              </section>
             </section>
           ) : (
             <section className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
@@ -696,6 +1330,365 @@ function Kpi({ label, value, note }: { label: string; value: string; note: strin
       <p className="mt-1 text-xs text-slate-500">{note}</p>
     </article>
   );
+}
+
+function daysBetween(from: string, to: string) {
+  if (!from || !to) return 0;
+  const start = new Date(from).getTime();
+  const end = new Date(to).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end)) return 0;
+  return Math.max(0, Math.ceil((end - start) / 86400000));
+}
+
+function percent(part: number, total: number) {
+  if (!total) return 0;
+  return Math.round((part / total) * 100);
+}
+
+function formatCurrency(value: number) {
+  if (!value) return "Chưa cập nhật";
+  return new Intl.NumberFormat("vi-VN").format(value) + " đ";
+}
+
+function formatDate(value: string) {
+  if (!value) return "Chưa cập nhật";
+  return new Intl.DateTimeFormat("vi-VN").format(new Date(value));
+}
+
+function ProjectDashboardView({
+  project,
+  customer,
+  contract,
+  stages,
+  modules,
+  issues,
+  issueSummaries,
+  members,
+  portals,
+  servers,
+}: {
+  project: Project;
+  customer?: Customer;
+  contract?: ContractInfo;
+  stages: ProjectStage[];
+  modules: ProjectModule[];
+  issues: ProjectIssue[];
+  issueSummaries: ProjectIssueSummary[];
+  members: ProjectMember[];
+  portals: ProjectPortal[];
+  servers: ProjectServer[];
+}) {
+  const moduleIssueTotal = modules.reduce((sum, item) => sum + item.totalIssues, 0);
+  const totalIssues = project.id === "project-epu" ? 313 : Math.max(issues.length, moduleIssueTotal);
+  const deliveredIssues = issueSummaries.find((item) => item.status === "Đã bàn giao")?.quantity ?? issues.filter((issue) => issue.customerStatus === "Đã bàn giao").length;
+  const issueCompletion = percent(deliveredIssues, totalIssues || issues.length);
+  const totalModuleItems = moduleIssueTotal;
+  const doneModuleItems = modules.reduce((sum, item) => sum + item.deliveredIssues, 0);
+  const masterPlanDays = contract?.masterPlanDays ?? daysBetween(project.startDate, project.endDate);
+  const passedDays = contract?.passedDays ?? daysBetween(project.startDate, new Date().toISOString().slice(0, 10));
+  const remainDays = contract?.remainDays ?? masterPlanDays - passedDays;
+  const progress = masterPlanDays ? Math.round((passedDays / masterPlanDays) * 1000) / 10 : project.progress;
+  const stageMax = Math.max(1, stages.reduce((sum, stage) => sum + stage.networkDays, 0));
+
+  return (
+    <div className="space-y-5">
+      <section className="rounded-lg border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 bg-amber-50 px-4 py-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-800">Dashboard từng dự án</p>
+          <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-xl font-semibold text-slate-950">{customer?.name ?? project.name}</h3>
+              <p className="mt-1 text-sm text-slate-600">{project.code} | PM: {project.pm} | {statusLabel[project.status]}</p>
+            </div>
+            <Pill className="border-amber-200 bg-white text-amber-800">Nguồn: dashboard nghiệp vụ theo dự án</Pill>
+          </div>
+        </div>
+
+        <div className="grid gap-4 p-4 xl:grid-cols-[0.95fr_1.05fr]">
+          <div className="rounded-lg border border-slate-200">
+            <SectionTitle index="1" title="Về hợp đồng" />
+            <div className="grid gap-3 p-4 sm:grid-cols-2">
+              <Info label="Number" value={contract?.number ?? "Chưa cập nhật"} />
+              <Info label="Valuation" value={formatCurrency(contract?.valuation ?? 0)} />
+              <Info label="Contract date" value={formatDate(contract?.contractDate ?? "")} />
+              <Info label="Status" value={contract?.status ?? statusLabel[project.status]} />
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-slate-200">
+            <SectionTitle index="2" title="Kế hoạch thời gian tổng thể" />
+            <div className="grid gap-3 p-4 sm:grid-cols-4">
+              <Info label="Begin date" value={formatDate(contract?.beginDate ?? project.startDate)} />
+              <Info label="Due date" value={formatDate(contract?.dueDate ?? project.endDate)} />
+              <Info label="Master Plan" value={`${masterPlanDays} ngày`} />
+              <Info label="Progress" value={`${progress}%`} />
+              <Info label="Passed" value={`${passedDays} ngày`} />
+              <Info label="Remain" value={`${remainDays} ngày`} />
+              <Info label="Issue" value={`${deliveredIssues}/${totalIssues}`} />
+              <Info label="Module" value={`${doneModuleItems}/${totalModuleItems}`} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[1fr_1fr]">
+        <div className="rounded-lg border border-slate-200 bg-white">
+          <SectionTitle index="3" title="Chi tiết từng giai đoạn" />
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-50 text-slate-600">
+                <tr>
+                  {["Stage", "Stage name", "Start date", "End date", "Networkdays"].map((head) => (
+                    <th key={head} className="border-b border-slate-200 px-3 py-3 font-semibold">{head}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {stages.map((stage) => (
+                  <tr key={stage.id} className="border-b border-slate-100">
+                    <td className="px-3 py-3 font-semibold text-slate-950">{stage.code}</td>
+                    <td className="min-w-64 px-3 py-3 text-slate-700">{stage.name}</td>
+                    <td className="px-3 py-3 text-slate-600">{formatDate(stage.startDate)}</td>
+                    <td className="px-3 py-3 text-slate-600">{formatDate(stage.endDate)}</td>
+                    <td className="px-3 py-3 font-semibold text-slate-950">{stage.networkDays}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-white">
+          <SectionTitle index="4" title="Timeline (day)" />
+          <div className="p-4">
+            <div className="rounded-md border border-blue-300 bg-white p-4">
+              <p className="text-lg font-semibold italic text-slate-500">Timeline (day)</p>
+              <TimelineBar label="Passed" value={Math.max(0, passedDays)} max={Math.max(stageMax, passedDays)} color="bg-emerald-400" note={`${passedDays}`} />
+              <div className="mt-4">
+                <p className="mb-2 text-xs font-semibold text-slate-600">Stage</p>
+                <div className="flex h-12 overflow-hidden rounded-md border border-slate-200">
+                  {stages.map((stage, index) => (
+                    <div
+                      key={stage.id}
+                      className={`${["bg-blue-800", "bg-blue-600", "bg-sky-500", "bg-sky-600", "bg-blue-700"][index % 5]} flex items-center justify-center text-xs font-semibold text-white`}
+                      style={{ width: `${Math.max(8, (stage.networkDays / stageMax) * 100)}%` }}
+                    >
+                      {stage.networkDays}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 flex justify-between text-xs text-slate-500">
+                  <span>0</span>
+                  <span>Net Working Day</span>
+                  <span>{stageMax}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white">
+        <SectionTitle index="5" title="Milestone" />
+        <div className="overflow-x-auto p-4">
+          <div className="relative min-w-[850px] rounded-md border border-blue-300 bg-white px-6 py-12">
+            <div className="absolute left-0 right-0 top-28 h-8 bg-violet-50" />
+            <div className="relative h-72">
+              <div className="absolute left-6 right-6 top-24 h-2 rounded bg-slate-500" />
+              {stages.map((stage, index) => {
+                const left = `${8 + index * (84 / Math.max(1, stages.length - 1))}%`;
+                const top = index % 2 === 0 ? "top-4" : "top-44";
+                return (
+                  <div key={stage.id} className={`absolute ${top} w-44 -translate-x-1/2 text-center`} style={{ left }}>
+                    <p className="text-sm font-semibold text-slate-950">{formatDate(stage.endDate)}</p>
+                    <div className="mx-auto mt-2 h-4 w-4 rotate-45 bg-slate-900" />
+                    <div className="mx-auto h-24 border-l border-dashed border-slate-500" />
+                    <div className="mx-auto h-4 w-4 rotate-45 bg-blue-300" />
+                    <div className="mx-auto h-4 rounded bg-blue-600" style={{ width: `${Math.max(36, stage.networkDays * 4)}px` }} />
+                    <p className="mt-3 text-xs font-semibold text-slate-700">
+                      {index + 1}. {stage.name} ({stage.networkDays} ngày)
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[0.75fr_1.25fr]">
+        <div className="rounded-lg border border-slate-200 bg-white">
+          <SectionTitle index="6" title="Số lượng issue theo trạng thái" />
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-50 text-slate-600">
+                <tr>
+                  {["N.o", "Status", "Quantity"].map((head) => (
+                    <th key={head} className="border-b border-slate-200 px-3 py-3 font-semibold">{head}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {issueSummaries.map((item, index) => (
+                  <tr key={`${item.status}-${index}`} className={item.emphasized ? "border-b border-slate-100 bg-slate-50 font-semibold" : "border-b border-slate-100"}>
+                    <td className="px-3 py-3">{index + 1}</td>
+                    <td className="px-3 py-3">{item.status}</td>
+                    <td className="px-3 py-3">{item.status.includes("%") ? `${issueCompletion}%` : item.quantity}</td>
+                  </tr>
+                ))}
+                <tr className="bg-slate-100 font-semibold">
+                  <td className="px-3 py-3">Total</td>
+                  <td className="px-3 py-3">{totalIssues}</td>
+                  <td className="px-3 py-3">{deliveredIssues}/{totalIssues}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-white">
+          <SectionTitle index="7" title="Danh sách các module" />
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-50 text-slate-600">
+                <tr>
+                  {["N.o", "Subsystem Name", "Module", "Done", "Remain"].map((head) => (
+                    <th key={head} className="border-b border-slate-200 px-3 py-3 font-semibold">{head}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {modules.map((item, index) => (
+                  <tr key={item.id} className="border-b border-slate-100">
+                    <td className="px-3 py-3 font-semibold text-slate-950">{toRoman(index + 1)}</td>
+                    <td className="min-w-80 px-3 py-3 text-slate-700">{item.moduleName}</td>
+                    <td className="px-3 py-3 text-slate-600">{item.totalIssues}</td>
+                    <td className="px-3 py-3 text-slate-600">{item.deliveredIssues}</td>
+                    <td className="px-3 py-3 font-semibold text-slate-950">{Math.max(0, item.totalIssues - item.deliveredIssues)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[1fr_1fr]">
+        <DashboardTable
+          index="8"
+          title="Member tham gia dự án"
+          heads={["N.o", "Member", "Position", "Issue", "Done", "(%)"]}
+          rows={members.map((member, index) => [
+            `${index + 1}`,
+            member.name,
+            member.position || "Chưa cập nhật",
+            `${member.issueTotal} / ${totalIssues}`,
+            `${member.doneTotal} / ${member.issueTotal}`,
+            `${percent(member.doneTotal, member.issueTotal)}%`,
+          ])}
+        />
+        <DashboardTable
+          index="9"
+          title="Các cổng thông tin"
+          heads={["N.o", "Portal", "Link", "Username", "Password", "Env"]}
+          rows={portals.map((portal, index) => [
+            `${index + 1}`,
+            portal.name,
+            portal.link,
+            portal.username || "-",
+            portal.passwordHint,
+            portal.environment,
+          ])}
+        />
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[1fr_1fr]">
+        <DashboardTable
+          index="10"
+          title="Thông tin server main và test"
+          heads={["N.o", "Server", "Remote", "Username", "Password", "Env"]}
+          rows={servers.map((server, index) => [
+            `${index + 1}`,
+            server.name,
+            server.remote,
+            server.username || "-",
+            server.passwordHint,
+            server.environment,
+          ])}
+        />
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+          <h3 className="font-semibold text-amber-950">Ghi chú bảo mật</h3>
+          <p className="mt-2">
+            Portal/server được thiết kế thành màn hình quản lý riêng, nhưng mật khẩu thật không nên lưu trong source hoặc localStorage. Khi lên bản có database, phần này nên dùng vault, mã hóa hoặc chỉ lưu người phụ trách và link truy cập.
+          </p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SectionTitle({ index, title }: { index: string; title: string }) {
+  return (
+    <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+      <h3 className="text-base font-semibold text-slate-950">
+        {index}. {title}
+      </h3>
+    </div>
+  );
+}
+
+function TimelineBar({ label, value, max, color, note }: { label: string; value: number; max: number; color: string; note: string }) {
+  return (
+    <div className="mt-4 grid grid-cols-[70px_1fr] items-center gap-3">
+      <span className="text-xs font-semibold text-slate-700">{label}</span>
+      <div className="h-11 rounded bg-slate-100">
+        <div className={`flex h-full items-center justify-end rounded pr-3 text-sm font-semibold text-slate-900 ${color}`} style={{ width: `${Math.min(100, Math.max(4, (value / max) * 100))}%` }}>
+          {note}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardTable({ index, title, heads, rows }: { index: string; title: string; heads: string[]; rows: string[][] }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white">
+      <SectionTitle index={index} title={title} />
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-left text-sm">
+          <thead className="bg-slate-50 text-slate-600">
+            <tr>
+              {heads.map((head) => (
+                <th key={head} className="border-b border-slate-200 px-3 py-3 font-semibold">{head}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, rowIndex) => (
+              <tr key={`${title}-${rowIndex}`} className="border-b border-slate-100 align-top">
+                {row.map((cell, cellIndex) => (
+                  <td key={`${title}-${rowIndex}-${cellIndex}`} className={`px-3 py-3 ${cellIndex === 1 ? "min-w-48 font-medium text-slate-950" : "text-slate-600"}`}>
+                    {cell.startsWith("http") ? (
+                      <a href={cell} target="_blank" rel="noreferrer" className="font-medium text-blue-700 hover:underline">
+                        {cell}
+                      </a>
+                    ) : (
+                      cell
+                    )}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function toRoman(value: number) {
+  const romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV"];
+  return romans[value - 1] ?? value.toString();
 }
 
 function Overview({

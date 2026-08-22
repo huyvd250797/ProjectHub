@@ -1,4 +1,4 @@
--- ASC ProjectHub V0.5.0 Core MVP
+-- ASC ProjectHub V0.5.3 Project Dashboard as Main Screen
 -- Run this in Supabase SQL Editor when moving from local-first mode to real database mode.
 
 create table if not exists organizations (
@@ -84,6 +84,132 @@ create table if not exists tasks (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists project_modules (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  department text not null,
+  subsystem text,
+  module_name text not null,
+  total_issues int not null default 0 check (total_issues >= 0),
+  delivered_issues int not null default 0 check (delivered_issues >= 0),
+  owner text,
+  status text not null check (status in ('Đã khảo sát', 'Sẵn sàng tập huấn', 'Đã tập huấn', 'Sẵn sàng nghiệm thu', 'Đã nghiệm thu')),
+  survey_done boolean not null default false,
+  training_done boolean not null default false,
+  acceptance_done boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists contracts (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  number text not null,
+  valuation numeric,
+  contract_date date,
+  status text not null check (status in ('Running', 'Paused', 'Closed')),
+  begin_date date,
+  due_date date,
+  master_plan_days int,
+  passed_days int,
+  remain_days int,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (project_id, number)
+);
+
+create table if not exists project_stages (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  code text not null,
+  name text not null,
+  start_date date,
+  end_date date,
+  network_days int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists project_issues (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  module_name text,
+  department text,
+  content text not null,
+  status text not null check (status in ('Chờ khách hàng', 'Không xử lý', 'Chờ xử lý', 'Đang xử lý', 'Đã xử lý', 'Đã Release', 'Không khả thi')),
+  customer_status text not null check (customer_status in ('Chưa bàn giao', 'Đã bàn giao')),
+  priority text check (priority in ('A', 'B', 'C', 'D')),
+  phase text,
+  release_date date,
+  due_date date,
+  assignee text,
+  jira_url text,
+  customer_feedback text,
+  note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists project_issue_summaries (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  status text not null,
+  quantity int not null default 0,
+  emphasized boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (project_id, status)
+);
+
+create table if not exists acceptance_records (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  department text not null,
+  module_name text not null,
+  step text not null check (step in ('Khảo sát', 'Đào tạo/Tập huấn', 'Xác nhận hoàn thành')),
+  status text not null check (status in ('Chưa bắt đầu', 'Đang thực hiện', 'Hoàn tất')),
+  owner text,
+  evidence text,
+  completed_at date,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists project_members (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  name text not null,
+  position text,
+  issue_total int not null default 0,
+  done_total int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists project_portals (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  name text not null,
+  link text,
+  username text,
+  password_hint text,
+  environment text not null check (environment in ('Production', 'Test')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists project_servers (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  name text not null,
+  remote text,
+  username text,
+  password_hint text,
+  environment text not null check (environment in ('Main', 'Test')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists attachments (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references projects(id) on delete cascade,
@@ -116,10 +242,19 @@ alter table customers enable row level security;
 alter table projects enable row level security;
 alter table milestones enable row level security;
 alter table tasks enable row level security;
+alter table contracts enable row level security;
+alter table project_stages enable row level security;
+alter table project_modules enable row level security;
+alter table project_issues enable row level security;
+alter table project_issue_summaries enable row level security;
+alter table acceptance_records enable row level security;
+alter table project_members enable row level security;
+alter table project_portals enable row level security;
+alter table project_servers enable row level security;
 alter table attachments enable row level security;
 alter table activity_logs enable row level security;
 
--- V0.5.0 policy baseline.
+-- V0.5.3 policy baseline.
 -- Tighten these in V0.5.x after confirming the exact auth/member workflow.
 create policy "members can read organization projects"
 on projects for select
