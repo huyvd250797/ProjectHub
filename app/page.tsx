@@ -53,109 +53,73 @@ type Task = {
   blockedReason: string;
 };
 
-type IssueStatus = "Chờ khách hàng" | "Không xử lý" | "Chờ xử lý" | "Đang xử lý" | "Đã xử lý" | "Đã Release" | "Không khả thi";
-type CustomerIssueStatus = "Chưa bàn giao" | "Đã bàn giao";
-type ModuleDeliveryStatus = "Đã khảo sát" | "Sẵn sàng tập huấn" | "Đã tập huấn" | "Sẵn sàng nghiệm thu" | "Đã nghiệm thu";
-type AcceptanceStep = "Khảo sát" | "Đào tạo/Tập huấn" | "Xác nhận hoàn thành";
+type CollaborationStatus = "Draft" | "Sent" | "Customer Review" | "Confirmed" | "Rework";
+type TrainingStatus = "Planned" | "Invited" | "Completed" | "Need Follow-up";
+type UatStatus = "Not Started" | "Testing" | "Failed" | "Passed" | "Accepted";
+type AcceptanceStatus = "Preparing" | "Sent" | "Waiting Customer" | "Signed" | "Rework";
+type SupportStatus = "New" | "In Progress" | "Waiting Customer" | "Resolved";
 
-type ProjectModule = {
+type CustomerSurvey = {
   id: string;
   projectId: string;
-  department: string;
-  subsystem: string;
   moduleName: string;
-  totalIssues: number;
-  deliveredIssues: number;
+  department: string;
   owner: string;
-  status: ModuleDeliveryStatus;
-  surveyDone: boolean;
-  trainingDone: boolean;
-  acceptanceDone: boolean;
+  scheduledDate: string;
+  status: CollaborationStatus;
+  summary: string;
+  decisions: string;
+  nextActions: string;
 };
 
-type ProjectIssue = {
+type TrainingSession = {
+  id: string;
+  projectId: string;
+  topic: string;
+  department: string;
+  trainer: string;
+  scheduledDate: string;
+  participants: number;
+  status: TrainingStatus;
+  evidence: string;
+  feedbackScore: number;
+};
+
+type UatCase = {
   id: string;
   projectId: string;
   moduleName: string;
-  department: string;
-  content: string;
-  status: IssueStatus;
-  customerStatus: CustomerIssueStatus;
-  priority: "A" | "B" | "C" | "D";
-  phase: "Giai đoạn 1" | "Giai đoạn 2" | "Giai đoạn 3";
-  releaseDate: string;
+  title: string;
+  owner: string;
   dueDate: string;
-  assignee: string;
+  priority: Priority;
+  status: UatStatus;
+  customerComment: string;
 };
 
-type ProjectIssueSummary = {
-  projectId: string;
-  status: string;
-  quantity: number;
-  emphasized?: boolean;
-};
-
-type AcceptanceRecord = {
+type AcceptanceSignoff = {
   id: string;
   projectId: string;
-  department: string;
   moduleName: string;
-  step: AcceptanceStep;
-  status: "Chưa bắt đầu" | "Đang thực hiện" | "Hoàn tất";
-  owner: string;
+  department: string;
+  documentName: string;
+  status: AcceptanceStatus;
+  sentDate: string;
+  signedDate: string;
+  confirmedBy: string;
   evidence: string;
 };
 
-type ContractInfo = {
+type SupportRequest = {
+  id: string;
   projectId: string;
-  number: string;
-  valuation: number;
-  contractDate: string;
-  status: "Running" | "Paused" | "Closed";
-  beginDate: string;
+  title: string;
+  channel: "Zalo" | "Email" | "Meeting" | "Portal";
+  owner: string;
   dueDate: string;
-  masterPlanDays: number;
-  passedDays: number;
-  remainDays: number;
-};
-
-type ProjectStage = {
-  id: string;
-  projectId: string;
-  code: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  networkDays: number;
-};
-
-type ProjectMember = {
-  id: string;
-  projectId: string;
-  name: string;
-  position: string;
-  issueTotal: number;
-  doneTotal: number;
-};
-
-type ProjectPortal = {
-  id: string;
-  projectId: string;
-  name: string;
-  link: string;
-  username: string;
-  passwordHint: string;
-  environment: "Production" | "Test";
-};
-
-type ProjectServer = {
-  id: string;
-  projectId: string;
-  name: string;
-  remote: string;
-  username: string;
-  passwordHint: string;
-  environment: "Main" | "Test";
+  priority: Priority;
+  status: SupportStatus;
+  note: string;
 };
 
 type AuditLog = {
@@ -172,19 +136,15 @@ type ProjectHubState = {
   projects: Project[];
   milestones: Milestone[];
   tasks: Task[];
-  modules: ProjectModule[];
-  issues: ProjectIssue[];
-  issueSummaries: ProjectIssueSummary[];
-  acceptanceRecords: AcceptanceRecord[];
-  contracts: ContractInfo[];
-  stages: ProjectStage[];
-  members: ProjectMember[];
-  portals: ProjectPortal[];
-  servers: ProjectServer[];
+  surveys: CustomerSurvey[];
+  trainings: TrainingSession[];
+  uatCases: UatCase[];
+  signoffs: AcceptanceSignoff[];
+  supportRequests: SupportRequest[];
   auditLogs: AuditLog[];
 };
 
-const STORAGE_KEY = "asc-projecthub-v0.5.3";
+const STORAGE_KEY = "asc-projecthub-v0.8.0";
 
 const statusLabel: Record<ProjectStatus, string> = {
   Planning: "Lập kế hoạch",
@@ -218,6 +178,44 @@ const taskColumns: { key: TaskStatus; label: string }[] = [
   { key: "Done", label: "Hoàn tất" },
 ];
 
+const collaborationTone: Record<CollaborationStatus, string> = {
+  Draft: "border-slate-200 bg-slate-50 text-slate-700",
+  Sent: "border-blue-200 bg-blue-50 text-blue-800",
+  "Customer Review": "border-amber-200 bg-amber-50 text-amber-800",
+  Confirmed: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  Rework: "border-rose-200 bg-rose-50 text-rose-800",
+};
+
+const trainingTone: Record<TrainingStatus, string> = {
+  Planned: "border-slate-200 bg-slate-50 text-slate-700",
+  Invited: "border-blue-200 bg-blue-50 text-blue-800",
+  Completed: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  "Need Follow-up": "border-amber-200 bg-amber-50 text-amber-800",
+};
+
+const uatTone: Record<UatStatus, string> = {
+  "Not Started": "border-slate-200 bg-slate-50 text-slate-700",
+  Testing: "border-blue-200 bg-blue-50 text-blue-800",
+  Failed: "border-rose-200 bg-rose-50 text-rose-800",
+  Passed: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  Accepted: "border-violet-200 bg-violet-50 text-violet-800",
+};
+
+const acceptanceTone: Record<AcceptanceStatus, string> = {
+  Preparing: "border-slate-200 bg-slate-50 text-slate-700",
+  Sent: "border-blue-200 bg-blue-50 text-blue-800",
+  "Waiting Customer": "border-amber-200 bg-amber-50 text-amber-800",
+  Signed: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  Rework: "border-rose-200 bg-rose-50 text-rose-800",
+};
+
+const supportTone: Record<SupportStatus, string> = {
+  New: "border-slate-200 bg-slate-50 text-slate-700",
+  "In Progress": "border-blue-200 bg-blue-50 text-blue-800",
+  "Waiting Customer": "border-amber-200 bg-amber-50 text-amber-800",
+  Resolved: "border-emerald-200 bg-emerald-50 text-emerald-800",
+};
+
 const seedState: ProjectHubState = {
   customers: [
     {
@@ -242,11 +240,11 @@ const seedState: ProjectHubState = {
       name: "Triển khai OneUni EPU",
       customerId: "customer-epu",
       pm: "Huy Vo",
-      status: "In Progress",
-      progress: 75,
-      startDate: "2025-07-23",
-      endDate: "2026-04-30",
-      healthNote: "Đang theo dõi triển khai tổng thể: hợp đồng, giai đoạn, issue, module, thành viên và cổng vận hành.",
+      status: "At Risk",
+      progress: 64,
+      startDate: "2026-08-05",
+      endDate: "2026-09-30",
+      healthNote: "Dữ liệu tuyển sinh cần đối soát thêm trước khi chốt UAT.",
     },
     {
       id: "project-hcmue",
@@ -334,481 +332,141 @@ const seedState: ProjectHubState = {
       blockedReason: "",
     },
   ],
-  modules: [
+  surveys: [
     {
-      id: "module-epu-1",
+      id: "survey-1",
       projectId: "project-epu",
-      department: "Trung tâm CNTT",
-      subsystem: "Quản trị hệ thống",
-      moduleName: "Quản trị hệ thống và phân quyền người dùng",
-      totalIssues: 1,
-      deliveredIssues: 0,
-      owner: "Đầu mối Phòng đào tạo",
-      status: "Sẵn sàng nghiệm thu",
-      surveyDone: true,
-      trainingDone: true,
-      acceptanceDone: false,
-    },
-    {
-      id: "module-epu-2",
-      projectId: "project-epu",
-      department: "Phòng quản lý đào tạo",
-      subsystem: "Đào tạo",
-      moduleName: "Phân hệ quản lý đào tạo các hệ và các bậc đào tạo",
-      totalIssues: 33,
-      deliveredIssues: 0,
-      owner: "Đầu mối Phòng khảo thí",
-      status: "Đã tập huấn",
-      surveyDone: true,
-      trainingDone: true,
-      acceptanceDone: false,
-    },
-    {
-      id: "module-epu-3",
-      projectId: "project-epu",
-      department: "Phòng tổ chức - hành chính",
-      subsystem: "Nhân sự",
-      moduleName: "Phân hệ quản lý nhân sự, quản lý đánh giá nhân sự và thù lao giảng dạy",
-      totalIssues: 14,
-      deliveredIssues: 0,
-      owner: "Đầu mối Phòng công tác sinh viên",
-      status: "Sẵn sàng tập huấn",
-      surveyDone: true,
-      trainingDone: false,
-      acceptanceDone: false,
-    },
-    {
-      id: "module-epu-4",
-      projectId: "project-epu",
-      department: "Phòng tổ chức - hành chính",
-      subsystem: "Hành chính",
-      moduleName: "Phân hệ hành chính điện tử",
-      totalIssues: 8,
-      deliveredIssues: 0,
-      owner: "Đầu mối Phòng tổ chức",
-      status: "Đã khảo sát",
-      surveyDone: true,
-      trainingDone: false,
-      acceptanceDone: false,
-    },
-    {
-      id: "module-epu-5",
-      projectId: "project-epu",
-      department: "Phòng Nghiên cứu khoa học - Hợp tác quốc tế",
-      subsystem: "Nghiên cứu khoa học",
-      moduleName: "Phân hệ quản lý khoa học và tạp chí điện tử",
-      totalIssues: 5,
-      deliveredIssues: 0,
-      owner: "Đầu mối NCKH",
-      status: "Đã khảo sát",
-      surveyDone: true,
-      trainingDone: false,
-      acceptanceDone: false,
-    },
-    {
-      id: "module-epu-6",
-      projectId: "project-epu",
-      department: "Phòng Nghiên cứu khoa học - Hợp tác quốc tế",
-      subsystem: "Hợp tác quốc tế",
-      moduleName: "Phân hệ quản lý Hợp tác quốc tế",
-      totalIssues: 4,
-      deliveredIssues: 0,
-      owner: "Đầu mối HTQT",
-      status: "Đã khảo sát",
-      surveyDone: true,
-      trainingDone: false,
-      acceptanceDone: false,
-    },
-    {
-      id: "module-epu-7",
-      projectId: "project-epu",
-      department: "Quản trị - Dịch vụ",
-      subsystem: "Tài sản",
-      moduleName: "Phân hệ quản lý tài sản và cơ sở vật chất",
-      totalIssues: 11,
-      deliveredIssues: 0,
-      owner: "Đầu mối quản trị",
-      status: "Đã khảo sát",
-      surveyDone: true,
-      trainingDone: false,
-      acceptanceDone: false,
-    },
-    {
-      id: "module-epu-8",
-      projectId: "project-epu",
-      department: "Quản trị - Dịch vụ",
-      subsystem: "Ký túc xá",
-      moduleName: "Phân hệ quản lý ký túc xá",
-      totalIssues: 6,
-      deliveredIssues: 0,
-      owner: "Đầu mối ký túc xá",
-      status: "Đã khảo sát",
-      surveyDone: true,
-      trainingDone: false,
-      acceptanceDone: false,
-    },
-    {
-      id: "module-epu-9",
-      projectId: "project-epu",
-      department: "Ban giám hiệu",
-      subsystem: "Điều hành",
-      moduleName: "Hệ thống thông tin hỗ trợ chỉ đạo điều hành",
-      totalIssues: 9,
-      deliveredIssues: 0,
-      owner: "Đầu mối điều hành",
-      status: "Đã khảo sát",
-      surveyDone: true,
-      trainingDone: false,
-      acceptanceDone: false,
-    },
-    {
-      id: "module-epu-10",
-      projectId: "project-epu",
-      department: "Trung tâm thư viện",
-      subsystem: "Thư viện",
-      moduleName: "Tích hợp phần mềm quản lý thư viện Libol",
-      totalIssues: 5,
-      deliveredIssues: 0,
-      owner: "Đầu mối thư viện",
-      status: "Đã khảo sát",
-      surveyDone: true,
-      trainingDone: false,
-      acceptanceDone: false,
-    },
-    {
-      id: "module-epu-11",
-      projectId: "project-epu",
-      department: "Thanh tra - Pháp chế",
-      subsystem: "Thanh tra",
-      moduleName: "Phân hệ quản lý công tác thanh tra, pháp chế",
-      totalIssues: 9,
-      deliveredIssues: 0,
-      owner: "Đầu mối pháp chế",
-      status: "Đã khảo sát",
-      surveyDone: true,
-      trainingDone: false,
-      acceptanceDone: false,
-    },
-    {
-      id: "module-epu-12",
-      projectId: "project-epu",
-      department: "Phòng kế hoạch tài chính",
-      subsystem: "Tài chính",
-      moduleName: "Tích hợp dữ liệu thu học phí với phần mềm tài chính kế toán",
-      totalIssues: 1,
-      deliveredIssues: 0,
-      owner: "Đầu mối tài chính",
-      status: "Đã khảo sát",
-      surveyDone: true,
-      trainingDone: false,
-      acceptanceDone: false,
-    },
-    {
-      id: "module-hcmue-1",
-      projectId: "project-hcmue",
-      department: "Trung tâm CNTT",
-      subsystem: "Cổng sinh viên",
-      moduleName: "Cổng thông tin sinh viên",
-      totalIssues: 9,
-      deliveredIssues: 7,
-      owner: "Trung tâm CNTT",
-      status: "Đã tập huấn",
-      surveyDone: true,
-      trainingDone: true,
-      acceptanceDone: false,
-    },
-  ],
-  issues: [
-    {
-      id: "issue-epu-1",
-      projectId: "project-epu",
-      moduleName: "Quản lý chứng chỉ, chuẩn đầu ra, xét tốt nghiệp",
-      department: "Phòng quản lý đào tạo",
-      content: "Chứng chỉ sinh viên quá hạn cần hiển thị đúng trạng thái trên trang sinh viên.",
-      status: "Đã xử lý",
-      customerStatus: "Đã bàn giao",
-      priority: "A",
-      phase: "Giai đoạn 1",
-      releaseDate: "2026-08-12",
-      dueDate: "2026-08-20",
-      assignee: "Data team",
-    },
-    {
-      id: "issue-epu-2",
-      projectId: "project-epu",
-      moduleName: "Tổ chức thi tập trung",
-      department: "Phòng khảo thí & Bảo đảm chất lượng",
-      content: "Bổ sung bộ lọc theo số báo danh trong danh sách trộn lịch thi.",
-      status: "Đã Release",
-      customerStatus: "Đã bàn giao",
-      priority: "B",
-      phase: "Giai đoạn 1",
-      releaseDate: "2026-08-19",
-      dueDate: "2026-08-21",
-      assignee: "Dev team",
-    },
-    {
-      id: "issue-epu-3",
-      projectId: "project-epu",
-      moduleName: "Quản lý lớp học và hồ sơ người học",
-      department: "Phòng công tác sinh viên",
-      content: "Đối soát dữ liệu lớp, trạng thái sinh viên và hồ sơ nhập học trực tuyến.",
-      status: "Đang xử lý",
-      customerStatus: "Chưa bàn giao",
-      priority: "A",
-      phase: "Giai đoạn 2",
-      releaseDate: "",
-      dueDate: "2026-08-28",
-      assignee: "PM",
-    },
-    {
-      id: "issue-epu-4",
-      projectId: "project-epu",
-      moduleName: "Quản lý Hồ sơ nhân sự",
-      department: "Phòng tổ chức - hành chính",
-      content: "Chuẩn hóa dữ liệu nhân sự trước khi chuyển sang môi trường vận hành.",
-      status: "Chờ khách hàng",
-      customerStatus: "Chưa bàn giao",
-      priority: "C",
-      phase: "Giai đoạn 2",
-      releaseDate: "",
-      dueDate: "2026-08-30",
-      assignee: "Khách hàng",
-    },
-    {
-      id: "issue-hcmue-1",
-      projectId: "project-hcmue",
-      moduleName: "Cổng thông tin sinh viên",
-      department: "Trung tâm CNTT",
-      content: "Tối ưu màn hình thông báo và lịch học trên mobile.",
-      status: "Đã Release",
-      customerStatus: "Đã bàn giao",
-      priority: "B",
-      phase: "Giai đoạn 1",
-      releaseDate: "2026-08-15",
-      dueDate: "2026-08-18",
-      assignee: "Frontend",
-    },
-  ],
-  issueSummaries: [
-    { projectId: "project-epu", status: "Chờ khách hàng", quantity: 0 },
-    { projectId: "project-epu", status: "Không xử lý", quantity: 0 },
-    { projectId: "project-epu", status: "Chờ xử lý", quantity: 0 },
-    { projectId: "project-epu", status: "Đang xử lý", quantity: 0 },
-    { projectId: "project-epu", status: "Đã xử lý", quantity: 0 },
-    { projectId: "project-epu", status: "Đã Release", quantity: 0 },
-    { projectId: "project-epu", status: "Đã bàn giao", quantity: 234, emphasized: true },
-    { projectId: "project-epu", status: "Hoàn thành (%)", quantity: 75, emphasized: true },
-    { projectId: "project-hcmue", status: "Chờ khách hàng", quantity: 1 },
-    { projectId: "project-hcmue", status: "Đã Release", quantity: 7, emphasized: true },
-    { projectId: "project-hcmue", status: "Đã bàn giao", quantity: 7, emphasized: true },
-  ],
-  acceptanceRecords: [
-    {
-      id: "accept-epu-1",
-      projectId: "project-epu",
-      department: "Phòng quản lý đào tạo",
-      moduleName: "Quản lý chứng chỉ, chuẩn đầu ra, xét tốt nghiệp",
-      step: "Khảo sát",
-      status: "Hoàn tất",
+      moduleName: "Tuyển sinh và nhập học trực tuyến",
+      department: "Phòng Đào tạo",
       owner: "PM",
-      evidence: "Biên bản khảo sát đã xác nhận",
+      scheduledDate: "2026-08-23",
+      status: "Customer Review",
+      summary: "Đã khảo sát luồng nhập học, hồ sơ thí sinh, xác nhận nhập học và dữ liệu chuyển sinh viên.",
+      decisions: "Chốt cần bổ sung bước đối soát dữ liệu trước UAT.",
+      nextActions: "Khách hàng gửi file mẫu dữ liệu nhập học trước 25/08.",
     },
     {
-      id: "accept-epu-2",
+      id: "survey-2",
+      projectId: "project-hcmue",
+      moduleName: "Cổng sinh viên",
+      department: "Trung tâm CNTT",
+      owner: "Mai Anh",
+      scheduledDate: "2026-08-18",
+      status: "Confirmed",
+      summary: "Đã xác nhận phạm vi nâng cấp màn hình mobile và thông báo sinh viên.",
+      decisions: "Không mở rộng thêm module tài chính trong đợt này.",
+      nextActions: "Chuyển sang tập huấn admin.",
+    },
+  ],
+  trainings: [
+    {
+      id: "training-1",
       projectId: "project-epu",
-      department: "Phòng quản lý đào tạo",
-      moduleName: "Quản lý chứng chỉ, chuẩn đầu ra, xét tốt nghiệp",
-      step: "Đào tạo/Tập huấn",
-      status: "Hoàn tất",
-      owner: "PM",
-      evidence: "Danh sách tập huấn đã chốt",
+      topic: "Tập huấn UAT tuyển sinh và nhập học",
+      department: "Phòng Đào tạo",
+      trainer: "PM",
+      scheduledDate: "2026-08-26",
+      participants: 12,
+      status: "Invited",
+      evidence: "Đã gửi lịch mời, chờ xác nhận danh sách tham dự.",
+      feedbackScore: 0,
     },
     {
-      id: "accept-epu-3",
+      id: "training-2",
+      projectId: "project-hcmue",
+      topic: "Tập huấn quản trị cổng sinh viên",
+      department: "Trung tâm CNTT",
+      trainer: "Mai Anh",
+      scheduledDate: "2026-08-22",
+      participants: 8,
+      status: "Completed",
+      evidence: "Biên bản tập huấn đã gửi khách hàng.",
+      feedbackScore: 4.6,
+    },
+  ],
+  uatCases: [
+    {
+      id: "uat-1",
       projectId: "project-epu",
-      department: "Phòng quản lý đào tạo",
-      moduleName: "Quản lý chứng chỉ, chuẩn đầu ra, xét tốt nghiệp",
-      step: "Xác nhận hoàn thành",
-      status: "Đang thực hiện",
+      moduleName: "Nhập học trực tuyến",
+      title: "Thí sinh xác nhận nhập học và chuyển sang hồ sơ sinh viên",
       owner: "Khách hàng",
-      evidence: "Chờ xác nhận nghiệm thu",
+      dueDate: "2026-08-29",
+      priority: "High",
+      status: "Testing",
+      customerComment: "Cần bổ sung trường nơi đăng ký BHYT trong bộ test.",
     },
     {
-      id: "accept-hcmue-1",
-      projectId: "project-hcmue",
-      department: "Trung tâm CNTT",
-      moduleName: "Cổng thông tin sinh viên",
-      step: "Đào tạo/Tập huấn",
-      status: "Hoàn tất",
+      id: "uat-2",
+      projectId: "project-epu",
+      moduleName: "Đăng ký học phần",
+      title: "Tự động đăng ký học phần sau khi nhập học thành công",
       owner: "PM",
-      evidence: "Hoàn tất đào tạo nhóm admin",
-    },
-  ],
-  contracts: [
-    {
-      projectId: "project-epu",
-      number: "272/2025/HĐ-ASC-PVCOMBANK-EPU",
-      valuation: 13848000000,
-      contractDate: "2025-07-23",
-      status: "Running",
-      beginDate: "2025-07-23",
-      dueDate: "2026-04-30",
-      masterPlanDays: 202,
-      passedDays: 283,
-      remainDays: -81,
+      dueDate: "2026-09-02",
+      priority: "High",
+      status: "Not Started",
+      customerComment: "Chờ khách hàng xác nhận điều kiện mở lớp.",
     },
     {
+      id: "uat-3",
       projectId: "project-hcmue",
-      number: "ASC/HCMUE/2026",
-      valuation: 0,
-      contractDate: "2026-07-15",
-      status: "Running",
-      beginDate: "2026-07-15",
-      dueDate: "2026-09-05",
-      masterPlanDays: 38,
-      passedDays: 25,
-      remainDays: 13,
+      moduleName: "Cổng sinh viên",
+      title: "Sinh viên xem thông báo và lịch học trên mobile",
+      owner: "Trung tâm CNTT",
+      dueDate: "2026-08-25",
+      priority: "Medium",
+      status: "Passed",
+      customerComment: "Đạt, cần tối ưu chữ ở màn nhỏ.",
     },
   ],
-  stages: [
+  signoffs: [
     {
-      id: "stage-epu-1",
+      id: "signoff-1",
       projectId: "project-epu",
-      code: "Stage 1",
-      name: "Khởi động dự án",
-      startDate: "2026-04-28",
-      endDate: "2026-05-11",
-      networkDays: 2,
+      moduleName: "Nhập học trực tuyến",
+      department: "Phòng Đào tạo",
+      documentName: "Biên bản khảo sát nghiệp vụ nhập học",
+      status: "Waiting Customer",
+      sentDate: "2026-08-22",
+      signedDate: "",
+      confirmedBy: "Đầu mối Phòng Đào tạo",
+      evidence: "Đã gửi bản nháp biên bản khảo sát.",
     },
     {
-      id: "stage-epu-2",
-      projectId: "project-epu",
-      code: "Stage 2",
-      name: "Khảo sát / tư vấn nghiệp vụ và Chốt tài liệu đặc tả nghiệp vụ",
-      startDate: "2026-05-13",
-      endDate: "2026-06-22",
-      networkDays: 30,
-    },
-    {
-      id: "stage-epu-3",
-      projectId: "project-epu",
-      code: "Stage 3",
-      name: "Thực hiện hiệu chỉnh, cài đặt và tập huấn",
-      startDate: "2026-06-27",
-      endDate: "2026-07-13",
-      networkDays: 15,
-    },
-    {
-      id: "stage-epu-4",
-      projectId: "project-epu",
-      code: "Stage 4",
-      name: "Hỗ trợ vận hành (Golive)",
-      startDate: "2026-07-13",
-      endDate: "2026-07-27",
-      networkDays: 10,
-    },
-    {
-      id: "stage-epu-5",
-      projectId: "project-epu",
-      code: "Stage 5",
-      name: "Đánh giá và nghiệm thu hệ thống phần mềm",
-      startDate: "2026-07-27",
-      endDate: "2026-08-11",
-      networkDays: 3,
-    },
-    {
-      id: "stage-hcmue-1",
+      id: "signoff-2",
       projectId: "project-hcmue",
-      code: "Stage 1",
-      name: "Khởi động và rà soát phạm vi",
-      startDate: "2026-07-15",
-      endDate: "2026-07-20",
-      networkDays: 4,
+      moduleName: "Cổng sinh viên",
+      department: "Trung tâm CNTT",
+      documentName: "Biên bản tập huấn quản trị cổng sinh viên",
+      status: "Signed",
+      sentDate: "2026-08-22",
+      signedDate: "2026-08-22",
+      confirmedBy: "Trung tâm CNTT",
+      evidence: "Khách hàng đã xác nhận qua email.",
+    },
+  ],
+  supportRequests: [
+    {
+      id: "support-1",
+      projectId: "project-epu",
+      title: "Theo dõi phản hồi danh sách dữ liệu test nhập học",
+      channel: "Zalo",
+      owner: "PM",
+      dueDate: "2026-08-25",
+      priority: "High",
+      status: "Waiting Customer",
+      note: "Nhắc khách hàng gửi file dữ liệu mẫu trước buổi UAT.",
     },
     {
-      id: "stage-hcmue-2",
+      id: "support-2",
       projectId: "project-hcmue",
-      code: "Stage 2",
-      name: "Hiệu chỉnh và UAT",
-      startDate: "2026-07-21",
-      endDate: "2026-08-25",
-      networkDays: 26,
-    },
-  ],
-  members: [
-    { id: "member-epu-1", projectId: "project-epu", name: "Võ Đức Huy", position: "PM", issueTotal: 178, doneTotal: 165 },
-    { id: "member-epu-2", projectId: "project-epu", name: "Nguyễn Đức Huy", position: "BA/Dev", issueTotal: 55, doneTotal: 35 },
-    { id: "member-epu-3", projectId: "project-epu", name: "Nguyễn Phi Long", position: "Dev", issueTotal: 42, doneTotal: 7 },
-    { id: "member-epu-4", projectId: "project-epu", name: "Lê Đăng Trường", position: "Support", issueTotal: 7, doneTotal: 7 },
-    { id: "member-epu-5", projectId: "project-epu", name: "Nguyễn Phúc Vĩnh Nguyên", position: "Support", issueTotal: 9, doneTotal: 9 },
-    { id: "member-hcmue-1", projectId: "project-hcmue", name: "Mai Anh", position: "PM", issueTotal: 9, doneTotal: 7 },
-  ],
-  portals: [
-    {
-      id: "portal-epu-1",
-      projectId: "project-epu",
-      name: "Trang giảng viên",
-      link: "https://eoffice.epu.edu.vn/HeThong",
-      username: "admin",
-      passwordHint: "Đã che - lưu trong vault/env, không ghi vào source",
-      environment: "Production",
-    },
-    {
-      id: "portal-epu-2",
-      projectId: "project-epu",
-      name: "Trang sinh viên",
-      link: "https://sv.epu.edu.vn",
-      username: "",
-      passwordHint: "Chưa cập nhật",
-      environment: "Production",
-    },
-    {
-      id: "portal-epu-3",
-      projectId: "project-epu",
-      name: "Đăng ký học phần",
-      link: "https://dkhp.epu.edu.vn/",
-      username: "",
-      passwordHint: "Chưa cập nhật",
-      environment: "Production",
-    },
-    {
-      id: "portal-epu-4",
-      projectId: "project-epu",
-      name: "Giảng viên test",
-      link: "https://gv-epu.ascvn.vn/",
-      username: "",
-      passwordHint: "Đã che",
-      environment: "Test",
-    },
-    {
-      id: "portal-epu-5",
-      projectId: "project-epu",
-      name: "Sinh viên test",
-      link: "https://sv-epu.ascvn.vn/",
-      username: "",
-      passwordHint: "Đã che",
-      environment: "Test",
-    },
-  ],
-  servers: [
-    {
-      id: "server-epu-1",
-      projectId: "project-epu",
-      name: "Database",
-      remote: "Đã che thông tin kết nối",
-      username: "epusql_asc_***",
-      passwordHint: "Đã che - không lưu mật khẩu trong source",
-      environment: "Main",
-    },
-    {
-      id: "server-epu-2",
-      projectId: "project-epu",
-      name: "WEB",
-      remote: "Chưa cập nhật",
-      username: "",
-      passwordHint: "Chưa cập nhật",
-      environment: "Main",
+      title: "Tối ưu hiển thị thông báo trên mobile",
+      channel: "Portal",
+      owner: "Frontend",
+      dueDate: "2026-08-24",
+      priority: "Medium",
+      status: "In Progress",
+      note: "Đang xử lý theo feedback sau tập huấn.",
     },
   ],
   auditLogs: [
@@ -818,7 +476,7 @@ const seedState: ProjectHubState = {
       actor: "June",
       action: "Khởi tạo",
       entity: "Version",
-      detail: "Tạo dữ liệu seed cho ASC ProjectHub V0.5.3 Project Dashboard as Main Screen.",
+      detail: "Tạo dữ liệu seed cho ASC ProjectHub V0.8.0 Customer Collaboration.",
     },
   ],
 };
@@ -840,6 +498,44 @@ const emptyMilestone = {
 };
 
 const emptyTask = {
+  title: "",
+  owner: "PM",
+  dueDate: "",
+  priority: "Medium" as Priority,
+};
+
+const emptySurvey = {
+  moduleName: "",
+  department: "",
+  owner: "PM",
+  scheduledDate: "",
+  summary: "",
+};
+
+const emptyTraining = {
+  topic: "",
+  department: "",
+  trainer: "PM",
+  scheduledDate: "",
+  participants: "0",
+};
+
+const emptyUat = {
+  moduleName: "",
+  title: "",
+  owner: "Khách hàng",
+  dueDate: "",
+  priority: "Medium" as Priority,
+};
+
+const emptySignoff = {
+  moduleName: "",
+  department: "",
+  documentName: "",
+  confirmedBy: "",
+};
+
+const emptySupport = {
   title: "",
   owner: "PM",
   dueDate: "",
@@ -873,15 +569,11 @@ function readState(): ProjectHubState {
       projects: parsed.projects ?? seedState.projects,
       milestones: parsed.milestones ?? seedState.milestones,
       tasks: parsed.tasks ?? seedState.tasks,
-      modules: parsed.modules ?? seedState.modules,
-      issues: parsed.issues ?? seedState.issues,
-      issueSummaries: parsed.issueSummaries ?? seedState.issueSummaries,
-      acceptanceRecords: parsed.acceptanceRecords ?? seedState.acceptanceRecords,
-      contracts: parsed.contracts ?? seedState.contracts,
-      stages: parsed.stages ?? seedState.stages,
-      members: parsed.members ?? seedState.members,
-      portals: parsed.portals ?? seedState.portals,
-      servers: parsed.servers ?? seedState.servers,
+      surveys: parsed.surveys ?? seedState.surveys,
+      trainings: parsed.trainings ?? seedState.trainings,
+      uatCases: parsed.uatCases ?? seedState.uatCases,
+      signoffs: parsed.signoffs ?? seedState.signoffs,
+      supportRequests: parsed.supportRequests ?? seedState.supportRequests,
       auditLogs: parsed.auditLogs ?? seedState.auditLogs,
     };
   } catch {
@@ -904,12 +596,17 @@ function ProgressBar({ value }: { value: number }) {
 export default function Home() {
   const [state, setState] = useState<ProjectHubState>(seedState);
   const [selectedProjectId, setSelectedProjectId] = useState(seedState.projects[0]?.id ?? "");
-  const [activeTab, setActiveTab] = useState("Tổng quan");
+  const [activeTab, setActiveTab] = useState("Cộng tác KH");
   const [role, setRole] = useState<Role>("PM");
   const [query, setQuery] = useState("");
   const [projectForm, setProjectForm] = useState(emptyProject);
   const [milestoneForm, setMilestoneForm] = useState(emptyMilestone);
   const [taskForm, setTaskForm] = useState(emptyTask);
+  const [surveyForm, setSurveyForm] = useState(emptySurvey);
+  const [trainingForm, setTrainingForm] = useState(emptyTraining);
+  const [uatForm, setUatForm] = useState(emptyUat);
+  const [signoffForm, setSignoffForm] = useState(emptySignoff);
+  const [supportForm, setSupportForm] = useState(emptySupport);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -928,14 +625,11 @@ export default function Home() {
   const selectedCustomer = state.customers.find((customer) => customer.id === selectedProject?.customerId);
   const projectMilestones = state.milestones.filter((milestone) => milestone.projectId === selectedProject?.id);
   const projectTasks = state.tasks.filter((task) => task.projectId === selectedProject?.id);
-  const projectModules = state.modules.filter((module) => module.projectId === selectedProject?.id);
-  const projectIssues = state.issues.filter((issue) => issue.projectId === selectedProject?.id);
-  const projectIssueSummaries = state.issueSummaries.filter((issue) => issue.projectId === selectedProject?.id);
-  const projectContract = state.contracts.find((contract) => contract.projectId === selectedProject?.id);
-  const projectStages = state.stages.filter((stage) => stage.projectId === selectedProject?.id);
-  const projectMembers = state.members.filter((member) => member.projectId === selectedProject?.id);
-  const projectPortals = state.portals.filter((portal) => portal.projectId === selectedProject?.id);
-  const projectServers = state.servers.filter((server) => server.projectId === selectedProject?.id);
+  const projectSurveys = state.surveys.filter((survey) => survey.projectId === selectedProject?.id);
+  const projectTrainings = state.trainings.filter((training) => training.projectId === selectedProject?.id);
+  const projectUatCases = state.uatCases.filter((uat) => uat.projectId === selectedProject?.id);
+  const projectSignoffs = state.signoffs.filter((signoff) => signoff.projectId === selectedProject?.id);
+  const projectSupportRequests = state.supportRequests.filter((request) => request.projectId === selectedProject?.id);
 
   const filteredProjects = useMemo(() => {
     const text = query.trim().toLowerCase();
@@ -957,6 +651,11 @@ export default function Home() {
       openTasks: state.tasks.filter((task) => task.status !== "Done").length,
       waitingTasks: state.tasks.filter((task) => task.status === "Waiting").length,
       dueMilestones: state.milestones.filter((milestone) => milestone.status === "Risk" || milestone.status === "Late").length,
+      customerWaiting:
+        state.surveys.filter((item) => item.status === "Customer Review").length +
+        state.signoffs.filter((item) => item.status === "Waiting Customer").length +
+        state.supportRequests.filter((item) => item.status === "Waiting Customer").length,
+      acceptedUat: state.uatCases.filter((item) => item.status === "Accepted" || item.status === "Passed").length,
     };
   }, [state]);
 
@@ -1088,10 +787,148 @@ export default function Home() {
     writeAudit("Chuyển trạng thái", "Task", `${task?.title ?? "Task"} sang ${status}.`);
   }
 
+  function createSurvey(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedProject || !surveyForm.moduleName.trim()) return;
+    const survey: CustomerSurvey = {
+      id: createId("survey"),
+      projectId: selectedProject.id,
+      moduleName: surveyForm.moduleName.trim(),
+      department: surveyForm.department.trim() || "Chưa cập nhật",
+      owner: surveyForm.owner.trim() || "PM",
+      scheduledDate: surveyForm.scheduledDate,
+      status: "Draft",
+      summary: surveyForm.summary.trim() || "Chưa cập nhật nội dung khảo sát.",
+      decisions: "Chưa chốt.",
+      nextActions: "Cần gửi khách hàng xác nhận.",
+    };
+    setState((current) => ({ ...current, surveys: [survey, ...current.surveys] }));
+    setSurveyForm(emptySurvey);
+    writeAudit("Tạo mới", "Survey", `Thêm khảo sát ${survey.moduleName}.`);
+  }
+
+  function updateSurvey(id: string, patch: Partial<CustomerSurvey>) {
+    setState((current) => ({
+      ...current,
+      surveys: current.surveys.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    }));
+    writeAudit("Cập nhật", "Survey", "Cập nhật trạng thái khảo sát khách hàng.");
+  }
+
+  function createTraining(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedProject || !trainingForm.topic.trim()) return;
+    const training: TrainingSession = {
+      id: createId("training"),
+      projectId: selectedProject.id,
+      topic: trainingForm.topic.trim(),
+      department: trainingForm.department.trim() || "Chưa cập nhật",
+      trainer: trainingForm.trainer.trim() || "PM",
+      scheduledDate: trainingForm.scheduledDate,
+      participants: Number(trainingForm.participants) || 0,
+      status: "Planned",
+      evidence: "Chưa có biên bản tập huấn.",
+      feedbackScore: 0,
+    };
+    setState((current) => ({ ...current, trainings: [training, ...current.trainings] }));
+    setTrainingForm(emptyTraining);
+    writeAudit("Tạo mới", "Training", `Thêm buổi tập huấn ${training.topic}.`);
+  }
+
+  function updateTraining(id: string, patch: Partial<TrainingSession>) {
+    setState((current) => ({
+      ...current,
+      trainings: current.trainings.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    }));
+    writeAudit("Cập nhật", "Training", "Cập nhật trạng thái tập huấn.");
+  }
+
+  function createUatCase(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedProject || !uatForm.title.trim()) return;
+    const uatCase: UatCase = {
+      id: createId("uat"),
+      projectId: selectedProject.id,
+      moduleName: uatForm.moduleName.trim() || "Chưa phân hệ",
+      title: uatForm.title.trim(),
+      owner: uatForm.owner.trim() || "Khách hàng",
+      dueDate: uatForm.dueDate,
+      priority: uatForm.priority,
+      status: "Not Started",
+      customerComment: "Chưa có phản hồi khách hàng.",
+    };
+    setState((current) => ({ ...current, uatCases: [uatCase, ...current.uatCases] }));
+    setUatForm(emptyUat);
+    writeAudit("Tạo mới", "UAT", `Thêm testcase ${uatCase.title}.`);
+  }
+
+  function updateUatCase(id: string, patch: Partial<UatCase>) {
+    setState((current) => ({
+      ...current,
+      uatCases: current.uatCases.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    }));
+    writeAudit("Cập nhật", "UAT", "Cập nhật testcase UAT.");
+  }
+
+  function createSignoff(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedProject || !signoffForm.documentName.trim()) return;
+    const signoff: AcceptanceSignoff = {
+      id: createId("signoff"),
+      projectId: selectedProject.id,
+      moduleName: signoffForm.moduleName.trim() || "Toàn dự án",
+      department: signoffForm.department.trim() || "Chưa cập nhật",
+      documentName: signoffForm.documentName.trim(),
+      status: "Preparing",
+      sentDate: "",
+      signedDate: "",
+      confirmedBy: signoffForm.confirmedBy.trim() || "Chưa cập nhật",
+      evidence: "Chưa có file/biên bản.",
+    };
+    setState((current) => ({ ...current, signoffs: [signoff, ...current.signoffs] }));
+    setSignoffForm(emptySignoff);
+    writeAudit("Tạo mới", "Acceptance", `Thêm hồ sơ nghiệm thu ${signoff.documentName}.`);
+  }
+
+  function updateSignoff(id: string, patch: Partial<AcceptanceSignoff>) {
+    setState((current) => ({
+      ...current,
+      signoffs: current.signoffs.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    }));
+    writeAudit("Cập nhật", "Acceptance", "Cập nhật hồ sơ nghiệm thu.");
+  }
+
+  function createSupport(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedProject || !supportForm.title.trim()) return;
+    const request: SupportRequest = {
+      id: createId("support"),
+      projectId: selectedProject.id,
+      title: supportForm.title.trim(),
+      channel: "Zalo",
+      owner: supportForm.owner.trim() || "PM",
+      dueDate: supportForm.dueDate,
+      priority: supportForm.priority,
+      status: "New",
+      note: "Yêu cầu hỗ trợ mới.",
+    };
+    setState((current) => ({ ...current, supportRequests: [request, ...current.supportRequests] }));
+    setSupportForm(emptySupport);
+    writeAudit("Tạo mới", "Support", `Thêm yêu cầu hỗ trợ ${request.title}.`);
+  }
+
+  function updateSupport(id: string, patch: Partial<SupportRequest>) {
+    setState((current) => ({
+      ...current,
+      supportRequests: current.supportRequests.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    }));
+    writeAudit("Cập nhật", "Support", "Cập nhật yêu cầu hỗ trợ vận hành.");
+  }
+
   function resetDemoData() {
     setState(seedState);
     setSelectedProjectId(seedState.projects[0].id);
-    setActiveTab("Tổng quan");
+    setActiveTab("Cộng tác KH");
   }
 
   return (
@@ -1101,15 +938,15 @@ export default function Home() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-blue-700">ASC ProjectHub</p>
-              <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">V0.5.3 Project Dashboard - dashboard là màn hình chính của từng dự án</h1>
+              <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">V0.8.0 Customer Collaboration - phối hợp khách hàng trong từng dự án</h1>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                Bản này tách ý tưởng ASC-Working thành màn hình nghiệp vụ: dashboard dự án, hợp đồng, kế hoạch thời gian, timeline, milestone, issue, module, member, portal và server có kiểm soát bảo mật.
+                Bản này quay lại nền V0.5.0 Core MVP và mở rộng đúng lộ trình V0.8.0: khảo sát khách hàng, tập huấn, UAT, nghiệm thu, hỗ trợ vận hành và góc nhìn khách hàng ở mức MVP.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Pill className="border-blue-200 bg-blue-50 text-blue-800">Đã xây: V0.5.3</Pill>
+              <Pill className="border-blue-200 bg-blue-50 text-blue-800">Đã xây: V0.8.0</Pill>
               <Pill className="border-slate-200 bg-white text-slate-700">Portable Next.js</Pill>
-              <Pill className="border-amber-200 bg-amber-50 text-amber-800">Next: V0.8.0 Customer Collaboration</Pill>
+              <Pill className="border-amber-200 bg-amber-50 text-amber-800">Next: V1.0 Production Ready</Pill>
             </div>
           </div>
         </div>
@@ -1195,19 +1032,20 @@ export default function Home() {
         </aside>
 
         <section className="space-y-5">
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-8">
             <Kpi label="Dự án" value={dashboard.totalProjects.toString()} note="Đang theo dõi" />
             <Kpi label="Tiến độ TB" value={`${dashboard.avgProgress}%`} note="Theo portfolio" />
             <Kpi label="Rủi ro" value={dashboard.riskProjects.toString()} note="At Risk/Blocked" />
             <Kpi label="Task mở" value={dashboard.openTasks.toString()} note="Chưa hoàn tất" />
             <Kpi label="Chờ KH" value={dashboard.waitingTasks.toString()} note="Cần follow-up" />
             <Kpi label="Milestone" value={dashboard.dueMilestones.toString()} note="Cần chú ý" />
+            <Kpi label="KH review" value={dashboard.customerWaiting.toString()} note="Khách hàng đang giữ" />
+            <Kpi label="UAT đạt" value={dashboard.acceptedUat.toString()} note="Passed/Accepted" />
           </section>
 
           {selectedProject ? (
-            <section className="space-y-5">
-              <section className="rounded-lg border border-slate-200 bg-white">
-                <div className="p-4">
+            <section className="rounded-lg border border-slate-200 bg-white">
+              <div className="border-b border-slate-200 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium text-slate-500">{selectedProject.code}</p>
@@ -1232,25 +1070,10 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              </section>
 
-              <ProjectDashboardView
-                project={selectedProject}
-                customer={selectedCustomer}
-                contract={projectContract}
-                stages={projectStages}
-                modules={projectModules}
-                issues={projectIssues}
-                issueSummaries={projectIssueSummaries}
-                members={projectMembers}
-                portals={projectPortals}
-                servers={projectServers}
-              />
-
-              <section className="rounded-lg border border-slate-200 bg-white">
-                <div className="border-b border-slate-200 px-4">
+              <div className="border-b border-slate-200 px-4">
                 <div className="flex gap-2 overflow-x-auto py-3">
-                  {["Tổng quan", "Kế hoạch", "Milestone", "Task", "Audit log", "Supabase"].map((tab) => (
+                  {["Cộng tác KH", "Khảo sát", "Tập huấn", "UAT", "Nghiệm thu", "Hỗ trợ", "Tổng quan", "Kế hoạch", "Milestone", "Task", "Audit log", "Supabase"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
@@ -1263,6 +1086,30 @@ export default function Home() {
               </div>
 
               <div className="p-4">
+                {activeTab === "Cộng tác KH" && (
+                  <CustomerCollaborationOverview
+                    surveys={projectSurveys}
+                    trainings={projectTrainings}
+                    uatCases={projectUatCases}
+                    signoffs={projectSignoffs}
+                    supportRequests={projectSupportRequests}
+                  />
+                )}
+                {activeTab === "Khảo sát" && (
+                  <SurveyView surveys={projectSurveys} form={surveyForm} setForm={setSurveyForm} onCreate={createSurvey} onUpdate={updateSurvey} />
+                )}
+                {activeTab === "Tập huấn" && (
+                  <TrainingView trainings={projectTrainings} form={trainingForm} setForm={setTrainingForm} onCreate={createTraining} onUpdate={updateTraining} />
+                )}
+                {activeTab === "UAT" && (
+                  <UatView uatCases={projectUatCases} form={uatForm} setForm={setUatForm} onCreate={createUatCase} onUpdate={updateUatCase} />
+                )}
+                {activeTab === "Nghiệm thu" && (
+                  <AcceptanceView signoffs={projectSignoffs} form={signoffForm} setForm={setSignoffForm} onCreate={createSignoff} onUpdate={updateSignoff} />
+                )}
+                {activeTab === "Hỗ trợ" && (
+                  <SupportView requests={projectSupportRequests} form={supportForm} setForm={setSupportForm} onCreate={createSupport} onUpdate={updateSupport} />
+                )}
                 {activeTab === "Tổng quan" && (
                   <Overview project={selectedProject} customer={selectedCustomer} milestones={projectMilestones} tasks={projectTasks} onUpdateProject={updateProject} />
                 )}
@@ -1282,7 +1129,6 @@ export default function Home() {
                 {activeTab === "Audit log" && <AuditLogView logs={state.auditLogs} />}
                 {activeTab === "Supabase" && <SupabaseReadiness />}
               </div>
-              </section>
             </section>
           ) : (
             <section className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
@@ -1332,363 +1178,331 @@ function Kpi({ label, value, note }: { label: string; value: string; note: strin
   );
 }
 
-function daysBetween(from: string, to: string) {
-  if (!from || !to) return 0;
-  const start = new Date(from).getTime();
-  const end = new Date(to).getTime();
-  if (Number.isNaN(start) || Number.isNaN(end)) return 0;
-  return Math.max(0, Math.ceil((end - start) / 86400000));
-}
-
-function percent(part: number, total: number) {
+function calcPercent(done: number, total: number) {
   if (!total) return 0;
-  return Math.round((part / total) * 100);
+  return Math.round((done / total) * 100);
 }
 
-function formatCurrency(value: number) {
-  if (!value) return "Chưa cập nhật";
-  return new Intl.NumberFormat("vi-VN").format(value) + " đ";
-}
-
-function formatDate(value: string) {
-  if (!value) return "Chưa cập nhật";
-  return new Intl.DateTimeFormat("vi-VN").format(new Date(value));
-}
-
-function ProjectDashboardView({
-  project,
-  customer,
-  contract,
-  stages,
-  modules,
-  issues,
-  issueSummaries,
-  members,
-  portals,
-  servers,
+function CustomerCollaborationOverview({
+  surveys,
+  trainings,
+  uatCases,
+  signoffs,
+  supportRequests,
 }: {
-  project: Project;
-  customer?: Customer;
-  contract?: ContractInfo;
-  stages: ProjectStage[];
-  modules: ProjectModule[];
-  issues: ProjectIssue[];
-  issueSummaries: ProjectIssueSummary[];
-  members: ProjectMember[];
-  portals: ProjectPortal[];
-  servers: ProjectServer[];
+  surveys: CustomerSurvey[];
+  trainings: TrainingSession[];
+  uatCases: UatCase[];
+  signoffs: AcceptanceSignoff[];
+  supportRequests: SupportRequest[];
 }) {
-  const moduleIssueTotal = modules.reduce((sum, item) => sum + item.totalIssues, 0);
-  const totalIssues = project.id === "project-epu" ? 313 : Math.max(issues.length, moduleIssueTotal);
-  const deliveredIssues = issueSummaries.find((item) => item.status === "Đã bàn giao")?.quantity ?? issues.filter((issue) => issue.customerStatus === "Đã bàn giao").length;
-  const issueCompletion = percent(deliveredIssues, totalIssues || issues.length);
-  const totalModuleItems = moduleIssueTotal;
-  const doneModuleItems = modules.reduce((sum, item) => sum + item.deliveredIssues, 0);
-  const masterPlanDays = contract?.masterPlanDays ?? daysBetween(project.startDate, project.endDate);
-  const passedDays = contract?.passedDays ?? daysBetween(project.startDate, new Date().toISOString().slice(0, 10));
-  const remainDays = contract?.remainDays ?? masterPlanDays - passedDays;
-  const progress = masterPlanDays ? Math.round((passedDays / masterPlanDays) * 1000) / 10 : project.progress;
-  const stageMax = Math.max(1, stages.reduce((sum, stage) => sum + stage.networkDays, 0));
+  const surveyConfirmed = surveys.filter((item) => item.status === "Confirmed").length;
+  const trainingCompleted = trainings.filter((item) => item.status === "Completed").length;
+  const uatPassed = uatCases.filter((item) => item.status === "Passed" || item.status === "Accepted").length;
+  const signed = signoffs.filter((item) => item.status === "Signed").length;
+  const unresolvedSupport = supportRequests.filter((item) => item.status !== "Resolved").length;
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-lg border border-slate-200 bg-white">
-        <div className="border-b border-slate-200 bg-amber-50 px-4 py-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-blue-800">Dashboard từng dự án</p>
-          <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 className="text-xl font-semibold text-slate-950">{customer?.name ?? project.name}</h3>
-              <p className="mt-1 text-sm text-slate-600">{project.code} | PM: {project.pm} | {statusLabel[project.status]}</p>
-            </div>
-            <Pill className="border-amber-200 bg-white text-amber-800">Nguồn: dashboard nghiệp vụ theo dự án</Pill>
-          </div>
-        </div>
+    <div className="space-y-4">
+      <section className="grid gap-3 md:grid-cols-5">
+        <Kpi label="Khảo sát" value={`${surveyConfirmed}/${surveys.length}`} note={`${calcPercent(surveyConfirmed, surveys.length)}% đã xác nhận`} />
+        <Kpi label="Tập huấn" value={`${trainingCompleted}/${trainings.length}`} note={`${calcPercent(trainingCompleted, trainings.length)}% hoàn tất`} />
+        <Kpi label="UAT" value={`${uatPassed}/${uatCases.length}`} note={`${calcPercent(uatPassed, uatCases.length)}% đạt`} />
+        <Kpi label="Nghiệm thu" value={`${signed}/${signoffs.length}`} note={`${calcPercent(signed, signoffs.length)}% đã ký`} />
+        <Kpi label="Hỗ trợ mở" value={unresolvedSupport.toString()} note="Cần theo dõi vận hành" />
+      </section>
 
-        <div className="grid gap-4 p-4 xl:grid-cols-[0.95fr_1.05fr]">
-          <div className="rounded-lg border border-slate-200">
-            <SectionTitle index="1" title="Về hợp đồng" />
-            <div className="grid gap-3 p-4 sm:grid-cols-2">
-              <Info label="Number" value={contract?.number ?? "Chưa cập nhật"} />
-              <Info label="Valuation" value={formatCurrency(contract?.valuation ?? 0)} />
-              <Info label="Contract date" value={formatDate(contract?.contractDate ?? "")} />
-              <Info label="Status" value={contract?.status ?? statusLabel[project.status]} />
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-slate-200">
-            <SectionTitle index="2" title="Kế hoạch thời gian tổng thể" />
-            <div className="grid gap-3 p-4 sm:grid-cols-4">
-              <Info label="Begin date" value={formatDate(contract?.beginDate ?? project.startDate)} />
-              <Info label="Due date" value={formatDate(contract?.dueDate ?? project.endDate)} />
-              <Info label="Master Plan" value={`${masterPlanDays} ngày`} />
-              <Info label="Progress" value={`${progress}%`} />
-              <Info label="Passed" value={`${passedDays} ngày`} />
-              <Info label="Remain" value={`${remainDays} ngày`} />
-              <Info label="Issue" value={`${deliveredIssues}/${totalIssues}`} />
-              <Info label="Module" value={`${doneModuleItems}/${totalModuleItems}`} />
-            </div>
-          </div>
+      <section className="rounded-lg border border-slate-200 p-4">
+        <h3 className="text-base font-semibold">Luồng cộng tác khách hàng</h3>
+        <div className="mt-4 grid gap-3 lg:grid-cols-5">
+          {[
+            ["1", "Khảo sát", "Chốt hiện trạng, phạm vi, dữ liệu và đầu mối."],
+            ["2", "Tập huấn", "Mời khách hàng, ghi nhận người tham dự và phản hồi."],
+            ["3", "UAT", "Theo dõi testcase, lỗi, kết quả pass/fail và xác nhận."],
+            ["4", "Nghiệm thu", "Quản lý biên bản, người xác nhận và bằng chứng."],
+            ["5", "Hỗ trợ", "Theo dõi yêu cầu vận hành sau go-live."],
+          ].map(([step, title, desc]) => (
+            <article key={step} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">{step}</div>
+              <h4 className="mt-3 text-sm font-semibold text-slate-950">{title}</h4>
+              <p className="mt-2 text-xs leading-5 text-slate-600">{desc}</p>
+            </article>
+          ))}
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[1fr_1fr]">
-        <div className="rounded-lg border border-slate-200 bg-white">
-          <SectionTitle index="3" title="Chi tiết từng giai đoạn" />
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-600">
-                <tr>
-                  {["Stage", "Stage name", "Start date", "End date", "Networkdays"].map((head) => (
-                    <th key={head} className="border-b border-slate-200 px-3 py-3 font-semibold">{head}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {stages.map((stage) => (
-                  <tr key={stage.id} className="border-b border-slate-100">
-                    <td className="px-3 py-3 font-semibold text-slate-950">{stage.code}</td>
-                    <td className="min-w-64 px-3 py-3 text-slate-700">{stage.name}</td>
-                    <td className="px-3 py-3 text-slate-600">{formatDate(stage.startDate)}</td>
-                    <td className="px-3 py-3 text-slate-600">{formatDate(stage.endDate)}</td>
-                    <td className="px-3 py-3 font-semibold text-slate-950">{stage.networkDays}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-slate-200 bg-white">
-          <SectionTitle index="4" title="Timeline (day)" />
-          <div className="p-4">
-            <div className="rounded-md border border-blue-300 bg-white p-4">
-              <p className="text-lg font-semibold italic text-slate-500">Timeline (day)</p>
-              <TimelineBar label="Passed" value={Math.max(0, passedDays)} max={Math.max(stageMax, passedDays)} color="bg-emerald-400" note={`${passedDays}`} />
-              <div className="mt-4">
-                <p className="mb-2 text-xs font-semibold text-slate-600">Stage</p>
-                <div className="flex h-12 overflow-hidden rounded-md border border-slate-200">
-                  {stages.map((stage, index) => (
-                    <div
-                      key={stage.id}
-                      className={`${["bg-blue-800", "bg-blue-600", "bg-sky-500", "bg-sky-600", "bg-blue-700"][index % 5]} flex items-center justify-center text-xs font-semibold text-white`}
-                      style={{ width: `${Math.max(8, (stage.networkDays / stageMax) * 100)}%` }}
-                    >
-                      {stage.networkDays}
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-2 flex justify-between text-xs text-slate-500">
-                  <span>0</span>
-                  <span>Net Working Day</span>
-                  <span>{stageMax}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-lg border border-slate-200 bg-white">
-        <SectionTitle index="5" title="Milestone" />
-        <div className="overflow-x-auto p-4">
-          <div className="relative min-w-[850px] rounded-md border border-blue-300 bg-white px-6 py-12">
-            <div className="absolute left-0 right-0 top-28 h-8 bg-violet-50" />
-            <div className="relative h-72">
-              <div className="absolute left-6 right-6 top-24 h-2 rounded bg-slate-500" />
-              {stages.map((stage, index) => {
-                const left = `${8 + index * (84 / Math.max(1, stages.length - 1))}%`;
-                const top = index % 2 === 0 ? "top-4" : "top-44";
-                return (
-                  <div key={stage.id} className={`absolute ${top} w-44 -translate-x-1/2 text-center`} style={{ left }}>
-                    <p className="text-sm font-semibold text-slate-950">{formatDate(stage.endDate)}</p>
-                    <div className="mx-auto mt-2 h-4 w-4 rotate-45 bg-slate-900" />
-                    <div className="mx-auto h-24 border-l border-dashed border-slate-500" />
-                    <div className="mx-auto h-4 w-4 rotate-45 bg-blue-300" />
-                    <div className="mx-auto h-4 rounded bg-blue-600" style={{ width: `${Math.max(36, stage.networkDays * 4)}px` }} />
-                    <p className="mt-3 text-xs font-semibold text-slate-700">
-                      {index + 1}. {stage.name} ({stage.networkDays} ngày)
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-5 xl:grid-cols-[0.75fr_1.25fr]">
-        <div className="rounded-lg border border-slate-200 bg-white">
-          <SectionTitle index="6" title="Số lượng issue theo trạng thái" />
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-600">
-                <tr>
-                  {["N.o", "Status", "Quantity"].map((head) => (
-                    <th key={head} className="border-b border-slate-200 px-3 py-3 font-semibold">{head}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {issueSummaries.map((item, index) => (
-                  <tr key={`${item.status}-${index}`} className={item.emphasized ? "border-b border-slate-100 bg-slate-50 font-semibold" : "border-b border-slate-100"}>
-                    <td className="px-3 py-3">{index + 1}</td>
-                    <td className="px-3 py-3">{item.status}</td>
-                    <td className="px-3 py-3">{item.status.includes("%") ? `${issueCompletion}%` : item.quantity}</td>
-                  </tr>
-                ))}
-                <tr className="bg-slate-100 font-semibold">
-                  <td className="px-3 py-3">Total</td>
-                  <td className="px-3 py-3">{totalIssues}</td>
-                  <td className="px-3 py-3">{deliveredIssues}/{totalIssues}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-slate-200 bg-white">
-          <SectionTitle index="7" title="Danh sách các module" />
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-600">
-                <tr>
-                  {["N.o", "Subsystem Name", "Module", "Done", "Remain"].map((head) => (
-                    <th key={head} className="border-b border-slate-200 px-3 py-3 font-semibold">{head}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {modules.map((item, index) => (
-                  <tr key={item.id} className="border-b border-slate-100">
-                    <td className="px-3 py-3 font-semibold text-slate-950">{toRoman(index + 1)}</td>
-                    <td className="min-w-80 px-3 py-3 text-slate-700">{item.moduleName}</td>
-                    <td className="px-3 py-3 text-slate-600">{item.totalIssues}</td>
-                    <td className="px-3 py-3 text-slate-600">{item.deliveredIssues}</td>
-                    <td className="px-3 py-3 font-semibold text-slate-950">{Math.max(0, item.totalIssues - item.deliveredIssues)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-5 xl:grid-cols-[1fr_1fr]">
-        <DashboardTable
-          index="8"
-          title="Member tham gia dự án"
-          heads={["N.o", "Member", "Position", "Issue", "Done", "(%)"]}
-          rows={members.map((member, index) => [
-            `${index + 1}`,
-            member.name,
-            member.position || "Chưa cập nhật",
-            `${member.issueTotal} / ${totalIssues}`,
-            `${member.doneTotal} / ${member.issueTotal}`,
-            `${percent(member.doneTotal, member.issueTotal)}%`,
-          ])}
-        />
-        <DashboardTable
-          index="9"
-          title="Các cổng thông tin"
-          heads={["N.o", "Portal", "Link", "Username", "Password", "Env"]}
-          rows={portals.map((portal, index) => [
-            `${index + 1}`,
-            portal.name,
-            portal.link,
-            portal.username || "-",
-            portal.passwordHint,
-            portal.environment,
-          ])}
-        />
-      </section>
-
-      <section className="grid gap-5 xl:grid-cols-[1fr_1fr]">
-        <DashboardTable
-          index="10"
-          title="Thông tin server main và test"
-          heads={["N.o", "Server", "Remote", "Username", "Password", "Env"]}
-          rows={servers.map((server, index) => [
-            `${index + 1}`,
-            server.name,
-            server.remote,
-            server.username || "-",
-            server.passwordHint,
-            server.environment,
-          ])}
-        />
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-          <h3 className="font-semibold text-amber-950">Ghi chú bảo mật</h3>
-          <p className="mt-2">
-            Portal/server được thiết kế thành màn hình quản lý riêng, nhưng mật khẩu thật không nên lưu trong source hoặc localStorage. Khi lên bản có database, phần này nên dùng vault, mã hóa hoặc chỉ lưu người phụ trách và link truy cập.
-          </p>
-        </div>
+      <section className="grid gap-4 xl:grid-cols-2">
+        <CollaborationList title="Việc đang chờ khách hàng" items={[
+          ...surveys.filter((item) => item.status === "Customer Review").map((item) => `${item.moduleName}: ${item.nextActions}`),
+          ...signoffs.filter((item) => item.status === "Waiting Customer").map((item) => `${item.documentName}: chờ ${item.confirmedBy}`),
+          ...supportRequests.filter((item) => item.status === "Waiting Customer").map((item) => `${item.title}: ${item.note}`),
+        ]} />
+        <CollaborationList title="Kết quả gần nhất" items={[
+          ...trainings.filter((item) => item.status === "Completed").map((item) => `${item.topic}: feedback ${item.feedbackScore || "-"} / 5`),
+          ...uatCases.filter((item) => item.status === "Passed" || item.status === "Accepted").map((item) => `${item.title}: ${item.status}`),
+          ...signoffs.filter((item) => item.status === "Signed").map((item) => `${item.documentName}: đã xác nhận`),
+        ]} />
       </section>
     </div>
   );
 }
 
-function SectionTitle({ index, title }: { index: string; title: string }) {
+function CollaborationList({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-      <h3 className="text-base font-semibold text-slate-950">
-        {index}. {title}
-      </h3>
-    </div>
-  );
-}
-
-function TimelineBar({ label, value, max, color, note }: { label: string; value: number; max: number; color: string; note: string }) {
-  return (
-    <div className="mt-4 grid grid-cols-[70px_1fr] items-center gap-3">
-      <span className="text-xs font-semibold text-slate-700">{label}</span>
-      <div className="h-11 rounded bg-slate-100">
-        <div className={`flex h-full items-center justify-end rounded pr-3 text-sm font-semibold text-slate-900 ${color}`} style={{ width: `${Math.min(100, Math.max(4, (value / max) * 100))}%` }}>
-          {note}
-        </div>
+    <div className="rounded-lg border border-slate-200 p-4">
+      <h3 className="text-base font-semibold">{title}</h3>
+      <div className="mt-3 space-y-2">
+        {items.length ? items.map((item, index) => (
+          <div key={`${item}-${index}`} className="rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-700">{item}</div>
+        )) : <p className="text-sm text-slate-500">Không có dữ liệu cần chú ý.</p>}
       </div>
     </div>
   );
 }
 
-function DashboardTable({ index, title, heads, rows }: { index: string; title: string; heads: string[]; rows: string[][] }) {
+function SurveyView({
+  surveys,
+  form,
+  setForm,
+  onCreate,
+  onUpdate,
+}: {
+  surveys: CustomerSurvey[];
+  form: typeof emptySurvey;
+  setForm: React.Dispatch<React.SetStateAction<typeof emptySurvey>>;
+  onCreate: (event: React.FormEvent<HTMLFormElement>) => void;
+  onUpdate: (id: string, patch: Partial<CustomerSurvey>) => void;
+}) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white">
-      <SectionTitle index={index} title={title} />
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-left text-sm">
-          <thead className="bg-slate-50 text-slate-600">
-            <tr>
-              {heads.map((head) => (
-                <th key={head} className="border-b border-slate-200 px-3 py-3 font-semibold">{head}</th>
-              ))}
+    <div className="grid gap-4 xl:grid-cols-[330px_1fr]">
+      <form onSubmit={onCreate} className="rounded-lg border border-slate-200 p-4">
+        <h3 className="text-base font-semibold">Thêm khảo sát</h3>
+        <div className="mt-3 space-y-3">
+          <TextInput label="Module/phân hệ" value={form.moduleName} onChange={(value) => setForm((current) => ({ ...current, moduleName: value }))} />
+          <TextInput label="Phòng ban" value={form.department} onChange={(value) => setForm((current) => ({ ...current, department: value }))} />
+          <TextInput label="Owner" value={form.owner} onChange={(value) => setForm((current) => ({ ...current, owner: value }))} />
+          <TextInput label="Ngày khảo sát" type="date" value={form.scheduledDate} onChange={(value) => setForm((current) => ({ ...current, scheduledDate: value }))} />
+          <TextInput label="Tóm tắt" value={form.summary} onChange={(value) => setForm((current) => ({ ...current, summary: value }))} />
+          <button className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Thêm khảo sát</button>
+        </div>
+      </form>
+      <SurveyTable surveys={surveys} onUpdate={onUpdate} />
+    </div>
+  );
+}
+
+function SurveyTable({ surveys, onUpdate }: { surveys: CustomerSurvey[]; onUpdate: (id: string, patch: Partial<CustomerSurvey>) => void }) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-slate-200">
+      <table className="min-w-full text-left text-sm">
+        <thead className="bg-slate-50 text-slate-600">
+          <tr>{["Module", "Phòng ban", "Ngày", "Owner", "Trạng thái", "Next action"].map((head) => <th key={head} className="border-b border-slate-200 px-3 py-3 font-semibold">{head}</th>)}</tr>
+        </thead>
+        <tbody>
+          {surveys.map((survey) => (
+            <tr key={survey.id} className="border-b border-slate-100 align-top">
+              <td className="min-w-56 px-3 py-3 font-medium text-slate-950">{survey.moduleName}</td>
+              <td className="px-3 py-3 text-slate-600">{survey.department}</td>
+              <td className="px-3 py-3 text-slate-600">{survey.scheduledDate || "Chưa chốt"}</td>
+              <td className="px-3 py-3 text-slate-600">{survey.owner}</td>
+              <td className="px-3 py-3">
+                <select value={survey.status} onChange={(event) => onUpdate(survey.id, { status: event.target.value as CollaborationStatus })} className={`rounded-md border px-2 py-1 text-xs font-semibold ${collaborationTone[survey.status]}`}>
+                  {Object.keys(collaborationTone).map((status) => <option key={status}>{status}</option>)}
+                </select>
+              </td>
+              <td className="min-w-72 px-3 py-3 text-slate-600">{survey.nextActions}</td>
             </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, rowIndex) => (
-              <tr key={`${title}-${rowIndex}`} className="border-b border-slate-100 align-top">
-                {row.map((cell, cellIndex) => (
-                  <td key={`${title}-${rowIndex}-${cellIndex}`} className={`px-3 py-3 ${cellIndex === 1 ? "min-w-48 font-medium text-slate-950" : "text-slate-600"}`}>
-                    {cell.startsWith("http") ? (
-                      <a href={cell} target="_blank" rel="noreferrer" className="font-medium text-blue-700 hover:underline">
-                        {cell}
-                      </a>
-                    ) : (
-                      cell
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function TrainingView({
+  trainings,
+  form,
+  setForm,
+  onCreate,
+  onUpdate,
+}: {
+  trainings: TrainingSession[];
+  form: typeof emptyTraining;
+  setForm: React.Dispatch<React.SetStateAction<typeof emptyTraining>>;
+  onCreate: (event: React.FormEvent<HTMLFormElement>) => void;
+  onUpdate: (id: string, patch: Partial<TrainingSession>) => void;
+}) {
+  return (
+    <div className="grid gap-4 xl:grid-cols-[330px_1fr]">
+      <form onSubmit={onCreate} className="rounded-lg border border-slate-200 p-4">
+        <h3 className="text-base font-semibold">Thêm buổi tập huấn</h3>
+        <div className="mt-3 space-y-3">
+          <TextInput label="Chủ đề" value={form.topic} onChange={(value) => setForm((current) => ({ ...current, topic: value }))} />
+          <TextInput label="Phòng ban" value={form.department} onChange={(value) => setForm((current) => ({ ...current, department: value }))} />
+          <TextInput label="Người tập huấn" value={form.trainer} onChange={(value) => setForm((current) => ({ ...current, trainer: value }))} />
+          <TextInput label="Ngày tập huấn" type="date" value={form.scheduledDate} onChange={(value) => setForm((current) => ({ ...current, scheduledDate: value }))} />
+          <TextInput label="Số người tham dự" type="number" value={form.participants} onChange={(value) => setForm((current) => ({ ...current, participants: value }))} />
+          <button className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Thêm tập huấn</button>
+        </div>
+      </form>
+      <div className="grid gap-3">
+        {trainings.map((training) => (
+          <article key={training.id} className="rounded-lg border border-slate-200 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold text-slate-950">{training.topic}</h3>
+                <p className="mt-1 text-sm text-slate-600">{training.department} | {training.scheduledDate || "Chưa chốt"} | {training.participants} người</p>
+              </div>
+              <select value={training.status} onChange={(event) => onUpdate(training.id, { status: event.target.value as TrainingStatus })} className={`rounded-md border px-2 py-1 text-xs font-semibold ${trainingTone[training.status]}`}>
+                {Object.keys(trainingTone).map((status) => <option key={status}>{status}</option>)}
+              </select>
+            </div>
+            <p className="mt-3 text-sm text-slate-600">{training.evidence}</p>
+          </article>
+        ))}
       </div>
     </div>
   );
 }
 
-function toRoman(value: number) {
-  const romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV"];
-  return romans[value - 1] ?? value.toString();
+function UatView({
+  uatCases,
+  form,
+  setForm,
+  onCreate,
+  onUpdate,
+}: {
+  uatCases: UatCase[];
+  form: typeof emptyUat;
+  setForm: React.Dispatch<React.SetStateAction<typeof emptyUat>>;
+  onCreate: (event: React.FormEvent<HTMLFormElement>) => void;
+  onUpdate: (id: string, patch: Partial<UatCase>) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <form onSubmit={onCreate} className="rounded-lg border border-slate-200 p-4">
+        <h3 className="text-base font-semibold">Thêm testcase UAT</h3>
+        <div className="mt-3 grid gap-3 md:grid-cols-[180px_1fr_160px_160px_140px] md:items-end">
+          <TextInput label="Module" value={form.moduleName} onChange={(value) => setForm((current) => ({ ...current, moduleName: value }))} />
+          <TextInput label="Testcase" value={form.title} onChange={(value) => setForm((current) => ({ ...current, title: value }))} />
+          <TextInput label="Owner" value={form.owner} onChange={(value) => setForm((current) => ({ ...current, owner: value }))} />
+          <TextInput label="Due date" type="date" value={form.dueDate} onChange={(value) => setForm((current) => ({ ...current, dueDate: value }))} />
+          <label className="block text-xs font-medium text-slate-600">Ưu tiên<select value={form.priority} onChange={(event) => setForm((current) => ({ ...current, priority: event.target.value as Priority }))} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{["High", "Medium", "Low"].map((priority) => <option key={priority}>{priority}</option>)}</select></label>
+        </div>
+        <button className="mt-3 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Thêm UAT</button>
+      </form>
+      <div className="grid gap-3 xl:grid-cols-5">
+        {(["Not Started", "Testing", "Failed", "Passed", "Accepted"] as UatStatus[]).map((status) => (
+          <div key={status} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <h3 className="text-sm font-semibold text-slate-900">{status}</h3>
+            <div className="mt-3 space-y-2">
+              {uatCases.filter((uat) => uat.status === status).map((uat) => (
+                <article key={uat.id} className="rounded-md border border-slate-200 bg-white p-3">
+                  <p className="text-sm font-semibold text-slate-950">{uat.title}</p>
+                  <p className="mt-2 text-xs text-slate-600">{uat.moduleName} | {uat.owner}</p>
+                  <select value={uat.status} onChange={(event) => onUpdate(uat.id, { status: event.target.value as UatStatus })} className={`mt-3 w-full rounded-md border px-2 py-1.5 text-xs font-semibold ${uatTone[uat.status]}`}>
+                    {Object.keys(uatTone).map((item) => <option key={item}>{item}</option>)}
+                  </select>
+                </article>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AcceptanceView({
+  signoffs,
+  form,
+  setForm,
+  onCreate,
+  onUpdate,
+}: {
+  signoffs: AcceptanceSignoff[];
+  form: typeof emptySignoff;
+  setForm: React.Dispatch<React.SetStateAction<typeof emptySignoff>>;
+  onCreate: (event: React.FormEvent<HTMLFormElement>) => void;
+  onUpdate: (id: string, patch: Partial<AcceptanceSignoff>) => void;
+}) {
+  return (
+    <div className="grid gap-4 xl:grid-cols-[330px_1fr]">
+      <form onSubmit={onCreate} className="rounded-lg border border-slate-200 p-4">
+        <h3 className="text-base font-semibold">Thêm hồ sơ nghiệm thu</h3>
+        <div className="mt-3 space-y-3">
+          <TextInput label="Module" value={form.moduleName} onChange={(value) => setForm((current) => ({ ...current, moduleName: value }))} />
+          <TextInput label="Phòng ban" value={form.department} onChange={(value) => setForm((current) => ({ ...current, department: value }))} />
+          <TextInput label="Tên biên bản/hồ sơ" value={form.documentName} onChange={(value) => setForm((current) => ({ ...current, documentName: value }))} />
+          <TextInput label="Người xác nhận" value={form.confirmedBy} onChange={(value) => setForm((current) => ({ ...current, confirmedBy: value }))} />
+          <button className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Thêm hồ sơ</button>
+        </div>
+      </form>
+      <div className="space-y-3">
+        {signoffs.map((signoff) => (
+          <article key={signoff.id} className="rounded-lg border border-slate-200 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold text-slate-950">{signoff.documentName}</h3>
+                <p className="mt-1 text-sm text-slate-600">{signoff.moduleName} | {signoff.department} | Xác nhận: {signoff.confirmedBy}</p>
+              </div>
+              <select value={signoff.status} onChange={(event) => onUpdate(signoff.id, { status: event.target.value as AcceptanceStatus })} className={`rounded-md border px-2 py-1 text-xs font-semibold ${acceptanceTone[signoff.status]}`}>
+                {Object.keys(acceptanceTone).map((status) => <option key={status}>{status}</option>)}
+              </select>
+            </div>
+            <p className="mt-3 text-sm text-slate-600">{signoff.evidence}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SupportView({
+  requests,
+  form,
+  setForm,
+  onCreate,
+  onUpdate,
+}: {
+  requests: SupportRequest[];
+  form: typeof emptySupport;
+  setForm: React.Dispatch<React.SetStateAction<typeof emptySupport>>;
+  onCreate: (event: React.FormEvent<HTMLFormElement>) => void;
+  onUpdate: (id: string, patch: Partial<SupportRequest>) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <form onSubmit={onCreate} className="rounded-lg border border-slate-200 p-4">
+        <h3 className="text-base font-semibold">Thêm yêu cầu hỗ trợ</h3>
+        <div className="mt-3 grid gap-3 md:grid-cols-[1fr_160px_160px_140px] md:items-end">
+          <TextInput label="Nội dung hỗ trợ" value={form.title} onChange={(value) => setForm((current) => ({ ...current, title: value }))} />
+          <TextInput label="Owner" value={form.owner} onChange={(value) => setForm((current) => ({ ...current, owner: value }))} />
+          <TextInput label="Due date" type="date" value={form.dueDate} onChange={(value) => setForm((current) => ({ ...current, dueDate: value }))} />
+          <label className="block text-xs font-medium text-slate-600">Ưu tiên<select value={form.priority} onChange={(event) => setForm((current) => ({ ...current, priority: event.target.value as Priority }))} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{["High", "Medium", "Low"].map((priority) => <option key={priority}>{priority}</option>)}</select></label>
+        </div>
+        <button className="mt-3 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Thêm hỗ trợ</button>
+      </form>
+      <div className="grid gap-3 xl:grid-cols-4">
+        {(["New", "In Progress", "Waiting Customer", "Resolved"] as SupportStatus[]).map((status) => (
+          <div key={status} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <h3 className="text-sm font-semibold text-slate-900">{status}</h3>
+            <div className="mt-3 space-y-2">
+              {requests.filter((request) => request.status === status).map((request) => (
+                <article key={request.id} className="rounded-md border border-slate-200 bg-white p-3">
+                  <p className="text-sm font-semibold text-slate-950">{request.title}</p>
+                  <p className="mt-2 text-xs text-slate-600">{request.channel} | {request.owner} | {request.dueDate || "No due"}</p>
+                  <select value={request.status} onChange={(event) => onUpdate(request.id, { status: event.target.value as SupportStatus })} className={`mt-3 w-full rounded-md border px-2 py-1.5 text-xs font-semibold ${supportTone[request.status]}`}>
+                    {Object.keys(supportTone).map((item) => <option key={item}>{item}</option>)}
+                  </select>
+                </article>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function Overview({
@@ -1791,7 +1605,7 @@ function PlanView({ milestones, tasks }: { milestones: Milestone[]; tasks: Task[
       <div className="rounded-lg border border-slate-200 p-4">
         <h3 className="text-base font-semibold">Liên kết task</h3>
         <p className="mt-2 text-sm text-slate-600">
-          {tasks.length} task đang gắn với dự án. V0.5.0 ưu tiên quản lý task cơ bản; V0.8.0 sẽ mở rộng khảo sát, tập huấn và UAT khách hàng.
+          {tasks.length} task đang gắn với dự án. V0.8.0 giữ task nội bộ và bổ sung các màn hình cộng tác khách hàng riêng cho khảo sát, tập huấn, UAT, nghiệm thu.
         </p>
       </div>
     </div>
@@ -1939,7 +1753,7 @@ function AuditLogView({ logs }: { logs: AuditLog[] }) {
     <div className="rounded-lg border border-slate-200">
       <div className="border-b border-slate-200 p-4">
         <h3 className="text-base font-semibold">Audit log</h3>
-        <p className="mt-1 text-sm text-slate-600">Ghi nhận thao tác tạo/cập nhật chính trong MVP. V0.5.0 lưu local; khi bật Supabase sẽ chuyển sang bảng activity_logs.</p>
+        <p className="mt-1 text-sm text-slate-600">Ghi nhận thao tác tạo/cập nhật chính trong MVP. V0.8.0 lưu local; khi bật Supabase sẽ chuyển sang bảng activity_logs.</p>
       </div>
       <div className="divide-y divide-slate-100">
         {logs.map((log) => (
@@ -1959,7 +1773,7 @@ function SupabaseReadiness() {
   const rows = [
     ["Auth", "Chuẩn bị role Admin/PM/Member/Viewer", "Cần NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY"],
     ["Database", "Có schema SQL trong source", "Chạy file supabase/schema.sql trên Supabase SQL Editor"],
-    ["Storage", "Thiết kế bảng attachments", "V0.5.0 chưa upload file thật"],
+    ["Storage", "Thiết kế bảng attachments", "V0.8.0 chưa upload file thật"],
     ["RLS", "Định hướng theo organization/project membership", "Bật trong V0.5.x khi có tài khoản thật"],
     ["Audit", "Có audit log local trong UI", "Chuyển sang activity_logs khi bật Supabase"],
   ];
@@ -1967,7 +1781,7 @@ function SupabaseReadiness() {
     <div className="rounded-lg border border-slate-200">
       <div className="border-b border-slate-200 p-4">
         <h3 className="text-base font-semibold">Supabase readiness</h3>
-        <p className="mt-1 text-sm text-slate-600">V0.5.0 bám kế hoạch Core MVP: cấu trúc dữ liệu đã sẵn sàng, nhưng chưa gắn khóa Supabase thật để tránh lộ cấu hình.</p>
+        <p className="mt-1 text-sm text-slate-600">V0.8.0 bám kế hoạch Customer Collaboration: cấu trúc dữ liệu đã sẵn sàng, nhưng chưa gắn khóa Supabase thật để tránh lộ cấu hình.</p>
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full text-left text-sm">

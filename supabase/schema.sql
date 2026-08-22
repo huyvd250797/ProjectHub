@@ -1,4 +1,4 @@
--- ASC ProjectHub V0.5.3 Project Dashboard as Main Screen
+-- ASC ProjectHub V0.8.0 Customer Collaboration
 -- Run this in Supabase SQL Editor when moving from local-first mode to real database mode.
 
 create table if not exists organizations (
@@ -84,128 +84,75 @@ create table if not exists tasks (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists project_modules (
+create table if not exists customer_surveys (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references projects(id) on delete cascade,
-  department text not null,
-  subsystem text,
   module_name text not null,
-  total_issues int not null default 0 check (total_issues >= 0),
-  delivered_issues int not null default 0 check (delivered_issues >= 0),
+  department text,
   owner text,
-  status text not null check (status in ('Đã khảo sát', 'Sẵn sàng tập huấn', 'Đã tập huấn', 'Sẵn sàng nghiệm thu', 'Đã nghiệm thu')),
-  survey_done boolean not null default false,
-  training_done boolean not null default false,
-  acceptance_done boolean not null default false,
+  scheduled_date date,
+  status text not null check (status in ('Draft', 'Sent', 'Customer Review', 'Confirmed', 'Rework')),
+  summary text,
+  decisions text,
+  next_actions text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-create table if not exists contracts (
+create table if not exists training_sessions (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references projects(id) on delete cascade,
-  number text not null,
-  valuation numeric,
-  contract_date date,
-  status text not null check (status in ('Running', 'Paused', 'Closed')),
-  begin_date date,
+  topic text not null,
+  department text,
+  trainer text,
+  scheduled_date date,
+  participants int not null default 0,
+  status text not null check (status in ('Planned', 'Invited', 'Completed', 'Need Follow-up')),
+  evidence text,
+  feedback_score numeric,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists uat_cases (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  module_name text,
+  title text not null,
+  owner text,
   due_date date,
-  master_plan_days int,
-  passed_days int,
-  remain_days int,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (project_id, number)
-);
-
-create table if not exists project_stages (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references projects(id) on delete cascade,
-  code text not null,
-  name text not null,
-  start_date date,
-  end_date date,
-  network_days int not null default 0,
+  priority text not null check (priority in ('High', 'Medium', 'Low')),
+  status text not null check (status in ('Not Started', 'Testing', 'Failed', 'Passed', 'Accepted')),
+  customer_comment text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-create table if not exists project_issues (
+create table if not exists acceptance_signoffs (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references projects(id) on delete cascade,
   module_name text,
   department text,
-  content text not null,
-  status text not null check (status in ('Chờ khách hàng', 'Không xử lý', 'Chờ xử lý', 'Đang xử lý', 'Đã xử lý', 'Đã Release', 'Không khả thi')),
-  customer_status text not null check (customer_status in ('Chưa bàn giao', 'Đã bàn giao')),
-  priority text check (priority in ('A', 'B', 'C', 'D')),
-  phase text,
-  release_date date,
-  due_date date,
-  assignee text,
-  jira_url text,
-  customer_feedback text,
-  note text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists project_issue_summaries (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references projects(id) on delete cascade,
-  status text not null,
-  quantity int not null default 0,
-  emphasized boolean not null default false,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (project_id, status)
-);
-
-create table if not exists acceptance_records (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references projects(id) on delete cascade,
-  department text not null,
-  module_name text not null,
-  step text not null check (step in ('Khảo sát', 'Đào tạo/Tập huấn', 'Xác nhận hoàn thành')),
-  status text not null check (status in ('Chưa bắt đầu', 'Đang thực hiện', 'Hoàn tất')),
-  owner text,
+  document_name text not null,
+  status text not null check (status in ('Preparing', 'Sent', 'Waiting Customer', 'Signed', 'Rework')),
+  sent_date date,
+  signed_date date,
+  confirmed_by text,
   evidence text,
-  completed_at date,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-create table if not exists project_members (
+create table if not exists support_requests (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references projects(id) on delete cascade,
-  name text not null,
-  position text,
-  issue_total int not null default 0,
-  done_total int not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists project_portals (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references projects(id) on delete cascade,
-  name text not null,
-  link text,
-  username text,
-  password_hint text,
-  environment text not null check (environment in ('Production', 'Test')),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists project_servers (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references projects(id) on delete cascade,
-  name text not null,
-  remote text,
-  username text,
-  password_hint text,
-  environment text not null check (environment in ('Main', 'Test')),
+  title text not null,
+  channel text not null check (channel in ('Zalo', 'Email', 'Meeting', 'Portal')),
+  owner text,
+  due_date date,
+  priority text not null check (priority in ('High', 'Medium', 'Low')),
+  status text not null check (status in ('New', 'In Progress', 'Waiting Customer', 'Resolved')),
+  note text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -242,20 +189,16 @@ alter table customers enable row level security;
 alter table projects enable row level security;
 alter table milestones enable row level security;
 alter table tasks enable row level security;
-alter table contracts enable row level security;
-alter table project_stages enable row level security;
-alter table project_modules enable row level security;
-alter table project_issues enable row level security;
-alter table project_issue_summaries enable row level security;
-alter table acceptance_records enable row level security;
-alter table project_members enable row level security;
-alter table project_portals enable row level security;
-alter table project_servers enable row level security;
+alter table customer_surveys enable row level security;
+alter table training_sessions enable row level security;
+alter table uat_cases enable row level security;
+alter table acceptance_signoffs enable row level security;
+alter table support_requests enable row level security;
 alter table attachments enable row level security;
 alter table activity_logs enable row level security;
 
--- V0.5.3 policy baseline.
--- Tighten these in V0.5.x after confirming the exact auth/member workflow.
+-- V0.8.0 policy baseline.
+-- Tighten these in V1.0 after confirming the exact auth/member/customer portal workflow.
 create policy "members can read organization projects"
 on projects for select
 using (
