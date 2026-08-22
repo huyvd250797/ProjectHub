@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { CurrentProjectDashboardDescription, CurrentProjectTitle } from "@/components/current-project";
 import { StatCard } from "@/components/stat-card";
 import { dashboardStats, stages } from "@/lib/mock-data";
 
@@ -26,8 +27,8 @@ export default function DashboardPage() {
     <>
       <PageHeader
         eyebrow="Project Intelligence"
-        title="Dashboard dự án EPU"
-        description="Tổng quan điều hành dự án. V0.1.0 đang dùng dữ liệu demo/seed từ cấu trúc workbook; V0.2.0 sẽ thay bằng query thật từ database."
+        title={<CurrentProjectTitle prefix="Dashboard dự án" />}
+        description={<CurrentProjectDashboardDescription />}
         actions={
           <div className="flex items-center gap-2">
             <span className="rounded-xl border border-emerald-300/15 bg-emerald-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-200">
@@ -203,7 +204,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <Clock3 className="size-4 text-amber-300/70" />
             <div>
-              <div className="text-xs font-medium text-slate-300">Next milestone</div>
+              <div className="text-xs font-medium text-slate-300">Current milestone</div>
               <div className="mt-0.5 text-[10px] text-slate-600">V0.2.0 • Data Model + Import POC</div>
             </div>
           </div>

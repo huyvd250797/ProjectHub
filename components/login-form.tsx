@@ -51,7 +51,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
           Đăng nhập ASC-Working
         </h1>
         <p className="mt-2 text-sm leading-6 text-slate-500">
-          Truy cập workspace triển khai dự án EPU.
+          Truy cập Project Workspace. Dự án hiện tại trong bản demo: EPU.
         </p>
       </div>
 
@@ -114,7 +114,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
       {!configured ? (
         <div className="mt-6 border-t border-white/[0.06] pt-5">
           <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300/70">
-            V0.1.0 Demo Mode
+            V0.2.0 Demo Mode
           </div>
           <p className="mb-4 text-xs leading-5 text-slate-500">
             Chưa có biến môi trường Supabase. Bạn vẫn có thể xem toàn bộ skeleton giao diện.

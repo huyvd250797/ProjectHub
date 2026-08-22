@@ -109,8 +109,8 @@ export function Sidebar({
               <span className="relative inline-flex size-2.5 rounded-full bg-emerald-400" />
             </span>
             <div className={cn("min-w-0", collapsed && "hidden")}>
-              <div className="text-[11px] font-medium text-slate-300">EPU Workspace</div>
-              <div className="mt-0.5 text-[9px] uppercase tracking-[0.15em] text-slate-600">V0.1.0 Foundation</div>
+              <div className="text-[11px] font-medium text-slate-300">Project Workspace</div>
+              <div className="mt-0.5 text-[9px] uppercase tracking-[0.15em] text-slate-600">V0.2.0 Data Model</div>
             </div>
           </div>
         </div>
