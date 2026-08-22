@@ -16,7 +16,7 @@ export default function IssuesPage() {
       <PageHeader
         eyebrow="Execution Control"
         title="ISSUE"
-        description="Grid nghiệp vụ trung tâm theo project context. V0.4.0 đã hoàn thiện PLHĐ Unified View theo project; ISSUE Core sẽ được hoàn thiện ở V0.6.0."
+        description="Grid nghiệp vụ trung tâm theo project context. V0.5.0 đã hoàn thiện Department Intelligence theo project; ISSUE Core sẽ được hoàn thiện ở V0.6.0."
         actions={
           <button className="flex h-10 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-xs font-semibold text-[#07111f] transition hover:bg-cyan-200">
             <Plus className="size-4" /> Thêm ISSUE

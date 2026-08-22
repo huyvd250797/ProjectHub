@@ -1,47 +1,63 @@
-# ASC WORKING — V0.4.0
+# ASC WORKING — V0.5.0
 
-**PLHĐ Unified View** — Project Workspace đa dự án.
+**Department Intelligence / Phòng ban** — Project Workspace đa dự án.
 
-EPU là project đầu tiên hiện tại, không phải tên workspace. Mọi màn hình dùng `project_id` để tái sử dụng cho các dự án tiếp theo.
+EPU là project đầu tiên hiện tại, không phải tên workspace. Tất cả Dashboard, PLHĐ, Phòng ban và các API đều hoạt động theo `project_id` của project đang chọn.
 
 ## Version history
 - ✅ V0.1.0 — Foundation / Deployable Skeleton
 - ✅ V0.2.0 — Data Model + Import POC
 - ✅ V0.3.0 — Dashboard / Real Project Data
 - ✅ V0.4.0 — PLHĐ Unified View
+- ✅ V0.5.0 — Department Intelligence / Phòng ban
 
-## V0.4.0 có gì mới?
+## V0.5.0 có gì mới?
 
-### PLHĐ thật theo project
-Route `/contract` có hai chế độ:
-- Tổng quan PLHĐ
-- Chi tiết PLHĐ
+### Department Intelligence thật theo project
+Route `/departments` đọc dữ liệu từ Supabase theo project hiện tại:
 
-Tính năng:
-- KPI Phân hệ / Module / chi tiết / ISSUE / bàn giao.
-- Search và filter.
-- Module progress.
-- Drill-down ISSUE.
-- Tree detail với expand/collapse.
-- Virtualized rendering cho 5.000+ node.
-- Focus Module từ tổng quan sang chi tiết.
-- Drawer node detail.
-- Cảnh báo mapping.
+- Tổng ISSUE theo phòng ban.
+- Đã xử lý.
+- Đã Release.
+- Đã bàn giao / còn lại.
+- ISSUE quá hạn / gần due date.
+- % bàn giao.
+- Đầu mối stakeholder theo phòng ban.
+- Module PLHĐ phòng ban phụ trách.
+- ISSUE cần chú ý.
+- Search, filter và sort.
+- Drawer chi tiết phòng ban.
+- Drill-down sang ISSUE theo bộ lọc.
+- Drill-down sang PLHĐ Module.
 
-### UX fixes
-- Click logo ASC WORKING => reload trang hiện tại.
-- Spinner nút đăng nhập giữ trạng thái quay cho đến khi redirect vào workspace hoàn tất.
-- Project Switcher dùng custom themed combobox; không còn dropdown native màu xanh/trắng lệch theme.
+### Bucket “Chưa xác định phòng ban”
+ISSUE chưa có `department_id` được đưa vào bucket riêng thay vì bị mất khỏi thống kê.
+
+Điều này đảm bảo:
+
+```text
+Tổng ISSUE theo phòng ban + Chưa xác định = Tổng ISSUE project
+```
+
+### Dashboard integration
+Top phòng ban trên Dashboard V0.3.0 nay mở trực tiếp Department Intelligence:
+
+```text
+Dashboard → Department Intelligence → ISSUE / Module
+```
+
+### Multi-project
+Đổi project bằng Project Switcher sẽ tự tải lại dữ liệu phòng ban của project mới.
 
 ## Supabase
 
-Nếu bạn đã chạy migration V0.2.0 + V0.3.0, chạy thêm:
+Nếu đã chạy migration V0.2.0 → V0.4.0, chạy thêm:
 
 ```text
-supabase/migrations/202608220003_v040_contract_rpc.sql
+supabase/migrations/202608220004_v050_department_rpc.sql
 ```
 
-Chi tiết: `docs/CONTRACT_V040_SETUP.md`.
+Chi tiết: `docs/DEPARTMENT_V050_SETUP.md`.
 
 ## Local
 
@@ -81,6 +97,6 @@ APP_URL=
 ```
 
 ## Tiếp theo
-**V0.5.0 — Phòng ban / Real Department Data**.
+**V0.6.0 — ISSUE Core**: CRUD ISSUE thật, inline edit, filter, drawer, assignee, due date, Module, Phòng ban và history.
 
 © 2026 HuyVo. All rights reserved.

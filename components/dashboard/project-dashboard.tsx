@@ -404,7 +404,7 @@ export function ProjectDashboard() {
               <div className="mb-5 flex items-center justify-between"><div><div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-600">Department Matrix</div><h2 className="mt-2 text-lg font-semibold text-white">Top phòng ban theo ISSUE</h2></div><Building2 className="size-5 text-emerald-300/50" /></div>
               <div className="space-y-3">
                 {data.departments.length ? data.departments.map((item) => (
-                  <Link key={item.id} href={`/issues?departmentId=${encodeURIComponent(item.id)}`} className="block rounded-xl border border-white/[0.05] bg-white/[0.018] p-3 hover:bg-white/[0.03]">
+                  <Link key={item.id} href={`/departments?departmentId=${encodeURIComponent(item.id)}`} className="block rounded-xl border border-white/[0.05] bg-white/[0.018] p-3 hover:bg-white/[0.03]">
                     <div className="flex items-center justify-between gap-3"><span className="truncate text-xs font-medium text-slate-300">{item.name}</span><span className="text-[10px] text-slate-500">{item.total} ISSUE</span></div>
                     <div className="mt-2 flex items-center gap-3"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.05]"><div className="h-full rounded-full bg-emerald-300/60" style={{ width: `${Math.min(100, item.progress)}%` }} /></div><span className="w-9 text-right text-[9px] text-slate-600">{item.progress}%</span></div>
                   </Link>
