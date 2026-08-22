@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "ASC ProjectHub",
   description:
-    "Core MVP V0.5.0 cho web app quản lý triển khai dự án phần mềm giáo dục.",
+    "Project Dashboard Screens V0.5.2 cho web app quản lý triển khai dự án phần mềm giáo dục.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

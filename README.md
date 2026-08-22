@@ -1,4 +1,4 @@
-# ASC ProjectHub V0.5.0 Core MVP
+# ASC ProjectHub V0.5.2 Project Dashboard Screens
 
 Web app quản lý triển khai dự án phần mềm giáo dục.
 
@@ -10,12 +10,14 @@ Web app quản lý triển khai dự án phần mềm giáo dục.
 - `V0.1.1 Portable Next.js`: chuyển source sang Next.js thuần để deploy ngoài Sites.
 - `V0.1.2 Vercel Fix`: fix deploy Vercel, loại trừ file Sites/Vinext cũ.
 - `V0.5.0 Core MVP`: CRUD nội bộ, local-first storage, dashboard dữ liệu thao tác thật, milestone, task, audit log, Supabase schema.
+- `V0.5.1 Sheet-Inspired Working View`: thêm màn hình theo dõi từng dự án lấy cảm hứng từ file ASC-Working: issue, module, phòng ban, biên bản khảo sát/tập huấn/nghiệm thu.
+- `V0.5.2 Project Dashboard Screens`: sửa đúng hướng hệ thống màn hình nghiệp vụ, không gom vào một tab working sheet; thêm dashboard dự án với hợp đồng, kế hoạch, timeline, milestone, issue, module, member, portal và server.
 
 Tiếp theo:
 
 - `V0.8.0 Customer Collaboration`: portal khách hàng, khảo sát, tập huấn, UAT và xác nhận khách hàng.
 
-## Có trong V0.5.0
+## Có trong V0.5.2
 
 - Dashboard portfolio đọc từ dữ liệu đang thao tác.
 - Tạo dự án mới.
@@ -29,12 +31,34 @@ Tiếp theo:
 - Chuyển trạng thái task theo board: Chưa làm, Đang làm, Chờ khách hàng, Hoàn tất.
 - Audit log cho thao tác tạo/cập nhật chính.
 - Role switcher nền tảng: Admin, PM, Member, Viewer.
+- Màn hình `Dashboard dự án` cho từng dự án:
+  - Về hợp đồng: số hợp đồng, giá trị, ngày hợp đồng, trạng thái.
+  - Kế hoạch thời gian tổng thể: begin date, due date, master plan, passed, remain, progress.
+  - Chi tiết từng giai đoạn: Stage 1 đến Stage 5, ngày bắt đầu/kết thúc, networkdays.
+  - Timeline day dạng stacked bar theo mẫu hình tham chiếu.
+  - Milestone timeline dạng trục thời gian theo mẫu hình tham chiếu.
+  - Số lượng issue theo trạng thái, tổng issue và tỷ lệ bàn giao.
+  - Danh sách module/phân hệ: module, done, remain.
+  - Member tham gia dự án: issue, done, tỷ lệ hoàn thành.
+  - Portal và server tách thành bảng quản lý riêng.
 - Supabase schema tại `supabase/schema.sql`.
 - `.env.example` cho Supabase URL/key.
 
+## Tham chiếu từ ASC-Working
+
+Bản này dùng file Excel `[EPU] _ ASC-Working.xlsx` làm tài liệu tham khảo nghiệp vụ. Các sheet được chuyển thành ý tưởng UI:
+
+- `DASHBOARD` -> khối thông tin dự án, kế hoạch, timeline và tỷ lệ hoàn thành.
+- `ISSUE` + `TrangThai` -> bảng yêu cầu, trạng thái ASC, trạng thái khách hàng, ưu tiên và release.
+- `PLHĐ` -> module/phân hệ, tổng yêu cầu, đã bàn giao, còn lại.
+- `Phòng ban` -> tổng hợp theo đơn vị đầu mối.
+- `Theo dõi biên bản` -> checklist khảo sát, tập huấn, xác nhận hoàn thành.
+
+Các dữ liệu nhạy cảm như mật khẩu portal/server, tài khoản email, test data nội bộ không được đưa vào source. UI chỉ hiển thị dạng che hoặc ghi chú lưu trong vault/env.
+
 ## Cơ chế lưu dữ liệu
 
-V0.5.0 đang chạy `local-first`:
+V0.5.2 đang chạy `local-first`:
 
 - Dữ liệu lưu trong `localStorage` của trình duyệt.
 - Có thể dùng ngay để pilot nội bộ, demo luồng, review nghiệp vụ.
@@ -95,6 +119,6 @@ Nếu repo đang còn các file này, hãy xóa bằng:
 git rm -r build db drizzle examples scripts worker .openai
 git rm vite.config.ts drizzle.config.ts
 git add .
-git commit -m "Build ASC ProjectHub V0.5.0 Core MVP"
+git commit -m "Build ASC ProjectHub V0.5.2 Project Dashboard Screens"
 git push
 ```
