@@ -1,8 +1,8 @@
-# ASC ProjectHub V0.1.1 Portable Next.js
+# ASC ProjectHub V0.1.2 Portable Next.js
 
-Bản này sửa lỗi deploy của zip V0.1.0 trước đó.
+Bản này sửa triệt để lỗi deploy Vercel do repo còn sót file cũ của Sites/Vinext.
 
-## Vì sao có bản V0.1.1?
+## Vì sao có bản V0.1.2?
 
 Bản `V0.1.0` trước được build theo môi trường Sites/Vinext nên `npm run build` chạy qua shell wrapper riêng. Khi đưa sang Vercel/Netlify, môi trường deploy có thể báo:
 
@@ -10,7 +10,16 @@ Bản `V0.1.0` trước được build theo môi trường Sites/Vinext nên `np
 Error: Command "npm run build" exited with 126
 ```
 
-Bản `V0.1.1` này chuyển về Next.js thuần để deploy phổ biến hơn.
+Sau đó nếu repo Git vẫn còn thư mục cũ như `build/`, `worker/`, `db/`, `drizzle/`, Vercel có thể type-check nhầm file không còn dependency, ví dụ:
+
+```text
+Cannot find module 'vite' or its corresponding type declarations.
+```
+
+Bản `V0.1.2` này xử lý bằng 2 lớp:
+
+- Source zip không còn các thư mục Sites/Vinext thừa.
+- `tsconfig.json` và `eslint.config.mjs` loại trừ các thư mục cũ để nếu Git còn sót file thì build vẫn không bị kéo vào.
 
 ## Lệnh build
 
@@ -25,9 +34,23 @@ npm run build
 - Build Command: `npm run build`
 - Output Directory: để trống hoặc `.next`
 - Install Command: `npm install`
-- Node.js Version: `20.x` hoặc mới hơn
+- Node.js Version: `22.x`
 
 Không đặt Output Directory là `out` vì app này không dùng static export.
+
+## Nếu đang dùng repo GitHub cũ
+
+Trong repo `ProjectHub`, cần xóa hẳn các thư mục/file cũ nếu còn:
+
+```bash
+git rm -r build db drizzle examples scripts worker .openai 2>/dev/null || true
+git rm vite.config.ts drizzle.config.ts 2>/dev/null || true
+git add package.json package-lock.json tsconfig.json eslint.config.mjs vercel.json app public README.md
+git commit -m "Fix Vercel build for portable Next.js"
+git push
+```
+
+Nếu không dùng lệnh `git rm`, xóa các thư mục/file trên trong VS Code rồi commit cũng được.
 
 ## Cấu hình Netlify
 
@@ -38,7 +61,8 @@ Không đặt Output Directory là `out` vì app này không dùng static export
 ## Phiên bản
 
 - Đã xây: `V0.1.0 Prototype/MVP Preview`
-- Bản sửa deploy: `V0.1.1 Portable Next.js`
+- Bản sửa deploy lần 1: `V0.1.1 Portable Next.js`
+- Bản fix triệt để Vercel: `V0.1.2 Portable Next.js`
 - Tiếp theo: `V0.5.0 Core MVP`
 
 ## Phạm vi app hiện tại

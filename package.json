@@ -1,9 +1,9 @@
 {
   "name": "asc-projecthub",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "engines": {
-    "node": ">=20.11.0"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "next dev",
