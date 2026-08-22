@@ -1,207 +1,115 @@
-# ASC-Working — V0.1.0
+# ASC-Working — V0.2.0
 
-**Foundation / Deployable Skeleton**  
-Phong cách: professional technology workspace.
+**Project Workspace — Data Model + Import POC**
 
-## 1. V0.1.0 có gì?
+> ASC-Working is a **multi-project workspace**. EPU is the first project currently shown in the UI; it is not the name of the workspace.
 
-- Next.js 16.3 App Router + TypeScript.
-- Tailwind CSS 4.
-- Giao diện dark-tech chuyên nghiệp, responsive.
-- Sidebar thu gọn + mobile drawer.
-- Topbar, global-search shell, project badge, version.
-- Route:
-  - `/dashboard`
-  - `/contract`
-  - `/departments`
-  - `/issues`
-  - `/resources`
-  - `/settings`
-  - `/login`
-- PLHĐ: một màn hình, toggle 2 kiểu xem tổng quan/chi tiết.
-- Supabase SSR/Auth foundation.
-- **Demo Mode**: nếu chưa cấu hình Supabase, app vẫn deploy và xem được toàn bộ skeleton.
-- Không đưa password/credential thật từ workbook vào source.
-- Vercel config tối giản; **không dùng `output: "export"` và không yêu cầu thư mục `out`**.
+## Branding
+The app uses the supplied HV gold logo as:
+- main sidebar logo
+- login branding
+- Next.js app/browser icon
 
-> Dữ liệu trong V0.1.0 là demo/seed để nhìn UX. V0.2.0 mới bắt đầu schema thật + import POC.
+## Version history
+- ✅ V0.1.0 — Foundation / Deployable Skeleton
+- ✅ **V0.2.0 — Data Model + Import POC**
+- ⏭️ Next: V0.3.0 — Dashboard connected to database
 
----
+## V0.2.0 additions
+- Multi-project database model (`project_id` everywhere it matters).
+- Project membership + role foundation.
+- EPU seed as project #1.
+- Project selector in topbar.
+- Import POC at `/settings/import`.
+- Server-side `.xlsx` parsing with ExcelJS.
+- Dry-run sheet mapping + data-quality report.
+- Remote password/secret columns explicitly excluded.
+- Supabase SQL migration + seed scripts.
+- `/api/health`.
 
-## 2. Yêu cầu máy
-
-- Node.js **20.9+**
-- npm 10+ khuyến nghị
-
-## 3. Chạy local
-
+## Run local
 ```bash
 npm install
 npm run dev
 ```
-
-Mở:
-
+Open:
 ```text
 http://localhost:3000
 ```
 
-Khi chưa có Supabase, vào `/login` và chọn **Vào Demo Workspace**.
+Without Supabase variables, choose **Vào Demo Workspace** at `/login`.
 
----
+## Import POC
+1. Open `/settings/import`.
+2. Choose the ASC-Working `.xlsx` workbook.
+3. Click **Chạy kiểm tra dữ liệu**.
+4. Review:
+   - required sheets
+   - record counts
+   - mapping targets
+   - missing module/department/assignee
+   - Jira duplicates
+   - secret exclusion
 
-## 4. Kết nối Supabase
+The dry-run does **not** persist uploaded files and does **not** write business rows into DB.
 
-Copy file:
+## Supabase
+See:
+- `docs/SUPABASE_SETUP.md`
+- `supabase/migrations/202608220001_v020_core_schema.sql`
+- `supabase/seed.sql`
+- `supabase/assign-first-user.sql`
 
-```bash
-cp .env.example .env.local
-```
-
-Windows PowerShell:
-
-```powershell
-Copy-Item .env.example .env.local
-```
-
-Điền:
-
+### `.env.local`
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 ```
 
-Sau đó restart:
-
-```bash
-npm run dev
-```
-
-Khi Supabase đã được cấu hình, workspace yêu cầu user đăng nhập thật bằng Supabase Auth.
-
-### Tạo user test
-
-Trong Supabase Dashboard:
-
-1. Authentication
-2. Users
-3. Add user
-4. Tạo email/password
-5. Dùng email/password đó tại `/login`
-
----
-
-## 5. Push GitHub
-
-```bash
-git init
-git add .
-git commit -m "feat: ASC-Working V0.1.0 foundation"
-git branch -M main
-git remote add origin https://github.com/<username>/<repo>.git
-git push -u origin main
-```
-
----
-
-## 6. Deploy Vercel
-
-1. Vercel → **Add New → Project**
-2. Import repository GitHub.
-3. Framework Preset: **Next.js**
-4. Build Command: để **Default**
-5. Install Command: để **Default**
-6. **Output Directory: để trống / Default**
-7. Nếu muốn Auth thật, thêm 2 Environment Variables:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-8. Deploy.
-
-### Rất quan trọng
-
-Không đặt Output Directory là `out`.
-
-Project này dùng Next.js server runtime bình thường. Không có:
-
-```ts
-output: "export"
-```
-
-nên Vercel tự xử lý `.next` theo Next.js integration.
-
----
-
-## 7. Environment variables dự kiến
-
+Reserved server-only variables:
 ```env
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
-
-# Chỉ dùng server-side ở các version sau:
 SUPABASE_SERVICE_ROLE_KEY=
 APP_ENCRYPTION_KEY=
 APP_URL=
 ```
+Never commit `.env.local`.
 
-Không commit `.env.local`.
+## Deploy Vercel
+1. Push this folder to GitHub.
+2. Vercel → Add New → Project → import repo.
+3. Framework: Next.js.
+4. Build/Install: Default.
+5. **Output Directory: leave Default/blank. Do not set `out`.**
+6. Add Supabase env vars if using real Auth/DB.
+7. Deploy.
 
----
+## Multi-project architecture
+Do not create separate tables for EPU or future customers.
 
-## 8. Cấu trúc source
-
+All project data uses shared tables:
 ```text
-ASC-Working-V0.1.0/
-├─ app/
-│  ├─ (workspace)/
-│  │  ├─ dashboard/
-│  │  ├─ contract/
-│  │  ├─ departments/
-│  │  ├─ issues/
-│  │  ├─ resources/
-│  │  └─ settings/
-│  ├─ login/
-│  ├─ globals.css
-│  ├─ layout.tsx
-│  └─ page.tsx
-├─ components/
-├─ lib/
-│  └─ supabase/
-├─ proxy.ts
-├─ .env.example
-├─ next.config.ts
-├─ package.json
-└─ vercel.json
+projects
+  ├─ project_members
+  ├─ project_stages
+  ├─ departments
+  ├─ people
+  ├─ contract_items
+  │    └─ contract_detail_items
+  ├─ issues
+  ├─ release_versions
+  └─ remote_resources
 ```
 
----
+Rows are isolated by `project_id` + Supabase RLS.
 
-## 9. Roadmap tiếp theo
+## Important security note
+The original workbook contains remote/server credentials. V0.2.0 does not copy these values into source or dry-run JSON.
 
-### Đã xây dựng
-- ✅ **V0.1.0 — Foundation / Deployable Skeleton**
-
-### Tiếp theo
-- ⏭️ **V0.2.0 — Data Model + Import POC**
-  - PostgreSQL schema
-  - RLS cơ bản
-  - master catalogs
-  - import dry-run
-  - PLHĐ/ISSUE mapping report
-  - seed dữ liệu thật có kiểm soát
-
----
-
-## 10. Security note cho Link Remote Server
-
-V0.1.0 **không chứa credential thật**.
-
-Các trường username/password/token trong workbook phải được xử lý ở version bảo mật:
+Later secure resource version will use:
 - server-only encryption
-- role check
-- reveal/copy API
+- role authorization
+- reveal/copy endpoints
 - audit logs
-- rotate credential cũ nếu từng được lưu plain text
-
----
+- credential rotation guidance
 
 © 2026 HuyVo. All rights reserved.

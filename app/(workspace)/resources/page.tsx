@@ -10,7 +10,7 @@ export default function ResourcesPage() {
       <PageHeader
         eyebrow="Secure Infrastructure"
         title="Link Remote Server"
-        description="Kho tài nguyên dự án theo hướng secure-by-default. V0.1.0 không mang credential thật từ workbook vào source code."
+        description="Kho tài nguyên dự án theo hướng secure-by-default. V0.2.0 không mang credential thật từ workbook vào source code hoặc payload Import POC."
       />
 
       <div className="mb-4 rounded-2xl border border-amber-300/15 bg-amber-300/[0.05] p-4">
@@ -21,7 +21,7 @@ export default function ResourcesPage() {
           <div>
             <div className="text-xs font-semibold text-amber-100">Security boundary</div>
             <p className="mt-1 text-xs leading-5 text-amber-100/50">
-              Username/password trong workbook không được hard-code vào V0.1.0. V0.8.0 sẽ bổ sung encryption server-only, quyền Reveal/Copy và audit log.
+              Username/password trong workbook không được hard-code vào V0.2.0. V0.8.0 sẽ bổ sung encryption server-only, quyền Reveal/Copy và audit log.
             </p>
           </div>
         </div>

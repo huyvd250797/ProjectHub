@@ -1,21 +1,34 @@
 # Changelog
 
-## V0.1.0 — Foundation / Deployable Skeleton
+## V0.2.0 — Data Model + Import POC
+
+### Changed
+- Product identity corrected to **Project Workspace**.
+- EPU is treated as the first/current project, not the name of the workspace.
+- Added project switcher foundation for future projects.
+- Updated footer/version to V0.2.0.
+- Replaced generated ASC mark with the user-provided HV logo throughout the app and as app icon.
 
 ### Added
-- Next.js 16.3 + TypeScript foundation.
-- Professional dark-tech visual system.
-- Responsive application shell.
-- Dashboard skeleton.
-- Unified PLHĐ / PLHĐ detail screen with two view modes.
-- Department overview skeleton.
-- ISSUE grid skeleton.
-- Secure Remote Resource skeleton.
-- Settings / foundation health screen.
-- Supabase SSR/Auth client/server/proxy foundation.
-- Demo Mode when Supabase environment variables are not configured.
-- Vercel-ready configuration and deployment guide.
+- Multi-project Supabase/PostgreSQL schema with `project_id` on business data.
+- Core tables: projects, members, departments, people, stages, status catalog, PLHĐ, PLHĐ detail, issues, history, releases, remote resources, import batches/messages.
+- RLS membership/role foundation.
+- Seed for EPU as project #1.
+- Import Dry-run API using ExcelJS.
+- `/settings/import` UI with workbook structure, counts, mapping and data-quality warnings.
+- Remote secret columns are excluded from import payload.
+- `/api/health`.
 
-### Security
-- No real remote/server credentials copied into the source.
-- Server-only secret placeholders reserved in `.env.example`.
+### Carried from V0.1.0
+- Next.js deployable skeleton.
+- Supabase SSR/Auth foundation.
+- Professional dark-tech UI.
+- Dashboard / PLHĐ / Phòng ban / ISSUE / Remote Server routes.
+
+## V0.1.0 — Foundation / Deployable Skeleton
+- Initial deployable application shell and UX foundation.
+
+### Deploy hotfix
+- Fix TypeScript incompatibility between ExcelJS 4.4.0 and Node Buffer generic types on Vercel.
+- Import dry-run now passes `ArrayBuffer` directly to ExcelJS instead of wrapping it with `Buffer.from()`.
+- No change to Supabase configuration or business schema.

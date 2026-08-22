@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { createClient } from "@/lib/supabase/server";
+import { getWorkspaceProjects } from "@/lib/projects-server";
 
 export default async function WorkspaceLayout({
   children,
@@ -8,10 +9,11 @@ export default async function WorkspaceLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
+  const projects = await getWorkspaceProjects(supabase);
 
   if (!supabase) {
     return (
-      <AppShell demoMode userEmail={null}>
+      <AppShell demoMode userEmail={null} projects={projects}>
         {children}
       </AppShell>
     );
@@ -24,7 +26,7 @@ export default async function WorkspaceLayout({
   if (!user) redirect("/login");
 
   return (
-    <AppShell demoMode={false} userEmail={user.email}>
+    <AppShell demoMode={false} userEmail={user.email} projects={projects}>
       {children}
     </AppShell>
   );
