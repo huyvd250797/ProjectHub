@@ -1,71 +1,40 @@
 # Changelog
 
-## V0.5.0 — Department Intelligence / Phòng ban
+## V0.6.0 — Deploy type fix
+
+- Unified `ThemedSelectOption` with the shared ISSUE `SelectOption` contract.
+- `description` now correctly accepts `string | null | undefined`, matching Supabase lookup data.
+- Fixes Vercel TypeScript error TS2322 in `components/issues/issue-workspace.tsx`.
+
+## V0.6.0 — ISSUE Core
 
 ### Added
-- Real project-scoped Department Intelligence API using `get_project_departments`.
-- Department KPI: total, resolved, released, handed-over, remaining, overdue, near-due and missing assignee.
-- Synthetic `Chưa xác định phòng ban` bucket so unmapped ISSUE are never omitted from totals.
-- Search, themed filters and sorting.
-- Department drawer with stakeholder contacts, owned PLHĐ Modules and attention ISSUE.
-- Drill-down links from department metrics to ISSUE query state.
-- Dashboard top-department cards now open `/departments?departmentId=...`.
-- Demo-mode Department Intelligence for Supabase-free preview.
+- Real Supabase ISSUE list scoped by selected project.
+- Server-side search, filtering and pagination.
+- ISSUE create/update/archive API.
+- Inline edit for high-frequency fields.
+- Professional detail drawer with Jira, dates, response and notes.
+- Automatic per-project `issue_no`.
+- Automatic `issue_history` trigger.
+- History UI with actor and old/new values.
+- Role-aware edit/archive behavior.
+- Deep-link support from Dashboard, PLHĐ and Department Intelligence.
+- Missing Module/Department/Assignee and Due Date attention filters.
 
-### Database
-- Added `202608220004_v050_department_rpc.sql`.
-- Server-side membership check and aggregate; no full ISSUE list is downloaded to calculate department KPI.
+### Changed
+- App version updated to V0.6.0.
+- Settings/System Foundation reflects ISSUE Core.
+- ISSUE screen no longer uses `lib/mock-data.ts` in normal Supabase mode.
 
-## V0.4.0 — PLHĐ Unified View
+### Preserved
+- Dashboard V0.3.0.
+- PLHĐ Unified View V0.4.0.
+- Department Intelligence V0.5.0.
+- Project Switcher, logo, theme and Supabase Auth configuration.
 
-### Added
-- Real project-scoped PLHĐ API using `get_project_contract`.
-- Unified overview/detail contract screen.
-- Virtualized detail tree for 5,000+ nodes.
-- Contract search, filters, focus-by-module, expand/collapse.
-- Module issue/handover aggregates and drill-down links.
-- Detail drawer and mapping state.
-- Professional custom themed select/combobox.
-
-### Fixed
-- App logo now reloads current page when clicked.
-- Login spinner remains active until successful redirect unmounts the login page.
-- Project selector no longer uses the browser-native unthemed dropdown.
-
-### Database
-- Added `202608220003_v040_contract_rpc.sql`.
-
-## V0.3.0 — Dashboard / Real Project Data
-
-### Branding
-- Rename application from PROJECT HUB / Project Hub to **ASC WORKING**.
-- Keep `Project Workspace` as the product/workspace description.
-- EPU remains a project, never the workspace identity.
-- Keep the exact HV logo/image already supplied by the user for app logo and browser icon.
-
-### Dashboard
-- Replaced Dashboard seed/mock flow with project-scoped API loading when Supabase is configured.
-- Added `/api/dashboard?projectId=`.
-- Added `get_project_dashboard(uuid)` Supabase RPC for server-side aggregation.
-- Project Overview, Master Plan health, Stage progress.
-- ISSUE status and customer handover KPI.
-- Needs Attention panel.
-- Contract Pulse.
-- Department ranking and ASC member workload.
-- Project switch immediately reloads Dashboard for the selected project.
-- Added loading, empty-data and migration-required states.
-
-### Multi-project
-- Dashboard queries are isolated by `project_id`.
-- Updated localStorage key to `asc-working:selected-project-id` with one-time migration from the old Project Hub key.
-- Removed hard-coded ISSUE count from Sidebar because it was EPU-specific.
-
-### Database
-- Added `supabase/migrations/202608220002_v030_dashboard_rpc.sql`.
-
-## V0.2.0 — Data Model + Import POC
-- Multi-project schema and RLS foundation.
-- Import dry-run POC.
-
-## V0.1.0 — Foundation / Deployable Skeleton
-- Initial deployable Next.js foundation.
+### Security
+- Uses authenticated Supabase session and existing RLS.
+- Viewer is read-only.
+- Member/PM/Admin may update ISSUE.
+- Archive is restricted to PM/Admin in API.
+- No service-role key is exposed to the browser.

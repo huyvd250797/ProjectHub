@@ -3,11 +3,11 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { SelectOption } from "@/lib/issues/types";
 
-export type ThemedSelectOption = {
-  value: string;
-  label: string;
-  description?: string;
+// Keep the shared ISSUE option contract as the base type.
+// ISSUE lookup descriptions may legitimately be null when the database has no secondary label.
+export type ThemedSelectOption = SelectOption & {
   disabled?: boolean;
 };
 

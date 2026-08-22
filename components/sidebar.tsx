@@ -108,7 +108,7 @@ export function Sidebar({
             <div className={cn("min-w-0", collapsed && "hidden")}>
               <div className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-600">Project hiện tại</div>
               <div className="mt-1 truncate text-[11px] font-semibold text-slate-300">{selectedProject.code} • {selectedProject.organizationName || selectedProject.name}</div>
-              <div className="mt-1 text-[9px] uppercase tracking-[0.15em] text-slate-700">V0.5.0 • Department Intelligence</div>
+              <div className="mt-1 text-[9px] uppercase tracking-[0.15em] text-slate-700">V0.6.0 • ISSUE Core</div>
             </div>
           </div>
         </div>
