@@ -211,7 +211,7 @@ function EmptyContract({ source }: { source: ContractData["source"] }) {
         <div className="mt-4 text-sm font-semibold text-slate-300">Project chưa có dữ liệu PLHĐ</div>
         <p className="mt-2 text-xs leading-5 text-slate-600">
           {source === "database"
-            ? "V0.4.0 không dùng số mock để thay thế dữ liệu thật. Hãy import/apply contract_items và contract_detail_items cho project đang chọn."
+            ? "ASC WORKING không dùng số mock để thay thế dữ liệu thật. Hãy import/apply contract_items và contract_detail_items cho project đang chọn."
             : "Demo contract chưa có dữ liệu."}
         </p>
       </div>
@@ -376,7 +376,7 @@ export function ContractView() {
           <Unlink2 className="mt-0.5 size-4 shrink-0 text-amber-200/70" />
           <div>
             <div className="text-xs font-medium text-amber-100/80">Có {formatNumber(data.summary.unmappedDetails)} node PLHĐ chi tiết chưa mapping Module</div>
-            <div className="mt-0.5 text-[10px] text-amber-100/40">V0.4.0 hiển thị trạng thái mapping để PM rà soát; chỉnh mapping trực tiếp sẽ được đưa vào phiên bản nghiệp vụ sau.</div>
+            <div className="mt-0.5 text-[10px] text-amber-100/40">PLHĐ Unified View hiển thị trạng thái mapping để PM rà soát; chỉnh mapping trực tiếp sẽ được đưa vào phiên bản nghiệp vụ sau.</div>
           </div>
         </div>
       ) : null}
@@ -710,7 +710,7 @@ export function ContractView() {
 
         <div className="flex flex-col gap-2 border-t border-white/[0.05] px-4 py-3 text-[9px] text-slate-700 md:flex-row md:items-center md:justify-between">
           <span>{data.source === "database" ? "Supabase • project_id scoped" : "Demo Mode"} • Generated {new Date(data.generatedAt).toLocaleTimeString("vi-VN")}</span>
-          <span>V0.4.0 • Unified View • Virtualized Detail Tree</span>
+          <span>V0.5.0 • PLHĐ Unified View • Virtualized Detail Tree</span>
         </div>
       </div>
 

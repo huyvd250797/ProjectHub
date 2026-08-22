@@ -21,7 +21,7 @@ export function CurrentProjectContractDescription() {
   const { selectedProject } = useProject();
   return (
     <>
-      Phạm vi PLHĐ thật của dự án <span className="font-medium text-slate-300">{selectedProject.code}</span>{selectedProject.organizationName ? <> — {selectedProject.organizationName}</> : null}. V0.4.0 dùng chung một màn hình Tổng quan / Chi tiết và tự đổi dữ liệu theo project đang chọn.
+      Phạm vi PLHĐ thật của dự án <span className="font-medium text-slate-300">{selectedProject.code}</span>{selectedProject.organizationName ? <> — {selectedProject.organizationName}</> : null}. PLHĐ Unified View dùng chung một màn hình Tổng quan / Chi tiết và tự đổi dữ liệu theo project đang chọn.
     </>
   );
 }

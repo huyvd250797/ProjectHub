@@ -1,5 +1,21 @@
 # Changelog
 
+## V0.5.0 — Department Intelligence / Phòng ban
+
+### Added
+- Real project-scoped Department Intelligence API using `get_project_departments`.
+- Department KPI: total, resolved, released, handed-over, remaining, overdue, near-due and missing assignee.
+- Synthetic `Chưa xác định phòng ban` bucket so unmapped ISSUE are never omitted from totals.
+- Search, themed filters and sorting.
+- Department drawer with stakeholder contacts, owned PLHĐ Modules and attention ISSUE.
+- Drill-down links from department metrics to ISSUE query state.
+- Dashboard top-department cards now open `/departments?departmentId=...`.
+- Demo-mode Department Intelligence for Supabase-free preview.
+
+### Database
+- Added `202608220004_v050_department_rpc.sql`.
+- Server-side membership check and aggregate; no full ISSUE list is downloaded to calculate department KPI.
+
 ## V0.4.0 — PLHĐ Unified View
 
 ### Added
