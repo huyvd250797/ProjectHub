@@ -1,186 +1,481 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-type ProjectStatus = "Đúng tiến độ" | "Có rủi ro" | "Trễ hạn";
-type TaskStatus = "Chưa làm" | "Đang làm" | "Chờ khách hàng" | "Hoàn tất";
+type Role = "Admin" | "PM" | "Member" | "Viewer";
+type ProjectStatus = "Planning" | "In Progress" | "At Risk" | "Blocked" | "Acceptance" | "Closed";
+type TaskStatus = "Todo" | "Doing" | "Waiting" | "Done";
+type Priority = "High" | "Medium" | "Low";
 
-type Milestone = {
+type Customer = {
+  id: string;
   name: string;
-  phase: string;
-  owner: string;
-  planned: string;
-  actual: string;
-  status: ProjectStatus;
-  progress: number;
-};
-
-type Task = {
-  title: string;
-  owner: string;
-  due: string;
-  status: TaskStatus;
-  priority: "Cao" | "Vừa" | "Thấp";
+  type: string;
+  province: string;
+  contact: string;
 };
 
 type Project = {
   id: string;
   code: string;
   name: string;
-  customer: string;
+  customerId: string;
   pm: string;
   status: ProjectStatus;
   progress: number;
-  start: string;
-  end: string;
-  nextMilestone: string;
+  startDate: string;
+  endDate: string;
   healthNote: string;
+};
+
+type Milestone = {
+  id: string;
+  projectId: string;
+  name: string;
+  phase: string;
+  owner: string;
+  plannedDate: string;
+  actualDate: string;
+  status: "On Track" | "Risk" | "Late" | "Done";
+  progress: number;
+  evidence: string;
+};
+
+type Task = {
+  id: string;
+  projectId: string;
+  milestoneId: string;
+  title: string;
+  owner: string;
+  dueDate: string;
+  status: TaskStatus;
+  priority: Priority;
+  blockedReason: string;
+};
+
+type AuditLog = {
+  id: string;
+  at: string;
+  actor: string;
+  action: string;
+  entity: string;
+  detail: string;
+};
+
+type ProjectHubState = {
+  customers: Customer[];
+  projects: Project[];
   milestones: Milestone[];
   tasks: Task[];
-  tickets: {
-    code: string;
-    title: string;
-    severity: "P1" | "P2" | "P3";
-    sla: string;
-    status: "Mở" | "Đang xử lý" | "Chờ xác nhận";
-  }[];
+  auditLogs: AuditLog[];
 };
 
-const projects: Project[] = [
-  {
-    id: "epu",
-    code: "ASC-UNI-001",
-    name: "Triển khai OneUni EPU",
-    customer: "Trường Đại học Điện lực",
-    pm: "Huy Vo",
-    status: "Có rủi ro",
-    progress: 64,
-    start: "05/08",
-    end: "30/09",
-    nextMilestone: "Hoàn tất UAT phân hệ tuyển sinh",
-    healthNote: "Dữ liệu tuyển sinh cần đối soát thêm trước khi chốt UAT.",
-    milestones: [
-      { name: "Khảo sát hiện trạng", phase: "Khảo sát", owner: "PM", planned: "08/08", actual: "08/08", status: "Đúng tiến độ", progress: 100 },
-      { name: "Cấu hình danh mục", phase: "Cấu hình", owner: "Triển khai", planned: "18/08", actual: "19/08", status: "Có rủi ro", progress: 85 },
-      { name: "UAT tuyển sinh", phase: "UAT", owner: "Khách hàng", planned: "26/08", actual: "Chưa chốt", status: "Có rủi ro", progress: 45 },
-      { name: "Go-live đợt 1", phase: "Go-live", owner: "PM", planned: "10/09", actual: "Chưa đến", status: "Đúng tiến độ", progress: 10 },
-    ],
-    tasks: [
-      { title: "Đối soát dữ liệu thí sinh trúng tuyển", owner: "Data team", due: "22/08", status: "Đang làm", priority: "Cao" },
-      { title: "Gửi form xác nhận lịch UAT", owner: "PM", due: "23/08", status: "Chờ khách hàng", priority: "Cao" },
-      { title: "Bổ sung tài liệu hướng dẫn nhập học", owner: "Triển khai", due: "25/08", status: "Chưa làm", priority: "Vừa" },
-      { title: "Chốt checklist nghiệm thu giai đoạn 1", owner: "PM", due: "29/08", status: "Chưa làm", priority: "Vừa" },
-      { title: "Tổng hợp feedback tập huấn", owner: "CS", due: "20/08", status: "Hoàn tất", priority: "Thấp" },
-    ],
-    tickets: [
-      { code: "SUP-104", title: "QR giấy báo trúng tuyển bị co ảnh trong mẫu Word", severity: "P2", sla: "24h", status: "Đang xử lý" },
-      { code: "SUP-109", title: "Danh mục huyện/xã thiếu mapping khi import", severity: "P1", sla: "8h", status: "Mở" },
-      { code: "SUP-112", title: "Khách hàng xác nhận lại quyền tài khoản UAT", severity: "P3", sla: "72h", status: "Chờ xác nhận" },
-    ],
-  },
-  {
-    id: "hcmue",
-    code: "ASC-UNI-002",
-    name: "Nâng cấp cổng sinh viên OneUni",
-    customer: "Trường Đại học Sư phạm TP.HCM",
-    pm: "Mai Anh",
-    status: "Đúng tiến độ",
-    progress: 78,
-    start: "15/07",
-    end: "05/09",
-    nextMilestone: "Tập huấn cán bộ phòng đào tạo",
-    healthNote: "Khách hàng phản hồi nhanh, phạm vi đang ổn định.",
-    milestones: [
-      { name: "Khảo sát nghiệp vụ", phase: "Khảo sát", owner: "PM", planned: "20/07", actual: "19/07", status: "Đúng tiến độ", progress: 100 },
-      { name: "Demo flow tự đăng ký hoạt động", phase: "Demo", owner: "UX", planned: "04/08", actual: "04/08", status: "Đúng tiến độ", progress: 100 },
-      { name: "Tập huấn phòng đào tạo", phase: "Tập huấn", owner: "PM", planned: "26/08", actual: "Chưa đến", status: "Đúng tiến độ", progress: 30 },
-      { name: "Nghiệm thu UI", phase: "Nghiệm thu", owner: "Khách hàng", planned: "04/09", actual: "Chưa đến", status: "Đúng tiến độ", progress: 0 },
-    ],
-    tasks: [
-      { title: "Rà lại flow đăng ký hoạt động trên app OneUni", owner: "UX", due: "22/08", status: "Đang làm", priority: "Cao" },
-      { title: "Chuẩn bị slide tập huấn", owner: "PM", due: "24/08", status: "Chưa làm", priority: "Vừa" },
-      { title: "Gửi link khảo sát sau demo", owner: "CS", due: "25/08", status: "Chưa làm", priority: "Thấp" },
-      { title: "Chốt danh sách học viên tập huấn", owner: "Khách hàng", due: "23/08", status: "Chờ khách hàng", priority: "Vừa" },
-    ],
-    tickets: [
-      { code: "SUP-087", title: "Cần bổ sung icon trạng thái đăng ký", severity: "P3", sla: "72h", status: "Mở" },
-      { code: "SUP-091", title: "Chưa đồng bộ màu phân hệ giữa web và app", severity: "P2", sla: "24h", status: "Đang xử lý" },
-    ],
-  },
-  {
-    id: "demo",
-    code: "ASC-UNI-003",
-    name: "Pilot ProjectHub nội bộ",
-    customer: "ASC Delivery Team",
-    pm: "June",
-    status: "Trễ hạn",
-    progress: 42,
-    start: "01/08",
-    end: "31/08",
-    nextMilestone: "Hoàn tất prototype V0.1.0",
-    healthNote: "Cần chốt phạm vi MVP để không kéo quá nhiều module vào bản đầu.",
-    milestones: [
-      { name: "Kế hoạch sản phẩm", phase: "Planning", owner: "PM", planned: "21/08", actual: "21/08", status: "Đúng tiến độ", progress: 100 },
-      { name: "Prototype dashboard", phase: "Prototype", owner: "Dev", planned: "22/08", actual: "Đang làm", status: "Có rủi ro", progress: 65 },
-      { name: "Review với PM", phase: "Review", owner: "PM", planned: "24/08", actual: "Chưa đến", status: "Đúng tiến độ", progress: 0 },
-      { name: "Chốt V0.5.0 backlog", phase: "Planning", owner: "PM", planned: "28/08", actual: "Chưa đến", status: "Trễ hạn", progress: 0 },
-    ],
-    tasks: [
-      { title: "Tạo dashboard portfolio", owner: "Dev", due: "22/08", status: "Đang làm", priority: "Cao" },
-      { title: "Tạo timeline milestone demo", owner: "Dev", due: "22/08", status: "Đang làm", priority: "Cao" },
-      { title: "Ghi version history V0.1.0", owner: "PM", due: "22/08", status: "Chưa làm", priority: "Cao" },
-      { title: "Chuẩn bị scope V0.5.0", owner: "PM", due: "24/08", status: "Chưa làm", priority: "Vừa" },
-    ],
-    tickets: [
-      { code: "SUP-001", title: "Cần xác định module nào vào MVP thật", severity: "P2", sla: "48h", status: "Mở" },
-      { code: "SUP-002", title: "Chưa có kết nối Supabase production", severity: "P3", sla: "Không áp dụng", status: "Chờ xác nhận" },
-    ],
-  },
-];
+const STORAGE_KEY = "asc-projecthub-v0.5.0";
+
+const statusLabel: Record<ProjectStatus, string> = {
+  Planning: "Lập kế hoạch",
+  "In Progress": "Đang triển khai",
+  "At Risk": "Có rủi ro",
+  Blocked: "Bị chặn",
+  Acceptance: "Nghiệm thu",
+  Closed: "Đã đóng",
+};
 
 const statusTone: Record<ProjectStatus, string> = {
-  "Đúng tiến độ": "border-emerald-200 bg-emerald-50 text-emerald-800",
-  "Có rủi ro": "border-amber-200 bg-amber-50 text-amber-800",
-  "Trễ hạn": "border-rose-200 bg-rose-50 text-rose-800",
+  Planning: "border-sky-200 bg-sky-50 text-sky-800",
+  "In Progress": "border-blue-200 bg-blue-50 text-blue-800",
+  "At Risk": "border-amber-200 bg-amber-50 text-amber-800",
+  Blocked: "border-rose-200 bg-rose-50 text-rose-800",
+  Acceptance: "border-violet-200 bg-violet-50 text-violet-800",
+  Closed: "border-emerald-200 bg-emerald-50 text-emerald-800",
 };
 
-const taskColumns: TaskStatus[] = ["Chưa làm", "Đang làm", "Chờ khách hàng", "Hoàn tất"];
+const milestoneTone: Record<Milestone["status"], string> = {
+  "On Track": "border-blue-200 bg-blue-50 text-blue-800",
+  Risk: "border-amber-200 bg-amber-50 text-amber-800",
+  Late: "border-rose-200 bg-rose-50 text-rose-800",
+  Done: "border-emerald-200 bg-emerald-50 text-emerald-800",
+};
 
-function Pill({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "blue" | "risk" }) {
-  const classes = {
-    neutral: "border-slate-200 bg-white text-slate-700",
-    blue: "border-blue-200 bg-blue-50 text-blue-800",
-    risk: "border-amber-200 bg-amber-50 text-amber-800",
-  };
-  return <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${classes[tone]}`}>{children}</span>;
+const taskColumns: { key: TaskStatus; label: string }[] = [
+  { key: "Todo", label: "Chưa làm" },
+  { key: "Doing", label: "Đang làm" },
+  { key: "Waiting", label: "Chờ khách hàng" },
+  { key: "Done", label: "Hoàn tất" },
+];
+
+const seedState: ProjectHubState = {
+  customers: [
+    {
+      id: "customer-epu",
+      name: "Trường Đại học Điện lực",
+      type: "Đại học công lập",
+      province: "Hà Nội",
+      contact: "Phòng Đào tạo",
+    },
+    {
+      id: "customer-hcmue",
+      name: "Trường Đại học Sư phạm TP.HCM",
+      type: "Đại học công lập",
+      province: "TP.HCM",
+      contact: "Trung tâm CNTT",
+    },
+  ],
+  projects: [
+    {
+      id: "project-epu",
+      code: "ASC-UNI-001",
+      name: "Triển khai OneUni EPU",
+      customerId: "customer-epu",
+      pm: "Huy Vo",
+      status: "At Risk",
+      progress: 64,
+      startDate: "2026-08-05",
+      endDate: "2026-09-30",
+      healthNote: "Dữ liệu tuyển sinh cần đối soát thêm trước khi chốt UAT.",
+    },
+    {
+      id: "project-hcmue",
+      code: "ASC-UNI-002",
+      name: "Nâng cấp cổng sinh viên OneUni",
+      customerId: "customer-hcmue",
+      pm: "Mai Anh",
+      status: "In Progress",
+      progress: 78,
+      startDate: "2026-07-15",
+      endDate: "2026-09-05",
+      healthNote: "Khách hàng phản hồi nhanh, phạm vi đang ổn định.",
+    },
+  ],
+  milestones: [
+    {
+      id: "ms-1",
+      projectId: "project-epu",
+      name: "Khảo sát hiện trạng",
+      phase: "Khảo sát",
+      owner: "PM",
+      plannedDate: "2026-08-08",
+      actualDate: "2026-08-08",
+      status: "Done",
+      progress: 100,
+      evidence: "Biên bản khảo sát đã xác nhận",
+    },
+    {
+      id: "ms-2",
+      projectId: "project-epu",
+      name: "UAT tuyển sinh",
+      phase: "UAT",
+      owner: "Khách hàng",
+      plannedDate: "2026-08-26",
+      actualDate: "",
+      status: "Risk",
+      progress: 45,
+      evidence: "Cần chốt bộ test case",
+    },
+    {
+      id: "ms-3",
+      projectId: "project-hcmue",
+      name: "Tập huấn phòng đào tạo",
+      phase: "Tập huấn",
+      owner: "PM",
+      plannedDate: "2026-08-26",
+      actualDate: "",
+      status: "On Track",
+      progress: 30,
+      evidence: "Danh sách tham dự đang xác nhận",
+    },
+  ],
+  tasks: [
+    {
+      id: "task-1",
+      projectId: "project-epu",
+      milestoneId: "ms-2",
+      title: "Đối soát dữ liệu thí sinh trúng tuyển",
+      owner: "Data team",
+      dueDate: "2026-08-22",
+      status: "Doing",
+      priority: "High",
+      blockedReason: "",
+    },
+    {
+      id: "task-2",
+      projectId: "project-epu",
+      milestoneId: "ms-2",
+      title: "Gửi form xác nhận lịch UAT",
+      owner: "PM",
+      dueDate: "2026-08-23",
+      status: "Waiting",
+      priority: "High",
+      blockedReason: "Chờ đầu mối khách hàng phản hồi",
+    },
+    {
+      id: "task-3",
+      projectId: "project-hcmue",
+      milestoneId: "ms-3",
+      title: "Chuẩn bị slide tập huấn",
+      owner: "PM",
+      dueDate: "2026-08-24",
+      status: "Todo",
+      priority: "Medium",
+      blockedReason: "",
+    },
+  ],
+  auditLogs: [
+    {
+      id: "log-1",
+      at: "2026-08-22 09:00",
+      actor: "June",
+      action: "Khởi tạo",
+      entity: "Version",
+      detail: "Tạo dữ liệu seed cho ASC ProjectHub V0.5.0 Core MVP.",
+    },
+  ],
+};
+
+const emptyProject = {
+  code: "",
+  name: "",
+  customerName: "",
+  pm: "Huy Vo",
+  startDate: new Date().toISOString().slice(0, 10),
+  endDate: "",
+};
+
+const emptyMilestone = {
+  name: "",
+  phase: "Khảo sát",
+  owner: "PM",
+  plannedDate: "",
+};
+
+const emptyTask = {
+  title: "",
+  owner: "PM",
+  dueDate: "",
+  priority: "Medium" as Priority,
+};
+
+function createId(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+}
+
+function todayStamp() {
+  return new Intl.DateTimeFormat("vi-VN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date());
+}
+
+function readState(): ProjectHubState {
+  if (typeof window === "undefined") return seedState;
+  const raw = window.localStorage.getItem(STORAGE_KEY);
+  if (!raw) return seedState;
+  try {
+    return JSON.parse(raw) as ProjectHubState;
+  } catch {
+    return seedState;
+  }
+}
+
+function Pill({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${className}`}>{children}</span>;
 }
 
 function ProgressBar({ value }: { value: number }) {
   return (
     <div className="h-2 rounded-full bg-slate-100">
-      <div className="h-full rounded-full bg-blue-600" style={{ width: `${value}%` }} />
+      <div className="h-full rounded-full bg-blue-600" style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
     </div>
   );
 }
 
 export default function Home() {
-  const [selectedId, setSelectedId] = useState(projects[0].id);
+  const [state, setState] = useState<ProjectHubState>(seedState);
+  const [selectedProjectId, setSelectedProjectId] = useState(seedState.projects[0]?.id ?? "");
   const [activeTab, setActiveTab] = useState("Tổng quan");
+  const [role, setRole] = useState<Role>("PM");
   const [query, setQuery] = useState("");
+  const [projectForm, setProjectForm] = useState(emptyProject);
+  const [milestoneForm, setMilestoneForm] = useState(emptyMilestone);
+  const [taskForm, setTaskForm] = useState(emptyTask);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const loaded = readState();
+      setState(loaded);
+      setSelectedProjectId(loaded.projects[0]?.id ?? "");
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }, [state]);
+
+  const selectedProject = state.projects.find((project) => project.id === selectedProjectId) ?? state.projects[0];
+  const selectedCustomer = state.customers.find((customer) => customer.id === selectedProject?.customerId);
+  const projectMilestones = state.milestones.filter((milestone) => milestone.projectId === selectedProject?.id);
+  const projectTasks = state.tasks.filter((task) => task.projectId === selectedProject?.id);
 
   const filteredProjects = useMemo(() => {
     const text = query.trim().toLowerCase();
-    if (!text) return projects;
-    return projects.filter((project) =>
-      [project.code, project.name, project.customer, project.pm].join(" ").toLowerCase().includes(text),
-    );
-  }, [query]);
+    if (!text) return state.projects;
+    return state.projects.filter((project) => {
+      const customer = state.customers.find((item) => item.id === project.customerId);
+      return [project.code, project.name, project.pm, customer?.name].join(" ").toLowerCase().includes(text);
+    });
+  }, [query, state.customers, state.projects]);
 
-  const selectedProject = projects.find((project) => project.id === selectedId) ?? projects[0];
-  const totalTasks = projects.reduce((sum, project) => sum + project.tasks.length, 0);
-  const overdueMilestones = projects.flatMap((project) => project.milestones).filter((item) => item.status !== "Đúng tiến độ").length;
-  const openTickets = projects.reduce((sum, project) => sum + project.tickets.filter((ticket) => ticket.status !== "Chờ xác nhận").length, 0);
-  const avgProgress = Math.round(projects.reduce((sum, project) => sum + project.progress, 0) / projects.length);
+  const dashboard = useMemo(() => {
+    const avgProgress = state.projects.length
+      ? Math.round(state.projects.reduce((sum, project) => sum + project.progress, 0) / state.projects.length)
+      : 0;
+    return {
+      totalProjects: state.projects.length,
+      avgProgress,
+      riskProjects: state.projects.filter((project) => project.status === "At Risk" || project.status === "Blocked").length,
+      openTasks: state.tasks.filter((task) => task.status !== "Done").length,
+      waitingTasks: state.tasks.filter((task) => task.status === "Waiting").length,
+      dueMilestones: state.milestones.filter((milestone) => milestone.status === "Risk" || milestone.status === "Late").length,
+    };
+  }, [state]);
+
+  function writeAudit(action: string, entity: string, detail: string) {
+    setState((current) => ({
+      ...current,
+      auditLogs: [
+        {
+          id: createId("log"),
+          at: todayStamp(),
+          actor: role,
+          action,
+          entity,
+          detail,
+        },
+        ...current.auditLogs,
+      ].slice(0, 80),
+    }));
+  }
+
+  function createProject(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!projectForm.code.trim() || !projectForm.name.trim() || !projectForm.customerName.trim()) return;
+
+    const customerId = createId("customer");
+    const projectId = createId("project");
+    const newCustomer: Customer = {
+      id: customerId,
+      name: projectForm.customerName.trim(),
+      type: "Khách hàng triển khai",
+      province: "Chưa cập nhật",
+      contact: "Chưa cập nhật",
+    };
+    const newProject: Project = {
+      id: projectId,
+      code: projectForm.code.trim(),
+      name: projectForm.name.trim(),
+      customerId,
+      pm: projectForm.pm.trim() || "PM",
+      status: "Planning",
+      progress: 0,
+      startDate: projectForm.startDate,
+      endDate: projectForm.endDate,
+      healthNote: "Dự án mới tạo, cần hoàn thiện kế hoạch tổng thể và milestone.",
+    };
+
+    setState((current) => ({
+      ...current,
+      customers: [newCustomer, ...current.customers],
+      projects: [newProject, ...current.projects],
+      auditLogs: [
+        {
+          id: createId("log"),
+          at: todayStamp(),
+          actor: role,
+          action: "Tạo mới",
+          entity: "Project",
+          detail: `Tạo dự án ${newProject.code} - ${newProject.name}.`,
+        },
+        ...current.auditLogs,
+      ],
+    }));
+    setSelectedProjectId(projectId);
+    setProjectForm(emptyProject);
+  }
+
+  function updateProject(patch: Partial<Project>) {
+    if (!selectedProject) return;
+    setState((current) => ({
+      ...current,
+      projects: current.projects.map((project) => (project.id === selectedProject.id ? { ...project, ...patch } : project)),
+    }));
+    writeAudit("Cập nhật", "Project", `Cập nhật ${selectedProject.code}.`);
+  }
+
+  function createMilestone(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedProject || !milestoneForm.name.trim()) return;
+    const milestone: Milestone = {
+      id: createId("ms"),
+      projectId: selectedProject.id,
+      name: milestoneForm.name.trim(),
+      phase: milestoneForm.phase,
+      owner: milestoneForm.owner.trim() || "PM",
+      plannedDate: milestoneForm.plannedDate,
+      actualDate: "",
+      status: "On Track",
+      progress: 0,
+      evidence: "Chưa có bằng chứng.",
+    };
+    setState((current) => ({ ...current, milestones: [milestone, ...current.milestones] }));
+    setMilestoneForm(emptyMilestone);
+    writeAudit("Tạo mới", "Milestone", `Thêm milestone ${milestone.name} cho ${selectedProject.code}.`);
+  }
+
+  function updateMilestone(id: string, patch: Partial<Milestone>) {
+    setState((current) => ({
+      ...current,
+      milestones: current.milestones.map((milestone) => (milestone.id === id ? { ...milestone, ...patch } : milestone)),
+    }));
+    writeAudit("Cập nhật", "Milestone", "Cập nhật milestone trong dự án.");
+  }
+
+  function createTask(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedProject || !taskForm.title.trim()) return;
+    const task: Task = {
+      id: createId("task"),
+      projectId: selectedProject.id,
+      milestoneId: projectMilestones[0]?.id ?? "",
+      title: taskForm.title.trim(),
+      owner: taskForm.owner.trim() || "PM",
+      dueDate: taskForm.dueDate,
+      status: "Todo",
+      priority: taskForm.priority,
+      blockedReason: "",
+    };
+    setState((current) => ({ ...current, tasks: [task, ...current.tasks] }));
+    setTaskForm(emptyTask);
+    writeAudit("Tạo mới", "Task", `Thêm task ${task.title}.`);
+  }
+
+  function moveTask(id: string, status: TaskStatus) {
+    const task = state.tasks.find((item) => item.id === id);
+    setState((current) => ({
+      ...current,
+      tasks: current.tasks.map((item) => (item.id === id ? { ...item, status } : item)),
+    }));
+    writeAudit("Chuyển trạng thái", "Task", `${task?.title ?? "Task"} sang ${status}.`);
+  }
+
+  function resetDemoData() {
+    setState(seedState);
+    setSelectedProjectId(seedState.projects[0].id);
+    setActiveTab("Tổng quan");
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
@@ -189,27 +484,48 @@ export default function Home() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-blue-700">ASC ProjectHub</p>
-              <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">Điều phối triển khai dự án phần mềm giáo dục</h1>
+              <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">V0.5.0 Core MVP - quản lý dự án có dữ liệu thao tác thật</h1>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                Bản này đã có CRUD nội bộ bằng local storage, nền phân quyền, audit log và cấu trúc dữ liệu bám theo kế hoạch Supabase. Khi có Supabase URL/key, có thể thay lớp lưu trữ local bằng database thật.
+              </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Pill tone="blue">V0.1.0 Prototype</Pill>
-              <Pill>Demo data</Pill>
-              <Pill tone="risk">Next: V0.5.0 Core MVP</Pill>
+              <Pill className="border-blue-200 bg-blue-50 text-blue-800">Đã xây: V0.5.0</Pill>
+              <Pill className="border-slate-200 bg-white text-slate-700">Portable Next.js</Pill>
+              <Pill className="border-amber-200 bg-amber-50 text-amber-800">Next: V0.8.0 Customer Collaboration</Pill>
             </div>
           </div>
-          <nav className="flex flex-wrap gap-2 text-sm">
-            {["Dashboard", "Projects", "Timeline", "Tasks", "Customer Work", "Acceptance"].map((item) => (
-              <a key={item} href={`#${item.toLowerCase().replaceAll(" ", "-")}`} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-medium text-slate-700 hover:bg-white">
-                {item}
-              </a>
-            ))}
-          </nav>
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[280px_1fr] lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[310px_1fr] lg:px-8">
         <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-          <section id="projects" className="rounded-lg border border-slate-200 bg-white p-4">
+          <section className="rounded-lg border border-slate-200 bg-white p-4">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold text-slate-900">Phiên làm việc</h2>
+              <button onClick={resetDemoData} className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                Reset demo
+              </button>
+            </div>
+            <label htmlFor="role" className="mt-3 block text-xs font-medium text-slate-500">
+              Vai trò hiện tại
+            </label>
+            <select
+              id="role"
+              value={role}
+              onChange={(event) => setRole(event.target.value as Role)}
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            >
+              {["Admin", "PM", "Member", "Viewer"].map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+            <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+              Chế độ hiện tại: Local-first. Dữ liệu lưu trên trình duyệt để test MVP nhanh. Supabase schema đã chuẩn bị trong source.
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-4">
             <label className="text-sm font-semibold text-slate-800" htmlFor="project-search">
               Tìm dự án
             </label>
@@ -221,129 +537,229 @@ export default function Home() {
               className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
             <div className="mt-4 space-y-2">
-              {filteredProjects.map((project) => (
-                <button
-                  key={project.id}
-                  onClick={() => setSelectedId(project.id)}
-                  className={`w-full rounded-md border p-3 text-left transition ${selectedProject.id === project.id ? "border-blue-500 bg-blue-50" : "border-slate-200 bg-white hover:bg-slate-50"}`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-xs font-medium text-slate-500">{project.code}</p>
-                      <p className="mt-1 text-sm font-semibold text-slate-950">{project.name}</p>
+              {filteredProjects.map((project) => {
+                const customer = state.customers.find((item) => item.id === project.customerId);
+                return (
+                  <button
+                    key={project.id}
+                    onClick={() => setSelectedProjectId(project.id)}
+                    className={`w-full rounded-md border p-3 text-left transition ${selectedProject?.id === project.id ? "border-blue-500 bg-blue-50" : "border-slate-200 bg-white hover:bg-slate-50"}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-xs font-medium text-slate-500">{project.code}</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-950">{project.name}</p>
+                      </div>
+                      <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusTone[project.status]}`}>{project.progress}%</span>
                     </div>
-                    <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusTone[project.status]}`}>{project.progress}%</span>
-                  </div>
-                  <p className="mt-2 text-xs text-slate-600">{project.customer}</p>
-                </button>
-              ))}
+                    <p className="mt-2 text-xs text-slate-600">{customer?.name ?? "Chưa có khách hàng"}</p>
+                  </button>
+                );
+              })}
             </div>
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white p-4">
-            <h2 className="text-sm font-semibold text-slate-900">Version history</h2>
-            <div className="mt-3 space-y-3 text-sm">
-              <div className="rounded-md border border-blue-200 bg-blue-50 p-3">
-                <p className="font-semibold text-blue-900">Đã xây dựng: V0.1.0</p>
-                <p className="mt-1 text-blue-800">Prototype giao diện, demo data, dashboard, project detail, timeline, task và ticket.</p>
+            <h2 className="text-sm font-semibold text-slate-900">Tạo dự án mới</h2>
+            <form onSubmit={createProject} className="mt-3 space-y-3">
+              <TextInput label="Mã dự án" value={projectForm.code} onChange={(value) => setProjectForm((current) => ({ ...current, code: value }))} placeholder="ASC-UNI-004" />
+              <TextInput label="Tên dự án" value={projectForm.name} onChange={(value) => setProjectForm((current) => ({ ...current, name: value }))} placeholder="Triển khai OneUni..." />
+              <TextInput label="Khách hàng" value={projectForm.customerName} onChange={(value) => setProjectForm((current) => ({ ...current, customerName: value }))} placeholder="Tên trường/đơn vị" />
+              <TextInput label="PM" value={projectForm.pm} onChange={(value) => setProjectForm((current) => ({ ...current, pm: value }))} />
+              <div className="grid grid-cols-2 gap-2">
+                <TextInput label="Bắt đầu" type="date" value={projectForm.startDate} onChange={(value) => setProjectForm((current) => ({ ...current, startDate: value }))} />
+                <TextInput label="Kết thúc" type="date" value={projectForm.endDate} onChange={(value) => setProjectForm((current) => ({ ...current, endDate: value }))} />
               </div>
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                <p className="font-semibold text-slate-900">Tiếp theo: V0.5.0</p>
-                <p className="mt-1 text-slate-700">Auth, Supabase, CRUD project, phase, milestone, task, attachment và audit log.</p>
-              </div>
-            </div>
+              <button className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                Thêm dự án
+              </button>
+            </form>
           </section>
         </aside>
 
         <section className="space-y-5">
-          <section id="dashboard" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {[
-              ["Dự án đang theo dõi", projects.length.toString(), "1 có rủi ro, 1 trễ hạn"],
-              ["Tiến độ trung bình", `${avgProgress}%`, "Tính theo dự án demo"],
-              ["Milestone cần chú ý", overdueMilestones.toString(), "Có rủi ro hoặc trễ hạn"],
-              ["Ticket đang mở", openTickets.toString(), `${totalTasks} task trong backlog`],
-            ].map(([label, value, note]) => (
-              <article key={label} className="rounded-lg border border-slate-200 bg-white p-4">
-                <p className="text-sm font-medium text-slate-600">{label}</p>
-                <p className="mt-2 text-3xl font-semibold text-slate-950">{value}</p>
-                <p className="mt-2 text-sm text-slate-500">{note}</p>
-              </article>
-            ))}
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+            <Kpi label="Dự án" value={dashboard.totalProjects.toString()} note="Đang theo dõi" />
+            <Kpi label="Tiến độ TB" value={`${dashboard.avgProgress}%`} note="Theo portfolio" />
+            <Kpi label="Rủi ro" value={dashboard.riskProjects.toString()} note="At Risk/Blocked" />
+            <Kpi label="Task mở" value={dashboard.openTasks.toString()} note="Chưa hoàn tất" />
+            <Kpi label="Chờ KH" value={dashboard.waitingTasks.toString()} note="Cần follow-up" />
+            <Kpi label="Milestone" value={dashboard.dueMilestones.toString()} note="Cần chú ý" />
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white">
-            <div className="border-b border-slate-200 p-4">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">{selectedProject.code}</p>
-                  <h2 className="mt-1 text-xl font-semibold text-slate-950">{selectedProject.name}</h2>
-                  <p className="mt-1 text-sm text-slate-600">{selectedProject.customer} | PM: {selectedProject.pm}</p>
-                </div>
-                <span className={`rounded-full border px-3 py-1 text-sm font-semibold ${statusTone[selectedProject.status]}`}>{selectedProject.status}</span>
-              </div>
-              <div className="mt-4 grid gap-3 md:grid-cols-[1fr_240px]">
-                <div>
-                  <div className="mb-2 flex justify-between text-sm">
-                    <span className="font-medium text-slate-700">Tiến độ tổng thể</span>
-                    <span className="font-semibold text-slate-950">{selectedProject.progress}%</span>
+          {selectedProject ? (
+            <section className="rounded-lg border border-slate-200 bg-white">
+              <div className="border-b border-slate-200 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500">{selectedProject.code}</p>
+                    <h2 className="mt-1 text-xl font-semibold text-slate-950">{selectedProject.name}</h2>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {selectedCustomer?.name ?? "Chưa có khách hàng"} | PM: {selectedProject.pm}
+                    </p>
                   </div>
-                  <ProgressBar value={selectedProject.progress} />
+                  <Pill className={statusTone[selectedProject.status]}>{statusLabel[selectedProject.status]}</Pill>
                 </div>
-                <div className="rounded-md bg-slate-50 p-3 text-sm text-slate-700">
-                  <span className="font-semibold text-slate-950">Mốc tiếp theo: </span>
-                  {selectedProject.nextMilestone}
+                <div className="mt-4 grid gap-3 md:grid-cols-[1fr_320px]">
+                  <div>
+                    <div className="mb-2 flex justify-between text-sm">
+                      <span className="font-medium text-slate-700">Tiến độ tổng thể</span>
+                      <span className="font-semibold text-slate-950">{selectedProject.progress}%</span>
+                    </div>
+                    <ProgressBar value={selectedProject.progress} />
+                  </div>
+                  <div className="rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-700">
+                    <span className="font-semibold text-slate-950">Health note: </span>
+                    {selectedProject.healthNote}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="border-b border-slate-200 px-4">
-              <div className="flex gap-2 overflow-x-auto py-3">
-                {["Tổng quan", "Milestone", "Timeline", "Task", "Khách hàng", "Nghiệm thu"].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium ${activeTab === tab ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+              <div className="border-b border-slate-200 px-4">
+                <div className="flex gap-2 overflow-x-auto py-3">
+                  {["Tổng quan", "Kế hoạch", "Milestone", "Task", "Audit log", "Supabase"].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium ${activeTab === tab ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="p-4">
-              {activeTab === "Tổng quan" && <Overview project={selectedProject} />}
-              {activeTab === "Milestone" && <Milestones project={selectedProject} />}
-              {activeTab === "Timeline" && <Timeline project={selectedProject} />}
-              {activeTab === "Task" && <Tasks project={selectedProject} />}
-              {activeTab === "Khách hàng" && <CustomerWork project={selectedProject} />}
-              {activeTab === "Nghiệm thu" && <Acceptance project={selectedProject} />}
-            </div>
-          </section>
+              <div className="p-4">
+                {activeTab === "Tổng quan" && (
+                  <Overview project={selectedProject} customer={selectedCustomer} milestones={projectMilestones} tasks={projectTasks} onUpdateProject={updateProject} />
+                )}
+                {activeTab === "Kế hoạch" && <PlanView milestones={projectMilestones} tasks={projectTasks} />}
+                {activeTab === "Milestone" && (
+                  <MilestoneView
+                    milestones={projectMilestones}
+                    form={milestoneForm}
+                    setForm={setMilestoneForm}
+                    onCreate={createMilestone}
+                    onUpdate={updateMilestone}
+                  />
+                )}
+                {activeTab === "Task" && (
+                  <TaskView tasks={projectTasks} form={taskForm} setForm={setTaskForm} onCreate={createTask} onMove={moveTask} />
+                )}
+                {activeTab === "Audit log" && <AuditLogView logs={state.auditLogs} />}
+                {activeTab === "Supabase" && <SupabaseReadiness />}
+              </div>
+            </section>
+          ) : (
+            <section className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
+              Chưa có dự án. Hãy tạo dự án đầu tiên ở thanh bên trái.
+            </section>
+          )}
         </section>
       </div>
     </main>
   );
 }
 
-function Overview({ project }: { project: Project }) {
+function TextInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+}) {
   return (
-    <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+    <label className="block text-xs font-medium text-slate-600">
+      {label}
+      <input
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+      />
+    </label>
+  );
+}
+
+function Kpi({ label, value, note }: { label: string; value: string; note: string }) {
+  return (
+    <article className="rounded-lg border border-slate-200 bg-white p-4">
+      <p className="text-sm font-medium text-slate-600">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-slate-950">{value}</p>
+      <p className="mt-1 text-xs text-slate-500">{note}</p>
+    </article>
+  );
+}
+
+function Overview({
+  project,
+  customer,
+  milestones,
+  tasks,
+  onUpdateProject,
+}: {
+  project: Project;
+  customer?: Customer;
+  milestones: Milestone[];
+  tasks: Task[];
+  onUpdateProject: (patch: Partial<Project>) => void;
+}) {
+  return (
+    <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
       <div className="rounded-lg border border-slate-200 p-4">
-        <h3 className="text-base font-semibold">Tình trạng dự án</h3>
-        <p className="mt-2 text-sm leading-6 text-slate-700">{project.healthNote}</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <Info label="Bắt đầu" value={project.start} />
-          <Info label="Kết thúc dự kiến" value={project.end} />
-          <Info label="Milestone" value={project.milestones.length.toString()} />
+        <h3 className="text-base font-semibold">Thông tin điều hành</h3>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <Info label="Khách hàng" value={customer?.name ?? "Chưa cập nhật"} />
+          <Info label="Đầu mối" value={customer?.contact ?? "Chưa cập nhật"} />
+          <Info label="Ngày bắt đầu" value={project.startDate || "Chưa cập nhật"} />
+          <Info label="Ngày kết thúc" value={project.endDate || "Chưa cập nhật"} />
+          <Info label="Milestone" value={milestones.length.toString()} />
+          <Info label="Task" value={tasks.length.toString()} />
         </div>
       </div>
+
       <div className="rounded-lg border border-slate-200 p-4">
-        <h3 className="text-base font-semibold">Việc cần PM xử lý</h3>
-        <ul className="mt-3 space-y-2 text-sm text-slate-700">
-          <li className="rounded-md bg-amber-50 p-3 text-amber-900">Chốt xác nhận khách hàng cho milestone gần nhất.</li>
-          <li className="rounded-md bg-slate-50 p-3">Rà lại các task đang chờ khách hàng phản hồi.</li>
-          <li className="rounded-md bg-slate-50 p-3">Chuẩn bị báo cáo tuần từ dữ liệu milestone và ticket.</li>
-        </ul>
+        <h3 className="text-base font-semibold">Cập nhật nhanh</h3>
+        <div className="mt-3 space-y-3">
+          <label className="block text-xs font-medium text-slate-600">
+            Trạng thái
+            <select
+              value={project.status}
+              onChange={(event) => onUpdateProject({ status: event.target.value as ProjectStatus })}
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            >
+              {Object.keys(statusLabel).map((status) => (
+                <option key={status} value={status}>{statusLabel[status as ProjectStatus]}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs font-medium text-slate-600">
+            Tiến độ: {project.progress}%
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={project.progress}
+              onChange={(event) => onUpdateProject({ progress: Number(event.target.value) })}
+              className="mt-2 w-full accent-blue-600"
+            />
+          </label>
+          <label className="block text-xs font-medium text-slate-600">
+            Health note
+            <textarea
+              value={project.healthNote}
+              onChange={(event) => onUpdateProject({ healthNote: event.target.value })}
+              className="mt-1 min-h-24 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+        </div>
       </div>
     </div>
   );
@@ -358,54 +774,165 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Milestones({ project }: { project: Project }) {
+function PlanView({ milestones, tasks }: { milestones: Milestone[]; tasks: Task[] }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full text-left text-sm">
-        <thead className="bg-slate-50 text-slate-600">
-          <tr>
-            {["Milestone", "Phase", "Owner", "Planned", "Actual", "Tiến độ", "Trạng thái"].map((head) => (
-              <th key={head} className="border-b border-slate-200 px-3 py-3 font-semibold">{head}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {project.milestones.map((milestone) => (
-            <tr key={milestone.name} className="border-b border-slate-100">
-              <td className="px-3 py-3 font-medium text-slate-950">{milestone.name}</td>
-              <td className="px-3 py-3 text-slate-600">{milestone.phase}</td>
-              <td className="px-3 py-3 text-slate-600">{milestone.owner}</td>
-              <td className="px-3 py-3 text-slate-600">{milestone.planned}</td>
-              <td className="px-3 py-3 text-slate-600">{milestone.actual}</td>
-              <td className="px-3 py-3">
-                <div className="w-28"><ProgressBar value={milestone.progress} /></div>
-              </td>
-              <td className="px-3 py-3"><span className={`rounded-full border px-2 py-1 text-xs font-semibold ${statusTone[milestone.status]}`}>{milestone.status}</span></td>
-            </tr>
+    <div className="space-y-4">
+      <div className="rounded-lg border border-slate-200 p-4">
+        <h3 className="text-base font-semibold">Timeline theo milestone</h3>
+        <div className="mt-4 space-y-3">
+          {milestones.map((milestone, index) => (
+            <div key={milestone.id} className="grid gap-2 sm:grid-cols-[150px_1fr] sm:items-center">
+              <p className="text-sm font-medium text-slate-700">{milestone.phase}</p>
+              <div className="h-11 rounded-md bg-slate-100 p-1">
+                <div
+                  className={`flex h-full items-center rounded px-3 text-xs font-semibold ${milestone.status === "Done" ? "bg-emerald-600 text-white" : milestone.status === "Risk" ? "bg-amber-500 text-white" : milestone.status === "Late" ? "bg-rose-500 text-white" : "bg-blue-600 text-white"}`}
+                  style={{ marginLeft: `${Math.min(index * 8, 32)}%`, width: `${Math.max(26, milestone.progress / 1.4)}%` }}
+                >
+                  {milestone.name}
+                </div>
+              </div>
+            </div>
           ))}
-        </tbody>
-      </table>
+        </div>
+      </div>
+      <div className="rounded-lg border border-slate-200 p-4">
+        <h3 className="text-base font-semibold">Liên kết task</h3>
+        <p className="mt-2 text-sm text-slate-600">
+          {tasks.length} task đang gắn với dự án. V0.5.0 ưu tiên quản lý task cơ bản; V0.8.0 sẽ mở rộng khảo sát, tập huấn và UAT khách hàng.
+        </p>
+      </div>
     </div>
   );
 }
 
-function Timeline({ project }: { project: Project }) {
+function MilestoneView({
+  milestones,
+  form,
+  setForm,
+  onCreate,
+  onUpdate,
+}: {
+  milestones: Milestone[];
+  form: typeof emptyMilestone;
+  setForm: React.Dispatch<React.SetStateAction<typeof emptyMilestone>>;
+  onCreate: (event: React.FormEvent<HTMLFormElement>) => void;
+  onUpdate: (id: string, patch: Partial<Milestone>) => void;
+}) {
   return (
-    <div id="timeline" className="space-y-4">
-      <div className="grid grid-cols-4 gap-2 text-center text-xs font-semibold text-slate-500">
-        {["Tuần 1", "Tuần 2", "Tuần 3", "Tuần 4"].map((week) => <div key={week}>{week}</div>)}
+    <div className="grid gap-4 xl:grid-cols-[320px_1fr]">
+      <form onSubmit={onCreate} className="rounded-lg border border-slate-200 p-4">
+        <h3 className="text-base font-semibold">Thêm milestone</h3>
+        <div className="mt-3 space-y-3">
+          <TextInput label="Tên milestone" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} placeholder="UAT tuyển sinh" />
+          <TextInput label="Phase" value={form.phase} onChange={(value) => setForm((current) => ({ ...current, phase: value }))} placeholder="Khảo sát/UAT/Go-live" />
+          <TextInput label="Owner" value={form.owner} onChange={(value) => setForm((current) => ({ ...current, owner: value }))} />
+          <TextInput label="Ngày dự kiến" type="date" value={form.plannedDate} onChange={(value) => setForm((current) => ({ ...current, plannedDate: value }))} />
+          <button className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Thêm milestone</button>
+        </div>
+      </form>
+
+      <div className="overflow-x-auto rounded-lg border border-slate-200">
+        <table className="min-w-full text-left text-sm">
+          <thead className="bg-slate-50 text-slate-600">
+            <tr>
+              {["Milestone", "Phase", "Owner", "Planned", "Progress", "Status", "Evidence"].map((head) => (
+                <th key={head} className="border-b border-slate-200 px-3 py-3 font-semibold">{head}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {milestones.map((milestone) => (
+              <tr key={milestone.id} className="border-b border-slate-100">
+                <td className="px-3 py-3 font-medium text-slate-950">{milestone.name}</td>
+                <td className="px-3 py-3 text-slate-600">{milestone.phase}</td>
+                <td className="px-3 py-3 text-slate-600">{milestone.owner}</td>
+                <td className="px-3 py-3 text-slate-600">{milestone.plannedDate || "Chưa cập nhật"}</td>
+                <td className="px-3 py-3">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={milestone.progress}
+                    onChange={(event) => onUpdate(milestone.id, { progress: Number(event.target.value) })}
+                    className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                  />
+                </td>
+                <td className="px-3 py-3">
+                  <select
+                    value={milestone.status}
+                    onChange={(event) => onUpdate(milestone.id, { status: event.target.value as Milestone["status"] })}
+                    className={`rounded-md border px-2 py-1 text-xs font-semibold ${milestoneTone[milestone.status]}`}
+                  >
+                    {["On Track", "Risk", "Late", "Done"].map((status) => <option key={status}>{status}</option>)}
+                  </select>
+                </td>
+                <td className="px-3 py-3 text-slate-600">{milestone.evidence}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <div className="space-y-3">
-        {project.milestones.map((milestone, index) => (
-          <div key={milestone.name} className="grid grid-cols-[150px_1fr] items-center gap-3">
-            <p className="text-sm font-medium text-slate-700">{milestone.phase}</p>
-            <div className="h-10 rounded-md bg-slate-100 p-1">
-              <div
-                className={`flex h-full items-center rounded px-3 text-xs font-semibold ${milestone.status === "Đúng tiến độ" ? "bg-blue-600 text-white" : milestone.status === "Có rủi ro" ? "bg-amber-500 text-white" : "bg-rose-500 text-white"}`}
-                style={{ marginLeft: `${index * 10}%`, width: `${Math.max(28, milestone.progress / 1.4)}%` }}
-              >
-                {milestone.name}
-              </div>
+    </div>
+  );
+}
+
+function TaskView({
+  tasks,
+  form,
+  setForm,
+  onCreate,
+  onMove,
+}: {
+  tasks: Task[];
+  form: typeof emptyTask;
+  setForm: React.Dispatch<React.SetStateAction<typeof emptyTask>>;
+  onCreate: (event: React.FormEvent<HTMLFormElement>) => void;
+  onMove: (id: string, status: TaskStatus) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <form onSubmit={onCreate} className="rounded-lg border border-slate-200 p-4">
+        <h3 className="text-base font-semibold">Thêm task</h3>
+        <div className="mt-3 grid gap-3 md:grid-cols-[1fr_180px_160px_140px] md:items-end">
+          <TextInput label="Tên task" value={form.title} onChange={(value) => setForm((current) => ({ ...current, title: value }))} placeholder="Kiểm tra dữ liệu..." />
+          <TextInput label="Owner" value={form.owner} onChange={(value) => setForm((current) => ({ ...current, owner: value }))} />
+          <TextInput label="Due date" type="date" value={form.dueDate} onChange={(value) => setForm((current) => ({ ...current, dueDate: value }))} />
+          <label className="block text-xs font-medium text-slate-600">
+            Ưu tiên
+            <select
+              value={form.priority}
+              onChange={(event) => setForm((current) => ({ ...current, priority: event.target.value as Priority }))}
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            >
+              {["High", "Medium", "Low"].map((priority) => <option key={priority}>{priority}</option>)}
+            </select>
+          </label>
+        </div>
+        <button className="mt-3 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Thêm task</button>
+      </form>
+
+      <div className="grid gap-3 xl:grid-cols-4">
+        {taskColumns.map((column) => (
+          <div key={column.key} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <h3 className="text-sm font-semibold text-slate-900">{column.label}</h3>
+            <div className="mt-3 space-y-2">
+              {tasks.filter((task) => task.status === column.key).map((task) => (
+                <article key={task.id} className="rounded-md border border-slate-200 bg-white p-3">
+                  <p className="text-sm font-semibold text-slate-950">{task.title}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Pill className="border-slate-200 bg-white text-slate-700">{task.owner}</Pill>
+                    <Pill className={task.priority === "High" ? "border-amber-200 bg-amber-50 text-amber-800" : "border-slate-200 bg-white text-slate-700"}>{task.priority}</Pill>
+                    <Pill className="border-slate-200 bg-white text-slate-700">{task.dueDate || "No due"}</Pill>
+                  </div>
+                  <select
+                    value={task.status}
+                    onChange={(event) => onMove(task.id, event.target.value as TaskStatus)}
+                    className="mt-3 w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs font-semibold"
+                  >
+                    {taskColumns.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
+                  </select>
+                </article>
+              ))}
             </div>
           </div>
         ))}
@@ -414,83 +941,60 @@ function Timeline({ project }: { project: Project }) {
   );
 }
 
-function Tasks({ project }: { project: Project }) {
+function AuditLogView({ logs }: { logs: AuditLog[] }) {
   return (
-    <div id="tasks" className="grid gap-3 xl:grid-cols-4">
-      {taskColumns.map((status) => (
-        <div key={status} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <h3 className="text-sm font-semibold text-slate-900">{status}</h3>
-          <div className="mt-3 space-y-2">
-            {project.tasks.filter((task) => task.status === status).map((task) => (
-              <article key={task.title} className="rounded-md border border-slate-200 bg-white p-3">
-                <p className="text-sm font-semibold text-slate-950">{task.title}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Pill>{task.owner}</Pill>
-                  <Pill tone={task.priority === "Cao" ? "risk" : "neutral"}>{task.priority}</Pill>
-                  <Pill>{task.due}</Pill>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function CustomerWork({ project }: { project: Project }) {
-  return (
-    <div id="customer-work" className="grid gap-4 lg:grid-cols-2">
-      <div className="rounded-lg border border-slate-200 p-4">
-        <h3 className="text-base font-semibold">Khảo sát và tập huấn</h3>
-        <div className="mt-3 space-y-3 text-sm">
-          <Info label="Form khảo sát" value="Hiện trạng triển khai, dữ liệu, quy trình, báo cáo" />
-          <Info label="Lịch tập huấn" value="2 phiên đang chờ xác nhận danh sách tham dự" />
-          <Info label="Feedback" value="Điểm hài lòng demo: 4.3/5" />
-        </div>
-      </div>
-      <div className="rounded-lg border border-slate-200 p-4">
-        <h3 className="text-base font-semibold">Ticket hỗ trợ vận hành</h3>
-        <div className="mt-3 space-y-2">
-          {project.tickets.map((ticket) => (
-            <div key={ticket.code} className="rounded-md border border-slate-200 p-3 text-sm">
-              <div className="flex items-start justify-between gap-3">
-                <p className="font-semibold text-slate-950">{ticket.code}</p>
-                <Pill tone={ticket.severity === "P1" ? "risk" : "neutral"}>{ticket.severity}</Pill>
-              </div>
-              <p className="mt-1 text-slate-700">{ticket.title}</p>
-              <p className="mt-2 text-xs text-slate-500">SLA: {ticket.sla} | {ticket.status}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Acceptance({ project }: { project: Project }) {
-  const checks = [
-    ["Kế hoạch tổng thể đã xác nhận", "Đạt"],
-    ["Cấu hình module trong scope", project.progress > 70 ? "Đạt" : "Đang kiểm tra"],
-    ["Biên bản tập huấn", "Đang kiểm tra"],
-    ["UAT bắt buộc", project.status === "Đúng tiến độ" ? "Đạt một phần" : "Chưa đạt"],
-    ["Ticket nghiêm trọng", project.tickets.some((ticket) => ticket.severity === "P1") ? "Cần xử lý" : "Đạt"],
-    ["Hồ sơ nghiệm thu", "Chưa đến"],
-  ];
-
-  return (
-    <div id="acceptance" className="rounded-lg border border-slate-200">
+    <div className="rounded-lg border border-slate-200">
       <div className="border-b border-slate-200 p-4">
-        <h3 className="text-base font-semibold">Checklist nghiệm thu sơ bộ</h3>
-        <p className="mt-1 text-sm text-slate-600">V0.1.0 hiển thị checklist demo. V1.0.0 sẽ có xác nhận, file bằng chứng và khóa điều kiện blocking.</p>
+        <h3 className="text-base font-semibold">Audit log</h3>
+        <p className="mt-1 text-sm text-slate-600">Ghi nhận thao tác tạo/cập nhật chính trong MVP. V0.5.0 lưu local; khi bật Supabase sẽ chuyển sang bảng activity_logs.</p>
       </div>
       <div className="divide-y divide-slate-100">
-        {checks.map(([label, status]) => (
-          <div key={label} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
-            <span className="font-medium text-slate-800">{label}</span>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">{status}</span>
+        {logs.map((log) => (
+          <div key={log.id} className="grid gap-2 px-4 py-3 text-sm md:grid-cols-[150px_110px_120px_1fr]">
+            <span className="text-slate-500">{log.at}</span>
+            <span className="font-semibold text-slate-900">{log.actor}</span>
+            <span className="text-slate-700">{log.action}</span>
+            <span className="text-slate-600">{log.entity}: {log.detail}</span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function SupabaseReadiness() {
+  const rows = [
+    ["Auth", "Chuẩn bị role Admin/PM/Member/Viewer", "Cần NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY"],
+    ["Database", "Có schema SQL trong source", "Chạy file supabase/schema.sql trên Supabase SQL Editor"],
+    ["Storage", "Thiết kế bảng attachments", "V0.5.0 chưa upload file thật"],
+    ["RLS", "Định hướng theo organization/project membership", "Bật trong V0.5.x khi có tài khoản thật"],
+    ["Audit", "Có audit log local trong UI", "Chuyển sang activity_logs khi bật Supabase"],
+  ];
+  return (
+    <div className="rounded-lg border border-slate-200">
+      <div className="border-b border-slate-200 p-4">
+        <h3 className="text-base font-semibold">Supabase readiness</h3>
+        <p className="mt-1 text-sm text-slate-600">V0.5.0 bám kế hoạch Core MVP: cấu trúc dữ liệu đã sẵn sàng, nhưng chưa gắn khóa Supabase thật để tránh lộ cấu hình.</p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-left text-sm">
+          <thead className="bg-slate-50 text-slate-600">
+            <tr>
+              {["Mảng", "Đã chuẩn bị", "Việc cần làm khi cấu hình thật"].map((head) => (
+                <th key={head} className="border-b border-slate-200 px-3 py-3 font-semibold">{head}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(([area, ready, next]) => (
+              <tr key={area} className="border-b border-slate-100">
+                <td className="px-3 py-3 font-semibold text-slate-950">{area}</td>
+                <td className="px-3 py-3 text-slate-700">{ready}</td>
+                <td className="px-3 py-3 text-slate-600">{next}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
