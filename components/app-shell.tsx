@@ -4,21 +4,26 @@ import { useState } from "react";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { cn } from "@/lib/utils";
+import type { WorkspaceProject } from "@/lib/projects";
+import { ProjectProvider } from "@/components/project-context";
 
 export function AppShell({
   children,
   demoMode,
   userEmail,
+  projects,
 }: {
   children: React.ReactNode;
   demoMode: boolean;
   userEmail?: string | null;
+  projects: WorkspaceProject[];
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen">
+    <ProjectProvider projects={projects}>
+      <div className="min-h-screen">
       <Sidebar
         collapsed={collapsed}
         mobileOpen={mobileOpen}
@@ -41,9 +46,10 @@ export function AppShell({
         </main>
         <footer className="mx-auto flex w-full max-w-[1600px] flex-col gap-1 border-t border-white/[0.05] px-4 py-5 text-[10px] uppercase tracking-[0.14em] text-slate-700 md:flex-row md:items-center md:justify-between md:px-6">
           <span>© 2026 HuyVo. All rights reserved.</span>
-          <span>ASC-Working • V0.1.0 • Foundation</span>
+          <span>ASC-Working • V0.2.0 • Project Workspace</span>
         </footer>
       </div>
     </div>
+    </ProjectProvider>
   );
 }
