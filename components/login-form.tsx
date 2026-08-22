@@ -25,19 +25,26 @@ export function LoginForm({ configured }: { configured: boolean }) {
     }
 
     setLoading(true);
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    setLoading(false);
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (authError) {
+        setLoading(false);
+        setError("Đăng nhập không thành công. Kiểm tra email hoặc mật khẩu.");
+        return;
+      }
 
-    if (authError) {
-      setError("Đăng nhập không thành công. Kiểm tra email hoặc mật khẩu.");
-      return;
+      // Keep loading=true until the login page unmounts after navigation.
+      // This prevents the spinner from stopping while Next.js/Supabase is still
+      // completing the authenticated dashboard transition.
+      router.replace("/dashboard");
+      router.refresh();
+    } catch {
+      setLoading(false);
+      setError("Không kết nối được máy chủ đăng nhập. Vui lòng thử lại.");
     }
-
-    router.push("/dashboard");
-    router.refresh();
   }
 
   return (
@@ -106,7 +113,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
           className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-cyan-300 text-sm font-semibold text-[#07111f] transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {loading ? <LoaderCircle className="size-4 animate-spin" /> : null}
-          Đăng nhập
+          {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           {!loading ? <ArrowRight className="size-4" /> : null}
         </button>
       </form>
@@ -114,7 +121,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
       {!configured ? (
         <div className="mt-6 border-t border-white/[0.06] pt-5">
           <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300/70">
-            V0.3.0 Demo Mode
+            V0.4.0 Demo Mode
           </div>
           <p className="mb-4 text-xs leading-5 text-slate-500">
             Chưa có biến môi trường Supabase. Bạn vẫn có thể xem toàn bộ Dashboard và giao diện workspace.

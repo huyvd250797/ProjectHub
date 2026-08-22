@@ -8,6 +8,7 @@ import {
   FileSpreadsheet,
   GitBranch,
   Layers3,
+  Network,
   ShieldCheck,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
@@ -23,8 +24,8 @@ export default function SettingsPage() {
     { label: "Vercel deployment", text: "Output Directory để Default", ok: true, icon: GitBranch },
     { label: "Supabase connection", text: supabaseReady ? "Environment đã nhận" : "Đang chạy Demo Mode", ok: supabaseReady, icon: Database },
     { label: "Multi-project schema", text: "projects + project_members + project_id", ok: true, icon: Layers3 },
-    { label: "Auth / RLS", text: "SQL migration đã có; cần chạy trên Supabase project", ok: supabaseReady, icon: ShieldCheck },
-    { label: "Import POC", text: "Dry-run workbook, không ghi dữ liệu", ok: true, icon: FileSpreadsheet },
+    { label: "Auth / RLS", text: "Project membership bảo vệ dữ liệu theo project", ok: supabaseReady, icon: ShieldCheck },
+    { label: "PLHĐ Unified View", text: "Overview + virtualized detail tree", ok: true, icon: Network },
   ];
 
   return (
@@ -32,7 +33,7 @@ export default function SettingsPage() {
       <PageHeader
         eyebrow="System Foundation"
         title="Thiết lập Project Workspace"
-        description="ASC WORKING là Project Workspace đa dự án. V0.3.0 bổ sung Dashboard đọc dữ liệu Supabase thật theo project đang chọn; EPU chỉ là project đầu tiên."
+        description="ASC WORKING là Project Workspace đa dự án. V0.4.0 bổ sung PLHĐ Unified View đọc dữ liệu thật theo project đang chọn, đồng thời hoàn thiện UX Project Switcher và đăng nhập."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -71,7 +72,7 @@ export default function SettingsPage() {
           <div className="mt-1 text-sm font-semibold text-slate-200">Data Import POC</div>
           <div className="mt-1 text-xs leading-5 text-slate-600">Upload workbook dự án, kiểm tra cấu trúc sheet, record count, mapping và cảnh báo dữ liệu trước khi Apply Import.</div>
         </div>
-        <div className="md:ml-auto flex items-center gap-2 text-xs font-medium text-cyan-200/80">
+        <div className="flex items-center gap-2 text-xs font-medium text-cyan-200/80 md:ml-auto">
           Mở Import POC <ArrowRight className="size-4" />
         </div>
       </Link>
@@ -80,11 +81,11 @@ export default function SettingsPage() {
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Release</div>
         <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-lg font-semibold text-white">ASC WORKING V0.3.0</div>
-            <div className="mt-1 text-xs text-slate-500">Dashboard / Real Project Data</div>
+            <div className="text-lg font-semibold text-white">ASC WORKING V0.4.0</div>
+            <div className="mt-1 text-xs text-slate-500">PLHĐ Unified View</div>
           </div>
           <span className="w-fit rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-200">
-            Live Project Dashboard
+            Contract Intelligence
           </span>
         </div>
       </div>
