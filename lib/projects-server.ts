@@ -12,7 +12,7 @@ export async function getWorkspaceProjects(
       .select("id, code, slug, name, organization_name, status, created_at")
       .order("created_at", { ascending: true });
 
-    // V0.2.0 stays deployable before the migration is applied.
+    // Keep the workspace deployable before database migrations are applied.
     if (error || !data?.length) return demoProjects;
 
     return data.map((project) => ({

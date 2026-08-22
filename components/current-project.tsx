@@ -11,8 +11,8 @@ export function CurrentProjectDashboardDescription() {
   const { selectedProject } = useProject();
   return (
     <>
-      Project context hiện tại: <span className="font-medium text-slate-300">{selectedProject.code}</span>
-      {selectedProject.organizationName ? <> — {selectedProject.organizationName}</> : null}. Ở V0.2.0 các KPI trên Dashboard vẫn là seed UX từ EPU; V0.3.0 sẽ query dữ liệu thật theo selected project_id, nên cùng thiết kế này sẽ dùng được cho mọi dự án.
+      Project đang chọn: <span className="font-medium text-slate-300">{selectedProject.code}</span>
+      {selectedProject.organizationName ? <> — {selectedProject.organizationName}</> : null}. Dashboard V0.3.0 đọc dữ liệu Supabase thật theo selected project_id.
     </>
   );
 }
@@ -21,7 +21,7 @@ export function CurrentProjectContractDescription() {
   const { selectedProject } = useProject();
   return (
     <>
-      Phạm vi PLHĐ của dự án <span className="font-medium text-slate-300">{selectedProject.code}</span>. V0.2.0 đã chuẩn bị schema multi-project và Import POC; dữ liệu grid hiện vẫn là seed UX cho tới bước Apply Import ở phiên bản sau.
+      Phạm vi PLHĐ của dự án <span className="font-medium text-slate-300">{selectedProject.code}</span>. Cùng một màn hình sẽ dùng cho mọi project trong ASC WORKING.
     </>
   );
 }

@@ -3,10 +3,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Project Hub | Project Workspace",
-    template: "%s | Project Hub",
+    default: "ASC WORKING | Project Workspace",
+    template: "%s | ASC WORKING",
   },
-  description: "Multi-project workspace for software implementation projects.",
+  description: "ASC WORKING — multi-project workspace for software implementation projects.",
   icons: {
     icon: "/branding/hv-logo.jpg",
     shortcut: "/branding/hv-logo.jpg",

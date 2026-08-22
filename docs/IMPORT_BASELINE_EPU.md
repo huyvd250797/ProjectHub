@@ -1,6 +1,6 @@
 # EPU workbook — V0.2.0 dry-run baseline
 
-Source template used for the first Project Hub project: `[EPU] _ ASC-Working.xlsx`.
+Source template used for the first ASC WORKING project: `[EPU] _ ASC-Working.xlsx`.
 
 This document records counts only. It contains no remote/server passwords or secrets.
 

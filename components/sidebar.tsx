@@ -68,11 +68,6 @@ export function Sidebar({
                 ) : null}
                 <Icon className={cn("size-[18px] shrink-0", active && "text-cyan-300")} />
                 <span className={cn("truncate", collapsed && "hidden")}>{item.label}</span>
-                {item.href === "/issues" && !collapsed ? (
-                  <span className="ml-auto rounded-md border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-slate-500">
-                    313
-                  </span>
-                ) : null}
               </Link>
             );
           })}
@@ -113,7 +108,7 @@ export function Sidebar({
             <div className={cn("min-w-0", collapsed && "hidden")}>
               <div className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-600">Project hiện tại</div>
               <div className="mt-1 truncate text-[11px] font-semibold text-slate-300">{selectedProject.code} • {selectedProject.organizationName || selectedProject.name}</div>
-              <div className="mt-1 text-[9px] uppercase tracking-[0.15em] text-slate-700">V0.2.0 • Multi-project ready</div>
+              <div className="mt-1 text-[9px] uppercase tracking-[0.15em] text-slate-700">V0.3.0 • Real Project Data</div>
             </div>
           </div>
         </div>

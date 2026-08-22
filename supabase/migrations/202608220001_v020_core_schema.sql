@@ -1,4 +1,4 @@
--- Project Hub V0.2.0 — Data Model + Import POC
+-- ASC WORKING V0.2.0 — Data Model + Import POC
 -- Multi-project first: every business entity is scoped by project_id.
 
 create extension if not exists pgcrypto;

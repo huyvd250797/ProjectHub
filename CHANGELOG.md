@@ -1,31 +1,36 @@
 # Changelog
 
+## V0.3.0 — Dashboard / Real Project Data
+
+### Branding
+- Rename application from PROJECT HUB / Project Hub to **ASC WORKING**.
+- Keep `Project Workspace` as the product/workspace description.
+- EPU remains a project, never the workspace identity.
+- Keep the exact HV logo/image already supplied by the user for app logo and browser icon.
+
+### Dashboard
+- Replaced Dashboard seed/mock flow with project-scoped API loading when Supabase is configured.
+- Added `/api/dashboard?projectId=`.
+- Added `get_project_dashboard(uuid)` Supabase RPC for server-side aggregation.
+- Project Overview, Master Plan health, Stage progress.
+- ISSUE status and customer handover KPI.
+- Needs Attention panel.
+- Contract Pulse.
+- Department ranking and ASC member workload.
+- Project switch immediately reloads Dashboard for the selected project.
+- Added loading, empty-data and migration-required states.
+
+### Multi-project
+- Dashboard queries are isolated by `project_id`.
+- Updated localStorage key to `asc-working:selected-project-id` with one-time migration from the old Project Hub key.
+- Removed hard-coded ISSUE count from Sidebar because it was EPU-specific.
+
+### Database
+- Added `supabase/migrations/202608220002_v030_dashboard_rpc.sql`.
+
 ## V0.2.0 — Data Model + Import POC
-
-### Product identity
-- Project Hub is a **Project Workspace**, not an EPU workspace.
-- EPU is the first/current project only.
-- Added project context and project switcher foundation for future projects.
-- Replaced the old generated ASC mark with the exact HV logo supplied by the user.
-- The same supplied image is used as the app/browser icon.
-
-### Data model
-- Added multi-project PostgreSQL schema with `project_id` on business data.
-- Added `projects`, `project_members`, `profiles`, `departments`, `people`, `project_stages`, `status_catalog`, `contract_items`, `contract_detail_items`, `release_versions`, `issues`, `issue_history`, `remote_resources`, `remote_resource_secrets`, `import_batches`, and `import_messages`.
-- Added Supabase RLS membership/role foundation.
-- Added EPU seed as project #1.
-
-### Import POC
-- Added `/settings/import`.
-- Added server-side `.xlsx` dry-run using SheetJS (`xlsx`) and `ArrayBuffer` directly.
-- Checks required sheets, counts, mapping, missing fields, module mismatches, duplicate Jira links, and selected-project mismatch.
-- Password/token/secret columns from LinkRemoteServer are explicitly excluded from the import payload.
-- V0.2.0 does not Apply Import to business tables yet.
-
-### Deployability
-- Keeps Demo Mode when Supabase is not configured.
-- Does not use `output: "export"` and does not require an `out` directory.
-- Avoids the ExcelJS/Node generic Buffer type issue by not using ExcelJS in the POC parser.
+- Multi-project schema and RLS foundation.
+- Import dry-run POC.
 
 ## V0.1.0 — Foundation / Deployable Skeleton
-- Initial professional technology UI and deployable Next.js foundation.
+- Initial deployable Next.js foundation.

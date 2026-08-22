@@ -1,97 +1,85 @@
-# Project Hub — V0.2.0
+# ASC WORKING — V0.3.0
 
-**Project Workspace • Data Model + Import POC**
+**Dashboard / Real Project Data**  
+Ứng dụng: **ASC WORKING**  
+Loại workspace: **Project Workspace đa dự án**.
 
-Project Hub is the application/workspace. **EPU is only the first/current project**. Future projects reuse the same UI and database tables; data is isolated by `project_id` + Supabase RLS.
+> EPU là project đầu tiên đang sử dụng hệ thống, không phải tên workspace. Khi có Project B/C..., cùng UI Dashboard/PLHĐ/ISSUE/Phòng ban/Remote Server sẽ đọc dữ liệu theo `project_id` của project đang chọn.
 
 ## Version history
 - ✅ V0.1.0 — Foundation / Deployable Skeleton
-- ✅ **V0.2.0 — Data Model + Import POC**
-- ⏭️ V0.3.0 — Dashboard connected to database
+- ✅ V0.2.0 — Data Model + Import POC
+- ✅ V0.3.0 — Dashboard / Real Project Data
 
-## V0.2.0 highlights
-- Exact HV image supplied by the user is now the main app logo and browser/app icon.
-- Project selector foundation in the topbar.
-- Multi-project PostgreSQL schema.
-- Supabase profiles + project memberships + role foundation.
-- EPU seed as project #1.
-- Import Dry-run at `/settings/import`.
-- Workbook sheet mapping and data-quality report.
-- Remote password/token/secret exclusion.
-- Demo Mode remains available when Supabase env is absent.
+## V0.3.0 có gì mới?
+- Đổi branding **PROJECT HUB → ASC WORKING**.
+- Giữ nguyên logo/icon HV đã cung cấp.
+- Project Switcher tiếp tục là nền multi-project.
+- Dashboard bỏ mock khi Supabase đã cấu hình.
+- API server: `GET /api/dashboard?projectId=<uuid>`.
+- RPC Supabase aggregate theo project: `get_project_dashboard`.
+- Project Overview: HĐ, ngày ký, start/end, status, contract value.
+- Master Plan: tổng ngày, đã chạy, còn lại, time progress, health.
+- Project Stage progress.
+- ISSUE KPI / customer handover KPI.
+- Needs Attention: overdue, missing assignee/module/department, near due.
+- Contract Pulse.
+- Department ranking.
+- ASC member workload.
+- Loading, empty database và migration-required state.
 
-## Tech
-- Next.js 16.3 App Router
-- React 19
-- TypeScript
-- Tailwind CSS 4
-- Supabase SSR/Auth/PostgreSQL/RLS
-- SheetJS `xlsx` for V0.2.0 workbook dry-run
-- Vercel
+## Supabase migration
+Chạy V0.2.0 trước:
 
-## Run local
+```text
+supabase/migrations/202608220001_v020_core_schema.sql
+```
+
+Sau đó chạy V0.3.0:
+
+```text
+supabase/migrations/202608220002_v030_dashboard_rpc.sql
+```
+
+Chi tiết: `docs/DASHBOARD_V030_SETUP.md`.
+
+## Chạy local
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+## Build kiểm tra
 
-Without Supabase variables, `/login` provides Demo Workspace access.
+```bash
+npm run typecheck
+npm run lint
+npm run build
+```
 
-## Supabase
-See `docs/SUPABASE_SETUP.md`.
+## Deploy Vercel
+- Framework Preset: Next.js
+- Build Command: Default
+- Output Directory: **Default / để trống**
+- Không cấu hình `out`
 
-Core files:
-- `supabase/migrations/202608220001_v020_core_schema.sql`
-- `supabase/seed.sql`
-- `supabase/assign-first-user.sql`
+Environment Variables:
 
-## Import POC
-1. Select target project in the topbar.
-2. Open **Thiết lập → Data Import POC**.
-3. Upload the project `.xlsx` workbook.
-4. Run **Chạy kiểm tra dữ liệu**.
-5. Review sheet mapping, counts and warnings.
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+```
 
-V0.2.0 is dry-run only. It does not write workbook rows to business tables.
-
-## Vercel deploy
-1. Push this folder to GitHub.
-2. Vercel → Add New → Project → import repository.
-3. Framework Preset: Next.js.
-4. Build Command: Default.
-5. Install Command: Default.
-6. **Output Directory: Default/blank — do not set `out`.**
-7. Add Supabase environment variables.
-8. Deploy.
+Nếu chưa cấu hình Supabase, app chạy Demo Mode để xem UI. Khi Supabase đã cấu hình, Dashboard chỉ đọc dữ liệu thật; nếu project chưa có ISSUE/PLHĐ thì KPI hiển thị 0 thay vì dùng mock.
 
 ## Security
-- Do not commit `.env.local`.
-- Import POC does not return Remote Server passwords/tokens/secrets.
-- `remote_resource_secrets` is separated from metadata and has no normal browser select policy.
-- Encryption/reveal/copy/audit will be completed in the security roadmap version.
+- Dashboard API kiểm tra user đăng nhập.
+- RPC kiểm tra `is_project_member(project_id)` trước khi aggregate.
+- Không tải toàn bộ ISSUE về browser để tự đếm.
+- Credential Remote Server vẫn chưa đưa vào Dashboard/API.
 
-## Project architecture
-
-```text
-Project Hub (workspace)
-└─ projects
-   ├─ EPU (current project)
-   ├─ Future Project B
-   └─ Future Project C
-
-Each project
-├─ project_members
-├─ project_stages
-├─ departments
-├─ people
-├─ contract_items
-│  └─ contract_detail_items
-├─ issues
-├─ release_versions
-└─ remote_resources
-```
+## Tiếp theo
+**V0.4.0 — PLHĐ Unified View**: hoàn thiện PLHĐ tổng quan + tree chi tiết, virtualization, mapping và drill-down theo project.
 
 © 2026 HuyVo. All rights reserved.

@@ -27,7 +27,7 @@ export default function LoginPage() {
               </span>
             </h2>
             <p className="mt-6 max-w-xl text-sm leading-7 text-slate-500">
-              Project Hub là workspace dùng chung để quản lý nhiều dự án. EPU là dự án đầu tiên hiện tại; các dự án sau sẽ dùng cùng cấu trúc Dashboard, PLHĐ, Phòng ban, ISSUE và Remote Server với dữ liệu được tách theo project_id.
+              ASC WORKING là workspace dùng chung để quản lý nhiều dự án. EPU là dự án đầu tiên hiện tại; các dự án sau sẽ dùng cùng cấu trúc Dashboard, PLHĐ, Phòng ban, ISSUE và Remote Server với dữ liệu được tách theo project_id.
             </p>
 
             <div className="mt-10 grid grid-cols-2 gap-3">
@@ -49,7 +49,7 @@ export default function LoginPage() {
             </div>
           </div>
           <div className="text-[9px] uppercase tracking-[0.2em] text-slate-700">
-            © 2026 HuyVo • Project Hub V0.2.0
+            © 2026 HuyVo • ASC WORKING V0.3.0
           </div>
         </section>
 

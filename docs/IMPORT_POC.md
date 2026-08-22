@@ -3,7 +3,7 @@
 Route: `/settings/import`
 
 ## What it does
-The user selects the target project in Project Hub, uploads a `.xlsx` workbook, and runs a dry-run. The endpoint:
+The user selects the target project in ASC WORKING, uploads a `.xlsx` workbook, and runs a dry-run. The endpoint:
 - parses the workbook in memory;
 - validates expected project sheets;
 - profiles row counts;
