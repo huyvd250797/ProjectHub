@@ -3,10 +3,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "ASC-Working | EPU",
+    default: "ASC-Working | Project Workspace",
     template: "%s | ASC-Working",
   },
-  description: "Project workspace for ASC software implementation projects.",
+  description: "Multi-project workspace for ASC software implementation projects.",
+  applicationName: "ASC-Working",
 };
 
 export default function RootLayout({
