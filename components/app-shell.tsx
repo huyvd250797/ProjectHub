@@ -1,0 +1,49 @@
+"use client";
+
+import { useState } from "react";
+import { Sidebar } from "@/components/sidebar";
+import { Topbar } from "@/components/topbar";
+import { cn } from "@/lib/utils";
+
+export function AppShell({
+  children,
+  demoMode,
+  userEmail,
+}: {
+  children: React.ReactNode;
+  demoMode: boolean;
+  userEmail?: string | null;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  return (
+    <div className="min-h-screen">
+      <Sidebar
+        collapsed={collapsed}
+        mobileOpen={mobileOpen}
+        onToggle={() => setCollapsed((value) => !value)}
+        onCloseMobile={() => setMobileOpen(false)}
+      />
+      <div
+        className={cn(
+          "min-h-screen transition-[padding] duration-200",
+          collapsed ? "lg:pl-[76px]" : "lg:pl-[248px]",
+        )}
+      >
+        <Topbar
+          demoMode={demoMode}
+          userEmail={userEmail}
+          onOpenMobile={() => setMobileOpen(true)}
+        />
+        <main className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-6 md:py-7">
+          {children}
+        </main>
+        <footer className="mx-auto flex w-full max-w-[1600px] flex-col gap-1 border-t border-white/[0.05] px-4 py-5 text-[10px] uppercase tracking-[0.14em] text-slate-700 md:flex-row md:items-center md:justify-between md:px-6">
+          <span>© 2026 HuyVo. All rights reserved.</span>
+          <span>ASC-Working • V0.1.0 • Foundation</span>
+        </footer>
+      </div>
+    </div>
+  );
+}
