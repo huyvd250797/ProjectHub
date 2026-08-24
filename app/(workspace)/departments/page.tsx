@@ -22,7 +22,7 @@ export default async function DepartmentsPage({
         actions={
           <div className="flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 py-2 text-[10px] text-slate-500">
             <Building2 className="size-3.5 text-emerald-300/60" />
-            Real Project Data • V0.7.0
+            Real Project Data • V0.8.0
           </div>
         }
       />

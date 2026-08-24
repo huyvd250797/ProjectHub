@@ -7,6 +7,6 @@
 - ✅ V0.5.0 — Department Intelligence
 - ✅ V0.6.0 — ISSUE Core
 - ✅ V0.7.0 — ISSUE Productivity
-- ⏭️ V0.8.0 — Remote Server Security
-- V0.9.0 — Hardening + UAT
+- ✅ V0.8.0 — Remote Server Security
+- ⏭️ V0.9.0 — Hardening + UAT
 - V1.0.0 — Production Release

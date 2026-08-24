@@ -9,7 +9,7 @@ import {
   FileSpreadsheet,
   GitBranch,
   Layers3,
-  ListTodo,
+  ServerCog,
   Network,
   ShieldCheck,
 } from "lucide-react";
@@ -29,7 +29,7 @@ export default function SettingsPage() {
     { label: "Auth / RLS", text: "Project membership bảo vệ dữ liệu theo project", ok: supabaseReady, icon: ShieldCheck },
     { label: "PLHĐ Unified View", text: "Overview + virtualized detail tree", ok: true, icon: Network },
     { label: "Department Intelligence", text: "KPI + Stakeholder + Module + drill-down", ok: true, icon: Building2 },
-    { label: "ISSUE Productivity", text: "Bulk update + Saved Views + Column Preferences + Export", ok: true, icon: ListTodo },
+    { label: "Remote Server Security", text: "AES-256-GCM + Reveal/Copy permission + Audit", ok: true, icon: ServerCog },
   ];
 
   return (
@@ -37,7 +37,7 @@ export default function SettingsPage() {
       <PageHeader
         eyebrow="System Foundation"
         title="Thiết lập Project Workspace"
-        description="ASC WORKING là Project Workspace đa dự án. V0.7.0 nâng ISSUE thành workspace thao tác nhanh: bulk update, Saved Views, cấu hình cột cá nhân, Quick Add, nhân bản và export theo project."
+        description="ASC WORKING là Project Workspace đa dự án. V0.8.0 đưa Remote Server thành Resource Vault bảo mật: metadata theo project, credential mã hóa server-side, Reveal/Copy theo quyền và audit."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -85,11 +85,11 @@ export default function SettingsPage() {
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Release</div>
         <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-lg font-semibold text-white">ASC WORKING V0.7.0</div>
-            <div className="mt-1 text-xs text-slate-500">ISSUE Productivity</div>
+            <div className="text-lg font-semibold text-white">ASC WORKING V0.8.0</div>
+            <div className="mt-1 text-xs text-slate-500">Remote Server Security</div>
           </div>
           <span className="w-fit rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-200">
-            Productivity Layer
+            Security Layer
           </span>
         </div>
       </div>

@@ -1,5 +1,15 @@
 # Changelog
 
+## V0.8.0 — Remote Server Security
+
+- Real project-scoped Resource Vault.
+- AES-256-GCM server-only encryption for credentials.
+- Reveal/Copy authorization and no-store responses.
+- Resource security audit logs.
+- PM/Admin CRUD and Member per-resource grant foundation.
+- Search/filter + secure resource drawer.
+- Server-only Supabase service client.
+
 ## V0.7.0 — ISSUE Productivity
 
 ### Added

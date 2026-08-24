@@ -101,3 +101,19 @@ textarea {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(46, 211, 255, 0.55), transparent);
 }
+
+
+
+.field {
+  height: 2.5rem; width: 100%; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,.08);
+  background: rgba(0,0,0,.1); padding: 0 .75rem; font-size: .75rem; color: rgb(226 232 240); outline: none;
+}
+.field::placeholder { color: rgb(51 65 85); }
+.field:focus { border-color: rgba(103,232,249,.25); box-shadow: 0 0 0 2px rgba(103,232,249,.04); }
+.secure-btn {
+  display: inline-flex; height: 2.25rem; align-items: center; gap: .5rem; border-radius: .75rem;
+  border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.025); padding: 0 .75rem;
+  font-size: .75rem; color: rgb(148 163 184); transition: 160ms ease;
+}
+.secure-btn:hover { border-color: rgba(103,232,249,.15); background: rgba(103,232,249,.04); color: rgb(207 250 254); }
+.secure-btn:disabled { cursor: not-allowed; opacity: .35; }
