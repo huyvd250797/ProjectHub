@@ -82,6 +82,12 @@ export async function PATCH(request: NextRequest) {
     assigneeId: Object.prototype.hasOwnProperty.call(parsed.patch, "assignee_person_id") ? parsed.patch.assignee_person_id as string | null : undefined,
   };
   const names = await resolveIssueRelationNames(supabase, projectId, relationFields);
+  if (relationFields.assigneeId && !names.assigneeValid) {
+    return NextResponse.json(
+      { ok: false, code: "ASSIGNEE_NOT_PROJECT_MEMBER", message: "Người phụ trách phải là Thành viên của Project." } satisfies IssueBulkMutationResponse,
+      { status: 400 },
+    );
+  }
   if (relationFields.moduleId !== undefined) parsed.patch.module_name_raw = names.moduleName;
   if (relationFields.departmentId !== undefined) parsed.patch.department_name_raw = names.departmentName;
   if (relationFields.requesterId !== undefined) parsed.patch.requester_name_raw = names.requesterName;

@@ -174,12 +174,18 @@ export function FloatingSelect({
                       type="button"
                       role="option"
                       aria-selected={active}
-                      onClick={() => { onChange(option.value); closeMenu(); }}
+                      disabled={option.disabled}
+                      onClick={() => {
+                        if (option.disabled) return;
+                        onChange(option.value);
+                        closeMenu();
+                      }}
                       className={cn(
                         "flex w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-left transition",
                         active
                           ? "border-cyan-300/15 bg-cyan-300/[0.08] text-cyan-100"
                           : "border-transparent text-slate-400 hover:bg-white/[0.04] hover:text-slate-100",
+                        option.disabled && "cursor-not-allowed opacity-45 hover:bg-transparent hover:text-slate-400",
                       )}
                     >
                       <span className="min-w-0 flex-1">

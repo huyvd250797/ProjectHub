@@ -373,7 +373,18 @@ export function IssueWorkspace() {
     if (id === "priority") return <FloatingSelect ariaLabel="Ưu tiên" compact disabled={editingDisabled} value={issue.priorityCode} options={currentData.lookups.priorities} onChange={(value) => inlineUpdate(issue, "priorityCode", value)} tone={priorityTone(issue.priorityCode)} />;
     if (id === "module") return <FloatingSelect ariaLabel="Module" compact disabled={editingDisabled} value={issue.moduleId} options={currentData.lookups.modules} onChange={(value) => inlineUpdate(issue, "moduleId", value)} placeholder="Chưa Module" />;
     if (id === "department") return <FloatingSelect ariaLabel="Phòng ban" compact disabled={editingDisabled} value={issue.departmentId} options={currentData.lookups.departments} onChange={(value) => inlineUpdate(issue, "departmentId", value)} placeholder="Chưa phòng ban" />;
-    if (id === "assignee") return <FloatingSelect ariaLabel="Phụ trách" compact disabled={editingDisabled} value={issue.assigneeId} options={currentData.lookups.assignees} onChange={(value) => inlineUpdate(issue, "assigneeId", value)} placeholder="Chưa phụ trách" />;
+    if (id === "assignee") {
+      const currentIsMember = !issue.assigneeId || currentData.lookups.assignees.some((option) => option.value === issue.assigneeId);
+      const assigneeOptions = currentIsMember
+        ? currentData.lookups.assignees
+        : [{
+            value: issue.assigneeId!,
+            label: `${issue.assigneeName ?? "Phụ trách cũ"} • Legacy`,
+            description: "Không còn là thành viên Project — chỉ giữ để hiển thị lịch sử",
+            disabled: true,
+          }, ...currentData.lookups.assignees];
+      return <FloatingSelect ariaLabel="Phụ trách" compact disabled={editingDisabled} value={issue.assigneeId} options={assigneeOptions} onChange={(value) => inlineUpdate(issue, "assigneeId", value)} placeholder="Chưa phụ trách" />;
+    }
     if (id === "dueDate") return <span className={cn("text-[10px]", isOverdue(issue.dueDate) ? "font-semibold text-rose-300/80" : "text-slate-600")}>{formatDate(issue.dueDate)}</span>;
     return issue.jiraUrl ? <a href={issue.jiraUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] px-2 py-1 text-[9px] text-cyan-300/60 hover:border-cyan-300/18 hover:text-cyan-200"><ExternalLink className="size-3" /> Jira</a> : <span className="text-slate-800">—</span>;
   }

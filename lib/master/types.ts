@@ -29,6 +29,7 @@ export type MasterProjectRow = {
 
 export type MasterProjectMember = {
   userId: string;
+  personId: string | null;
   email: string | null;
   displayName: string | null;
   role: ProjectRole;
@@ -48,5 +49,5 @@ export type MasterMembersResponse =
   | { ok: false; code: string; message: string };
 
 export type MasterMemberMutationResponse =
-  | { ok: true; member?: MasterProjectMember; removedUserId?: string }
+  | { ok: true; member?: MasterProjectMember; removedUserId?: string; assigneeSynced?: boolean }
   | { ok: false; code: string; message: string };

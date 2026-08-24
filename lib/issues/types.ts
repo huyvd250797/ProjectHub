@@ -4,6 +4,7 @@ export type SelectOption = {
   value: string;
   label: string;
   description?: string | null;
+  disabled?: boolean;
 };
 
 export type IssueRow = {

@@ -58,12 +58,15 @@ export function normalizeMasterProject(
 export function normalizeMasterMember(
   membershipValue: unknown,
   profileValue?: unknown,
+  personValue?: unknown,
 ): MasterProjectMember {
   const membership = asRecord(membershipValue);
   const profile = asRecord(profileValue);
+  const person = asRecord(personValue);
   const role = String(membership.role ?? "viewer") as ProjectRole;
   return {
     userId: String(membership.user_id),
+    personId: person?.id ? String(person.id) : null,
     email: profile?.email ? String(profile.email) : null,
     displayName: profile?.display_name ? String(profile.display_name) : null,
     role: role === "admin" || role === "pm" || role === "member" ? role : "viewer",

@@ -391,9 +391,11 @@ function MembersPanel({ project, onChanged }: { project: MasterProjectRow; onCha
   const [members, setMembers] = useState<MasterProjectMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<ProjectRole>("member");
-  const [message, setMessage] = useState<string | null>(null);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -402,54 +404,176 @@ function MembersPanel({ project, onChanged }: { project: MasterProjectRow; onCha
       const result = (await response.json()) as MasterMembersResponse;
       if (!response.ok || !result.ok) throw new Error(result.ok ? "Không tải được thành viên." : result.message);
       setMembers(result.members);
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Không tải được thành viên."); }
-    finally { setLoading(false); }
+    } catch (error) {
+      setMessage({ type: "error", text: error instanceof Error ? error.message : "Không tải được thành viên." });
+    } finally {
+      setLoading(false);
+    }
   }, [project.id]);
 
   useEffect(() => { void load(); }, [load]);
 
-  async function addMember(event: FormEvent) {
+  function resetForm() {
+    setFullName("");
+    setEmail("");
+    setRole("member");
+    setEditingUserId(null);
+  }
+
+  function editMember(member: MasterProjectMember) {
+    setFullName(member.displayName ?? "");
+    setEmail(member.email ?? "");
+    setRole(member.role);
+    setEditingUserId(member.userId);
+    setMessage(null);
+  }
+
+  async function saveMember(event: FormEvent) {
     event.preventDefault();
-    setSaving(true); setMessage(null);
+    setSaving(true);
+    setMessage(null);
     try {
-      const response = await fetch(`/api/master/projects/${project.id}/members`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, role }) });
+      const response = await fetch(`/api/master/projects/${project.id}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName, email, role }),
+      });
       const result = await response.json();
       if (!response.ok || !result.ok) throw new Error(result.message || "Không lưu được thành viên.");
-      setEmail(""); await load(); await onChanged();
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Không lưu được thành viên."); }
-    finally { setSaving(false); }
+      setMessage({
+        type: "ok",
+        text: "Đã lưu thành viên và đồng bộ vào danh sách Phụ trách ISSUE.",
+      });
+      resetForm();
+      await load();
+      await onChanged();
+    } catch (error) {
+      setMessage({ type: "error", text: error instanceof Error ? error.message : "Không lưu được thành viên." });
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function removeMember(userId: string) {
-    if (!window.confirm("Gỡ tài khoản này khỏi Project?")) return;
+    if (!window.confirm("Gỡ tài khoản này khỏi Project? Thành viên sẽ không còn xuất hiện trong danh sách Phụ trách mới, nhưng ISSUE lịch sử vẫn giữ tên người đã phụ trách.")) return;
     const response = await fetch(`/api/master/projects/${project.id}/members?userId=${encodeURIComponent(userId)}`, { method: "DELETE" });
     const result = await response.json();
-    if (!response.ok || !result.ok) { setMessage(result.message || "Không gỡ được thành viên."); return; }
-    await load(); await onChanged();
+    if (!response.ok || !result.ok) {
+      setMessage({ type: "error", text: result.message || "Không gỡ được thành viên." });
+      return;
+    }
+    if (editingUserId === userId) resetForm();
+    setMessage({ type: "ok", text: "Đã gỡ thành viên khỏi Project và danh sách Phụ trách." });
+    await load();
+    await onChanged();
   }
 
   return (
     <>
-      <form onSubmit={addMember} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
-        <div className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500"><UserPlus className="size-3.5 text-cyan-300/60" /> Thêm / đổi quyền thành viên</div>
-        <input type="email" required value={email} onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)} placeholder="Email tài khoản Supabase" className="h-10 w-full rounded-xl border border-white/[0.08] bg-black/10 px-3 text-xs text-slate-200 outline-none focus:border-cyan-300/20" />
-        <div className="mt-3"><ThemedSelect ariaLabel="Role" value={role} options={roleOptions} onChange={(value) => setRole(value as ProjectRole)} /></div>
-        <button disabled={saving} className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-cyan-300 text-xs font-semibold text-[#07111f] disabled:opacity-60">{saving ? <LoaderCircle className="size-4 animate-spin" /> : <UserPlus className="size-4" />}{saving ? "Đang lưu..." : "Lưu thành viên"}</button>
-        <div className="mt-3 text-[10px] leading-5 text-slate-600">Tài khoản phải đã tồn tại trong Supabase Auth/profiles. MASTER không cần được thêm vào project_members.</div>
+      <form onSubmit={saveMember} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+              <UserPlus className="size-3.5 text-cyan-300/60" />
+              {editingUserId ? "Cập nhật thành viên" : "Khai báo thành viên Project"}
+            </div>
+            <div className="mt-2 max-w-xl text-[10px] leading-5 text-slate-600">
+              Thành viên Project là nguồn duy nhất của combobox <span className="font-semibold text-cyan-200/70">Phụ trách</span> trong ISSUE.
+              Họ tên dùng để hiển thị; email là tài khoản đăng nhập Supabase.
+            </div>
+          </div>
+          {editingUserId ? (
+            <button type="button" onClick={resetForm} className="shrink-0 rounded-lg border border-white/[0.07] px-2.5 py-1.5 text-[9px] text-slate-500 hover:text-slate-200">
+              Hủy sửa
+            </button>
+          ) : null}
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Họ tên">
+            <input
+              required
+              value={fullName}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setFullName(event.target.value)}
+              placeholder="Ví dụ: Võ Đức Huy"
+              className={inputClass}
+              maxLength={180}
+            />
+          </Field>
+          <Field label="Email đăng nhập">
+            <input
+              type="email"
+              required
+              value={email}
+              disabled={Boolean(editingUserId)}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)}
+              placeholder="user@company.com"
+              className={`${inputClass} disabled:cursor-not-allowed disabled:opacity-55`}
+              maxLength={180}
+            />
+          </Field>
+        </div>
+
+        <div className="mt-3">
+          <Field label="Quyền trong Project">
+            <ThemedSelect ariaLabel="Role" value={role} options={roleOptions} onChange={(value) => setRole(value as ProjectRole)} />
+          </Field>
+        </div>
+
+        <button disabled={saving} className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-cyan-300 text-xs font-semibold text-[#07111f] disabled:opacity-60">
+          {saving ? <LoaderCircle className="size-4 animate-spin" /> : editingUserId ? <Save className="size-4" /> : <UserPlus className="size-4" />}
+          {saving ? "Đang đồng bộ..." : editingUserId ? "Cập nhật thành viên" : "Lưu thành viên"}
+        </button>
+
+        <div className="mt-3 rounded-xl border border-amber-300/10 bg-amber-300/[0.025] px-3 py-2.5 text-[10px] leading-5 text-amber-100/45">
+          Email phải tồn tại trong <span className="font-mono text-amber-200/70">Supabase Authentication</span> để người dùng đăng nhập.
+          Sau khi lưu, hệ thống tự liên kết Project Member ↔ nhân sự ASC ↔ Phụ trách ISSUE. MASTER chỉ cần được thêm vào Project nếu muốn xuất hiện trong combobox Phụ trách.
+        </div>
       </form>
 
-      {message ? <div className="mt-3 rounded-xl border border-rose-300/10 bg-rose-300/[0.035] p-3 text-xs text-rose-200">{message}</div> : null}
+      {message ? (
+        <div className={`mt-3 rounded-xl border px-3 py-3 text-xs ${message.type === "ok" ? "border-emerald-300/10 bg-emerald-300/[0.04] text-emerald-200" : "border-rose-300/10 bg-rose-300/[0.035] text-rose-200"}`}>
+          {message.text}
+        </div>
+      ) : null}
 
       <div className="mt-5 space-y-2">
-        <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-600">Project Members • {members.length}</div>
-        {loading ? <div className="py-12 text-center text-xs text-slate-600"><LoaderCircle className="mx-auto mb-2 size-5 animate-spin" />Đang tải...</div> : members.length ? members.map((member) => (
-          <div key={member.userId} className="flex items-center gap-3 rounded-xl border border-white/[0.055] bg-white/[0.018] p-3">
-            <div className="grid size-9 place-items-center rounded-xl bg-white/[0.04] text-[10px] font-bold text-slate-400">{(member.displayName || member.email || "U").slice(0,2).toUpperCase()}</div>
-            <div className="min-w-0 flex-1"><div className="truncate text-xs font-medium text-slate-300">{member.displayName || member.email || member.userId}</div><div className="mt-1 truncate text-[10px] text-slate-600">{member.email || member.userId}</div></div>
-            <span className="rounded-lg border border-cyan-300/10 bg-cyan-300/[0.045] px-2 py-1 text-[9px] font-semibold uppercase text-cyan-200/75">{member.role}</span>
-            <button onClick={() => void removeMember(member.userId)} type="button" className="grid size-8 place-items-center rounded-lg border border-rose-300/10 text-rose-300/55 hover:bg-rose-300/[0.05] hover:text-rose-200"><X className="size-3.5" /></button>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-600">Project Members • {members.length}</div>
+          <div className="text-[9px] text-slate-700">Nguồn dữ liệu Phụ trách ISSUE</div>
+        </div>
+
+        {loading ? (
+          <div className="py-12 text-center text-xs text-slate-600">
+            <LoaderCircle className="mx-auto mb-2 size-5 animate-spin" />Đang tải...
           </div>
-        )) : <div className="rounded-xl border border-dashed border-white/[0.07] p-8 text-center text-xs text-slate-600">Project chưa có member. MASTER vẫn có toàn quyền truy cập.</div>}
+        ) : members.length ? members.map((member) => (
+          <div key={member.userId} className="flex items-center gap-3 rounded-xl border border-white/[0.055] bg-white/[0.018] p-3">
+            <div className="grid size-9 place-items-center rounded-xl bg-white/[0.04] text-[10px] font-bold text-slate-400">
+              {(member.displayName || member.email || "U").slice(0,2).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-xs font-medium text-slate-300">{member.displayName || member.email || member.userId}</div>
+              <div className="mt-1 truncate text-[10px] text-slate-600">{member.email || member.userId}</div>
+              <div className={`mt-1.5 inline-flex items-center gap-1 text-[9px] ${member.personId ? "text-emerald-300/65" : "text-amber-300/55"}`}>
+                {member.personId ? <CheckCircle2 className="size-3" /> : <LoaderCircle className="size-3" />}
+                {member.personId ? "Đã đồng bộ Phụ trách ISSUE" : "Chưa đồng bộ Phụ trách"}
+              </div>
+            </div>
+            <span className="rounded-lg border border-cyan-300/10 bg-cyan-300/[0.045] px-2 py-1 text-[9px] font-semibold uppercase text-cyan-200/75">{member.role}</span>
+            <button onClick={() => editMember(member)} type="button" className="grid size-8 place-items-center rounded-lg border border-white/[0.07] text-slate-500 hover:bg-white/[0.04] hover:text-cyan-200" title="Sửa thành viên">
+              <Pencil className="size-3.5" />
+            </button>
+            <button onClick={() => void removeMember(member.userId)} type="button" className="grid size-8 place-items-center rounded-lg border border-rose-300/10 text-rose-300/55 hover:bg-rose-300/[0.05] hover:text-rose-200" title="Gỡ khỏi Project">
+              <X className="size-3.5" />
+            </button>
+          </div>
+        )) : (
+          <div className="rounded-xl border border-dashed border-white/[0.07] p-8 text-center text-xs leading-6 text-slate-600">
+            Project chưa có member. Combobox Phụ trách ISSUE sẽ không có người để chọn.<br />
+            MASTER vẫn có quyền toàn hệ thống nhưng không tự xuất hiện trong Phụ trách nếu chưa được thêm vào Project.
+          </div>
+        )}
       </div>
     </>
   );

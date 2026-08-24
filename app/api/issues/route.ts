@@ -186,6 +186,13 @@ export async function POST(request: NextRequest) {
     requesterId: input.requesterId,
     assigneeId: input.assigneeId,
   });
+  if (input.assigneeId && !relationNames.assigneeValid) {
+    return NextResponse.json(
+      { ok: false, code: "ASSIGNEE_NOT_PROJECT_MEMBER", message: "Người phụ trách phải là Thành viên của Project." } satisfies IssueMutationResponse,
+      { status: 400 },
+    );
+  }
+
   const { data, error } = await supabase
     .from("issues")
     .insert({

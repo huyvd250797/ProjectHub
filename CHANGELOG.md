@@ -1,5 +1,23 @@
 # Changelog
 
+## V0.9.5 — Project Team / ISSUE Assignee Sync
+
+### Added
+- Họ tên + email đăng nhập + role trong Project Member form.
+- `people.user_id` liên kết profile/project member với nhân sự ASC.
+- Project Members trở thành nguồn duy nhất của combobox Phụ trách ISSUE.
+- Hiển thị email + role trong option Phụ trách.
+- Nút sửa member và trạng thái đồng bộ Phụ trách.
+- Legacy assignee display cho ISSUE lịch sử.
+
+### Changed
+- MASTER access vẫn toàn cục, nhưng muốn xuất hiện trong Phụ trách thì thêm MASTER vào Project Member.
+- API ISSUE từ chối assignee không còn thuộc Project.
+- Gỡ member khỏi Project không xóa dữ liệu lịch sử assignee.
+
+### Database
+- `202608240006_v095_project_members_assignees.sql`
+
 ## V0.9.4 — Searchable Combobox & Sticky Grid UX
 
 ### Added

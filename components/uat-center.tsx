@@ -68,7 +68,7 @@ export function UatCenter() {
 
   async function copyReport() {
     const lines = [
-      `ASC WORKING V0.9.4 - UAT Report`,
+      `ASC WORKING V0.9.5 - UAT Report`,
       `Project: ${selectedProject.code} - ${selectedProject.name}`,
       `Generated: ${new Date().toLocaleString("vi-VN")}`,
       `Automated readiness: ${data?.overall ?? "unknown"}`,

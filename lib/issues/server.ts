@@ -79,7 +79,7 @@ function dedupeCatalog(rows: Array<Record<string, unknown>>, category: string): 
 }
 
 export async function getIssueLookups(supabase: SupabaseClient, projectId: string): Promise<IssueLookups> {
-  const [catalogResult, stageResult, moduleResult, departmentResult, peopleResult] = await Promise.all([
+  const [catalogResult, stageResult, moduleResult, departmentResult, peopleResult, membershipResult] = await Promise.all([
     supabase
       .from("status_catalog")
       .select("project_id, category, code, label, sort_order, is_active")
@@ -105,14 +105,54 @@ export async function getIssueLookups(supabase: SupabaseClient, projectId: strin
       .order("name", { ascending: true }),
     supabase
       .from("people")
-      .select("id, full_name, title, person_type, department_id")
+      .select("id, user_id, full_name, title, person_type, department_id, email")
       .eq("project_id", projectId)
       .order("full_name", { ascending: true })
       .limit(2000),
+    supabase
+      .from("project_members")
+      .select("user_id, role")
+      .eq("project_id", projectId),
   ]);
 
   const catalog = (catalogResult.data ?? []) as Array<Record<string, unknown>>;
   const people = (peopleResult.data ?? []) as Array<Record<string, unknown>>;
+  const memberships = (membershipResult.data ?? []) as Array<Record<string, unknown>>;
+  const memberUserIds = memberships.map((row) => String(row.user_id)).filter(Boolean);
+
+  const profileResult = memberUserIds.length
+    ? await supabase
+        .from("profiles")
+        .select("id, email, display_name, is_active")
+        .in("id", memberUserIds)
+    : { data: [], error: null };
+
+  const profiles = (profileResult.data ?? []) as Array<Record<string, unknown>>;
+  const profileMap = new Map<string, Record<string, unknown>>(
+    profiles.map((row) => [String(row.id), row]),
+  );
+  const personByUser = new Map<string, Record<string, unknown>>(
+    people
+      .filter((row) => row.person_type === "asc" && row.user_id)
+      .map((row) => [String(row.user_id), row]),
+  );
+
+  const assignees = memberships
+    .map((membership) => {
+      const userId = String(membership.user_id ?? "");
+      const profile = profileMap.get(userId);
+      const person = personByUser.get(userId);
+      if (!userId || !profile || profile.is_active === false || !person?.id) return null;
+      const role = String(membership.role ?? "member").toUpperCase();
+      const email = profile.email ? String(profile.email) : person.email ? String(person.email) : "";
+      return {
+        value: String(person.id),
+        label: String(profile.display_name ?? person.full_name ?? email ?? userId),
+        description: [email, role].filter(Boolean).join(" • "),
+      } satisfies SelectOption;
+    })
+    .filter((option): option is SelectOption => Boolean(option))
+    .sort((a, b) => a.label.localeCompare(b.label, "vi"));
 
   return {
     statuses: dedupeCatalog(catalog, "issue_status"),
@@ -133,13 +173,7 @@ export async function getIssueLookups(supabase: SupabaseClient, projectId: strin
       label: String(row.name),
       description: row.code ? String(row.code) : null,
     })),
-    assignees: people
-      .filter((row) => row.person_type === "asc")
-      .map((row) => ({
-        value: String(row.id),
-        label: String(row.full_name),
-        description: row.title ? String(row.title) : null,
-      })),
+    assignees,
     requesters: people
       .filter((row) => row.person_type === "customer")
       .map((row) => ({
@@ -162,6 +196,7 @@ export async function getCurrentAssigneePersonId(
     .eq("project_id", projectId)
     .eq("person_type", "asc")
     .eq("email", email)
+    .not("user_id", "is", null)
     .limit(1)
     .maybeSingle();
   return data?.id ? String(data.id) : null;
@@ -188,14 +223,31 @@ export async function resolveIssueRelationNames(
       ? supabase.from("people").select("full_name").eq("project_id", projectId).eq("id", ids.requesterId).maybeSingle()
       : Promise.resolve({ data: null }),
     ids.assigneeId
-      ? supabase.from("people").select("full_name").eq("project_id", projectId).eq("id", ids.assigneeId).maybeSingle()
+      ? supabase.from("people").select("full_name,user_id").eq("project_id", projectId).eq("person_type", "asc").eq("id", ids.assigneeId).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
+
+  let assigneeValid = true;
+  if (ids.assigneeId) {
+    const assigneeUserId = assigneeResult.data?.user_id ? String(assigneeResult.data.user_id) : null;
+    if (!assigneeUserId) {
+      assigneeValid = false;
+    } else {
+      const { data: membership } = await supabase
+        .from("project_members")
+        .select("user_id")
+        .eq("project_id", projectId)
+        .eq("user_id", assigneeUserId)
+        .maybeSingle();
+      assigneeValid = Boolean(membership?.user_id);
+    }
+  }
 
   return {
     moduleName: moduleResult.data?.name ? String(moduleResult.data.name) : null,
     departmentName: departmentResult.data?.name ? String(departmentResult.data.name) : null,
     requesterName: requesterResult.data?.full_name ? String(requesterResult.data.full_name) : null,
     assigneeName: assigneeResult.data?.full_name ? String(assigneeResult.data.full_name) : null,
+    assigneeValid,
   };
 }

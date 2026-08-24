@@ -166,6 +166,23 @@ export function IssueDrawer({
   const subtitle = createMode ? "Tạo yêu cầu trong project đang chọn" : "Chi tiết • chỉnh sửa • lịch sử thay đổi";
   const writable = canEdit && source === "database";
 
+  const assigneeOptions = useMemo(() => {
+    const currentId = draft.assigneeId;
+    if (!currentId || lookups.assignees.some((option) => option.value === currentId)) {
+      return [{ value: "", label: "Chưa phụ trách" }, ...lookups.assignees];
+    }
+    return [
+      { value: "", label: "Chưa phụ trách" },
+      {
+        value: currentId,
+        label: `${issue?.assigneeName ?? "Phụ trách cũ"} • Legacy`,
+        description: "Không còn là thành viên Project — chỉ giữ để hiển thị lịch sử",
+        disabled: true,
+      },
+      ...lookups.assignees,
+    ];
+  }, [draft.assigneeId, issue?.assigneeName, lookups.assignees]);
+
   const payload = useMemo(() => ({
     projectId,
     content: draft.content,
@@ -333,7 +350,7 @@ export function IssueDrawer({
                 <div><FieldLabel>Module</FieldLabel><ThemedSelect ariaLabel="Module" disabled={!writable} value={draft.moduleId} onChange={(value) => setDraft((c) => ({ ...c, moduleId: value }))} options={[{ value: "", label: "Chưa xác định Module" }, ...lookups.modules]} placeholder="Chưa xác định Module" menuClassName="min-w-[360px]" /></div>
                 <div><FieldLabel>Phòng ban</FieldLabel><ThemedSelect ariaLabel="Phòng ban" disabled={!writable} value={draft.departmentId} onChange={(value) => setDraft((c) => ({ ...c, departmentId: value }))} options={[{ value: "", label: "Chưa xác định Phòng ban" }, ...lookups.departments]} placeholder="Chưa xác định Phòng ban" /></div>
                 <div><FieldLabel>Nhân sự yêu cầu</FieldLabel><ThemedSelect ariaLabel="Nhân sự yêu cầu" disabled={!writable} value={draft.requesterId} onChange={(value) => setDraft((c) => ({ ...c, requesterId: value }))} options={[{ value: "", label: "Chưa xác định" }, ...lookups.requesters]} placeholder="Chưa xác định" /></div>
-                <div><FieldLabel>Phụ trách yêu cầu</FieldLabel><ThemedSelect ariaLabel="Phụ trách" disabled={!writable} value={draft.assigneeId} onChange={(value) => setDraft((c) => ({ ...c, assigneeId: value }))} options={[{ value: "", label: "Chưa phụ trách" }, ...lookups.assignees]} placeholder="Chưa phụ trách" /></div>
+                <div><FieldLabel>Phụ trách yêu cầu</FieldLabel><ThemedSelect ariaLabel="Phụ trách" disabled={!writable} value={draft.assigneeId} onChange={(value) => setDraft((c) => ({ ...c, assigneeId: value }))} options={assigneeOptions} placeholder="Chưa phụ trách" /></div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

@@ -14,3 +14,6 @@
 - ✅ V0.9.3 — Project Profile / Project Management
 - ✅ V0.9.4 — Searchable Combobox & Sticky Grid UX
 - ⏭ V1.0.0 — Production Release
+
+- ✅ V0.9.5 — Project Team / ISSUE Assignee Sync
+- ⏭ V1.0.0 — Production Release
