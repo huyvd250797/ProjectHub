@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getEffectiveProjectRole } from "@/lib/access";
 import type { IssueLookups, IssueRow, ProjectRole, SelectOption } from "./types";
 
 export const ISSUE_SELECT = `
@@ -59,14 +60,7 @@ export async function getProjectRole(
   projectId: string,
   userId: string,
 ): Promise<ProjectRole | null> {
-  const { data } = await supabase
-    .from("project_members")
-    .select("role")
-    .eq("project_id", projectId)
-    .eq("user_id", userId)
-    .maybeSingle();
-  const role = data?.role;
-  return role === "admin" || role === "pm" || role === "member" || role === "viewer" ? role : null;
+  return getEffectiveProjectRole(supabase, projectId, userId);
 }
 
 function dedupeCatalog(rows: Array<Record<string, unknown>>, category: string): SelectOption[] {

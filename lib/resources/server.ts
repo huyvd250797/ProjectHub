@@ -1,16 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getEffectiveProjectRole } from "@/lib/access";
 import type { ProjectRole } from "@/lib/issues/types";
 import type { ResourceRow } from "@/lib/resources/types";
 
 export async function getProjectRoleForResource(supabase: SupabaseClient, projectId: string, userId: string): Promise<ProjectRole | null> {
-  const { data } = await supabase
-    .from("project_members")
-    .select("role")
-    .eq("project_id", projectId)
-    .eq("user_id", userId)
-    .maybeSingle();
-  const role = data?.role;
-  return role === "admin" || role === "pm" || role === "member" || role === "viewer" ? role : null;
+  return getEffectiveProjectRole(supabase, projectId, userId);
 }
 
 export function normalizeResource(row: Record<string, unknown>, access?: { canReveal?: boolean; canCopy?: boolean; secretHint?: string | null }): ResourceRow {

@@ -7,6 +7,7 @@ type ProjectContextValue = {
   projects: WorkspaceProject[];
   selectedProject: WorkspaceProject;
   selectProject: (projectId: string) => void;
+  isMaster: boolean;
 };
 
 const ProjectContext = createContext<ProjectContextValue | null>(null);
@@ -15,9 +16,11 @@ const LEGACY_STORAGE_KEY = "project-hub:selected-project-id";
 
 export function ProjectProvider({
   projects,
+  isMaster = false,
   children,
 }: {
   projects: WorkspaceProject[];
+  isMaster?: boolean;
   children: React.ReactNode;
 }) {
   const firstProject = projects[0];
@@ -31,7 +34,10 @@ export function ProjectProvider({
       window.localStorage.removeItem(LEGACY_STORAGE_KEY);
       return;
     }
-    if (firstProject) setSelectedId(firstProject.id);
+    if (firstProject) {
+      setSelectedId(firstProject.id);
+      window.localStorage.setItem(STORAGE_KEY, firstProject.id);
+    }
   }, [projects, firstProject]);
 
   const selectedProject = useMemo(
@@ -48,6 +54,7 @@ export function ProjectProvider({
       value={{
         projects,
         selectedProject,
+        isMaster,
         selectProject(projectId: string) {
           if (!projects.some((project) => project.id === projectId)) return;
           setSelectedId(projectId);

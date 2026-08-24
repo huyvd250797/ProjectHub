@@ -10,7 +10,7 @@ export type ReadinessCheck = {
 
 export type ReadinessData = {
   app: "ASC WORKING";
-  version: "0.9.0";
+  version: "0.9.1";
   projectId: string;
   generatedAt: string;
   overall: "ready" | "attention" | "blocked";

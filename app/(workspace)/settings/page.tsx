@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   CircleDashed,
   Code2,
+  Crown,
   Database,
   FileSpreadsheet,
   ClipboardCheck,
@@ -16,18 +17,24 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { createClient } from "@/lib/supabase/server";
+import { isMasterUser } from "@/lib/access";
 
 export const metadata = { title: "Thiết lập" };
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
   const supabaseReady = isSupabaseConfigured();
+  const supabase = await createClient();
+  const user = supabase ? (await supabase.auth.getUser()).data.user : null;
+  const master = Boolean(supabase && user && await isMasterUser(supabase, user.id));
 
   const checks = [
     { label: "Next.js App Router", text: "Framework nền tảng", ok: true, icon: Code2 },
     { label: "Vercel deployment", text: "Output Directory để Default", ok: true, icon: GitBranch },
     { label: "Supabase connection", text: supabaseReady ? "Environment đã nhận" : "Đang chạy Demo Mode", ok: supabaseReady, icon: Database },
     { label: "Multi-project schema", text: "projects + project_members + project_id", ok: true, icon: Layers3 },
-    { label: "Auth / RLS", text: "Project membership bảo vệ dữ liệu theo project", ok: supabaseReady, icon: ShieldCheck },
+    { label: "Master Access", text: master ? "Global MASTER • mọi Project" : "Project-scoped user", ok: master, icon: Crown },
+    { label: "Auth / RLS", text: "MASTER global + project_members cho user thường", ok: supabaseReady, icon: ShieldCheck },
     { label: "PLHĐ Unified View", text: "Overview + virtualized detail tree", ok: true, icon: Network },
     { label: "Department Intelligence", text: "KPI + Stakeholder + Module + drill-down", ok: true, icon: Building2 },
     { label: "Remote Server Security", text: "AES-256-GCM + Reveal/Copy permission + Audit", ok: true, icon: ServerCog },
@@ -39,7 +46,7 @@ export default function SettingsPage() {
       <PageHeader
         eyebrow="System Foundation"
         title="Thiết lập Project Workspace"
-        description="ASC WORKING là Project Workspace đa dự án. V0.9.0 tập trung Hardening + UAT: readiness check, security headers, error/loading states, performance và regression trước Production."
+        description="ASC WORKING là Project Workspace đa dự án. V0.9.1 bổ sung MASTER toàn hệ thống: tự truy cập mọi Project hiện tại và tương lai, trong khi user thường tiếp tục bị giới hạn bởi project_members."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -65,6 +72,25 @@ export default function SettingsPage() {
           );
         })}
       </div>
+
+      {master ? (
+        <Link
+          href="/settings/projects"
+          className="tech-panel tech-panel-hover mt-4 flex flex-col gap-4 rounded-2xl border-amber-300/10 p-5 md:flex-row md:items-center md:p-6"
+        >
+          <div className="grid size-12 shrink-0 place-items-center rounded-2xl border border-amber-300/15 bg-amber-300/[0.055]">
+            <Crown className="size-5 text-amber-200/80" />
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300/60">MASTER Tool</div>
+            <div className="mt-1 text-sm font-semibold text-slate-200">Master Project Console</div>
+            <div className="mt-1 text-xs leading-5 text-slate-600">Tạo Project, đổi trạng thái, xem toàn bộ Project và gán Admin/PM/Member/Viewer cho user thường.</div>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-medium text-amber-200/80 md:ml-auto">
+            Quản trị toàn hệ thống <ArrowRight className="size-4" />
+          </div>
+        </Link>
+      ) : null}
 
       <Link
         href="/settings/uat"
@@ -104,11 +130,11 @@ export default function SettingsPage() {
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Release</div>
         <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-lg font-semibold text-white">ASC WORKING V0.9.0</div>
-            <div className="mt-1 text-xs text-slate-500">Hardening + UAT</div>
+            <div className="text-lg font-semibold text-white">ASC WORKING V0.9.1</div>
+            <div className="mt-1 text-xs text-slate-500">Master Account / Multi-Project Access</div>
           </div>
-          <span className="w-fit rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-200">
-            Production Candidate
+          <span className="w-fit rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200">
+            Master Ready
           </span>
         </div>
       </div>

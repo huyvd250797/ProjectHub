@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { ReadinessApiResponse, ReadinessCheck, ReadinessStatus } from "@/lib/readiness/types";
 import { securityEnvironmentReady } from "@/lib/resources/server";
+import { getGlobalRole, getEffectiveProjectRole } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "0.9.0",
+        version: "0.9.1",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -56,21 +57,36 @@ export async function GET(request: NextRequest) {
   const checks: ReadinessCheck[] = [];
   checks.push(check("auth", "Authentication session", "pass", `Session hợp lệ cho ${user.email ?? user.id}.`));
 
-  const membership = await timed(async () => supabase.from("project_members").select("role").eq("project_id", projectId).eq("user_id", user.id).maybeSingle());
-  const membershipError = membership.error || membership.value?.error;
-  const role = membership.value?.data?.role ? String(membership.value.data.role) : null;
-  if (membershipError || !role) {
-    checks.push(check("membership", "Project membership / RLS", "fail", membershipError ? "Không kiểm tra được quyền Project/RLS." : "Tài khoản chưa được gán vào Project này.", membership.durationMs));
+  const accessCheck = await timed(async () => Promise.all([
+    getGlobalRole(supabase, user.id),
+    getEffectiveProjectRole(supabase, projectId, user.id),
+  ]));
+  const globalRole = accessCheck.value?.[0] ?? "user";
+  const role = accessCheck.value?.[1] ?? null;
+  if (accessCheck.error || !role) {
+    checks.push(check("membership", "Project access / RLS", "fail", accessCheck.error ? "Không kiểm tra được quyền Project/RLS." : "Tài khoản chưa được cấp quyền vào Project này.", accessCheck.durationMs));
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "0.9.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "0.9.1", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
     return NextResponse.json(body, { headers: { "Cache-Control": "no-store" } });
   }
-  checks.push(check("membership", "Project membership / RLS", "pass", `Đã xác nhận quyền Project: ${role}.`, membership.durationMs));
+  checks.push(check(
+    "membership",
+    "Project access / RLS",
+    "pass",
+    globalRole === "master" ? "MASTER global access: không cần project_members." : `Đã xác nhận project_members: ${role}.`,
+    accessCheck.durationMs,
+  ));
+  checks.push(check(
+    "master_access",
+    "Master / Multi-Project access",
+    globalRole === "master" ? "pass" : "warn",
+    globalRole === "master" ? "Tài khoản hiện tại có quyền MASTER trên mọi Project." : "Tài khoản hiện tại dùng quyền theo từng Project.",
+  ));
 
   const database = await timed(async () => Promise.all([
     supabase.from("issues").select("id", { count: "exact", head: true }).eq("project_id", projectId).is("archived_at", null),
@@ -163,7 +179,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "0.9.0",
+      version: "0.9.1",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

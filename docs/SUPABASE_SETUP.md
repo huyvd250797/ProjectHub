@@ -51,3 +51,8 @@ Do not commit `.env.local`.
 
 ## Multi-project rule
 Never create separate tables such as `issues_epu` or `issues_project_b`. Add a new row to `projects`, assign users in `project_members`, and store all business rows with that project's `project_id`.
+
+## V0.9.1 — MASTER account
+Nếu nâng tới V0.9.1, sau khi chạy migration `202608240003_v091_master_multi_project.sql`, có thể dùng `supabase/promote-master.sql` để cấp quyền toàn hệ thống cho tài khoản quản trị chính.
+
+MASTER không cần một dòng `project_members` cho từng Project. User thường vẫn phải được gán `admin / pm / member / viewer` theo từng Project.

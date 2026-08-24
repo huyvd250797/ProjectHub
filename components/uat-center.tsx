@@ -8,6 +8,7 @@ import type { ReadinessApiResponse, ReadinessData, ReadinessStatus } from "@/lib
 const manualItems = [
   ["login", "Đăng nhập/đăng xuất và redirect hoạt động ổn định"],
   ["switch", "Đổi Project và dữ liệu tất cả màn hình đổi theo project"],
+  ["master", "MASTER nhìn thấy mọi Project; user thường chỉ thấy Project được cấp qua project_members"],
   ["dashboard", "Dashboard KPI, drill-down và Needs Attention đúng dữ liệu"],
   ["contract", "PLHĐ tổng quan/chi tiết, search, expand và virtualized tree hoạt động"],
   ["department", "Phòng ban KPI, drawer và drill-down ISSUE hoạt động"],
@@ -34,7 +35,7 @@ export function UatCenter() {
   const [manual, setManual] = useState<Record<string, boolean>>({});
   const [copied, setCopied] = useState(false);
 
-  const storageKey = `asc-working:uat:v090:${selectedProject.id}`;
+  const storageKey = `asc-working:uat:v091:${selectedProject.id}`;
 
   useEffect(() => {
     try { setManual(JSON.parse(localStorage.getItem(storageKey) ?? "{}")); } catch { setManual({}); }
@@ -67,7 +68,7 @@ export function UatCenter() {
 
   async function copyReport() {
     const lines = [
-      `ASC WORKING V0.9.0 - UAT Report`,
+      `ASC WORKING V0.9.1 - UAT Report`,
       `Project: ${selectedProject.code} - ${selectedProject.name}`,
       `Generated: ${new Date().toLocaleString("vi-VN")}`,
       `Automated readiness: ${data?.overall ?? "unknown"}`,

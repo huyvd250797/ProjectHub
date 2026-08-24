@@ -12,7 +12,7 @@ export async function getWorkspaceProjects(
       .select("id, code, slug, name, organization_name, status, created_at")
       .order("created_at", { ascending: true });
 
-    // Hardening V0.9.0: when Supabase is configured, never silently fall back
+    // Hardening V0.9.1: when Supabase is configured, never silently fall back
     // to the EPU demo project. Empty/forbidden data must be visible to the user.
     if (error || !data?.length) return [];
 

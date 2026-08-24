@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, X } from "lucide-react";
+import { ChevronLeft, Crown, X } from "lucide-react";
 import { navigation, secondaryNavigation } from "@/lib/navigation";
 import { Logo } from "@/components/logo";
 import { useProject } from "@/components/project-context";
@@ -20,7 +20,7 @@ export function Sidebar({
   onCloseMobile: () => void;
 }) {
   const pathname = usePathname();
-  const { selectedProject } = useProject();
+  const { selectedProject, isMaster } = useProject();
 
   const navContent = (
     <>
@@ -96,6 +96,22 @@ export function Sidebar({
             );
           })}
         </nav>
+
+        {isMaster ? (
+          <Link
+            href="/settings/projects"
+            onClick={onCloseMobile}
+            className={cn(
+              "mt-1 flex h-11 items-center gap-3 rounded-xl border border-amber-300/10 bg-amber-300/[0.035] px-3 text-sm text-amber-200/75 transition hover:bg-amber-300/[0.06] hover:text-amber-100",
+              pathname.startsWith("/settings/projects") && "border-amber-300/20 bg-amber-300/[0.07] text-amber-100",
+              collapsed && "justify-center px-0",
+            )}
+            title={collapsed ? "Master Console" : undefined}
+          >
+            <Crown className="size-[18px]" />
+            <span className={cn("truncate", collapsed && "hidden")}>Master Console</span>
+          </Link>
+        ) : null}
       </div>
 
       <div className="border-t border-white/[0.06] p-3">
@@ -108,7 +124,7 @@ export function Sidebar({
             <div className={cn("min-w-0", collapsed && "hidden")}>
               <div className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-600">Project hiện tại</div>
               <div className="mt-1 truncate text-[11px] font-semibold text-slate-300">{selectedProject.code} • {selectedProject.organizationName || selectedProject.name}</div>
-              <div className="mt-1 text-[9px] uppercase tracking-[0.15em] text-slate-700">V0.9.0 • Hardening + UAT</div>
+              <div className="mt-1 text-[9px] uppercase tracking-[0.15em] text-slate-700">V0.9.1 • {isMaster ? "MASTER • ALL PROJECTS" : "PROJECT ACCESS"}</div>
             </div>
           </div>
         </div>

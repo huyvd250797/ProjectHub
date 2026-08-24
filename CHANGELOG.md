@@ -1,5 +1,27 @@
 # Changelog
 
+## V0.9.1 — Master Account / Multi-Project Access
+
+### Added
+- Global `profiles.global_role` with `user | master`.
+- RLS helper `public.is_master()` and MASTER-aware `is_project_member()` / `has_project_role()`.
+- Master Project Console for creating projects, changing lifecycle status and managing project members.
+- MASTER bootstrap flow when no Project exists yet.
+- Master badge in workspace UI and Project Switcher.
+- Readiness/UAT check for global MASTER access.
+- `supabase/promote-master.sql` bootstrap script.
+
+### Security
+- MASTER is mapped to effective project `admin` in ISSUE and Remote Resource server APIs.
+- Normal users remain project-scoped through `project_members`.
+- Profile trigger blocks non-MASTER users from self-promoting `global_role`.
+- Existing RLS policies inherit MASTER access through upgraded helper functions instead of duplicating policies across every business table.
+
+### Preserved
+- V0.9.0 Hardening + UAT.
+- V0.8.0 Remote Server Security and encrypted credential vault.
+- Dashboard, PLHĐ, Department Intelligence and ISSUE Core/Productivity.
+
 ## V0.9.0 — Hardening + UAT
 
 ### Added

@@ -13,7 +13,7 @@ export default function ResourcesPage() {
         description="Kho tài nguyên theo project với secret mã hóa server-side, Reveal/Copy theo quyền và security audit. Metadata không chứa plaintext credential."
         actions={
           <div className="flex items-center gap-2 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.05] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-200/80">
-            <ShieldCheck className="size-3.5" /> V0.9.0 Hardened Security
+            <ShieldCheck className="size-3.5" /> V0.9.1 Hardened Security
           </div>
         }
       />

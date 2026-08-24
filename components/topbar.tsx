@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, ChevronDown, Command, LogOut, Menu, Search } from "lucide-react";
+import { Bell, ChevronDown, Command, Crown, LogOut, Menu, Search } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { MobileProjectChip, ProjectSwitcher } from "@/components/project-switcher";
 
@@ -11,6 +11,7 @@ const pageNames: Record<string, string> = {
   "/departments": "Phòng ban",
   "/issues": "ISSUE",
   "/resources": "Remote Server",
+  "/settings/projects": "Master Project Console",
   "/settings/uat": "Hardening & UAT",
   "/settings/import": "Import POC",
   "/settings": "Thiết lập",
@@ -20,10 +21,12 @@ export function Topbar({
   onOpenMobile,
   demoMode,
   userEmail,
+  isMaster = false,
 }: {
   onOpenMobile: () => void;
   demoMode: boolean;
   userEmail?: string | null;
+  isMaster?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -79,6 +82,12 @@ export function Topbar({
         {demoMode ? (
           <span className="hidden rounded-lg border border-amber-300/15 bg-amber-300/[0.07] px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-amber-200 md:inline-flex">
             Demo Mode
+          </span>
+        ) : null}
+
+        {isMaster && !demoMode ? (
+          <span className="hidden items-center gap-1.5 rounded-lg border border-amber-300/15 bg-amber-300/[0.07] px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-amber-200 md:inline-flex">
+            <Crown className="size-3" /> MASTER
           </span>
         ) : null}
 
