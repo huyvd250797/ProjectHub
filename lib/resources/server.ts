@@ -56,6 +56,44 @@ export async function getResourceAccess(
   return { canReveal: Boolean(data?.can_reveal), canCopy: Boolean(data?.can_copy) };
 }
 
+
+export async function getResourceAccessMap(
+  supabase: SupabaseClient,
+  projectId: string,
+  resourceIds: string[],
+  userId: string,
+  role: ProjectRole,
+) {
+  const result = new Map<string, { canReveal: boolean; canCopy: boolean }>();
+  if (!resourceIds.length) return result;
+
+  if (role === "admin" || role === "pm") {
+    resourceIds.forEach((id) => result.set(id, { canReveal: true, canCopy: true }));
+    return result;
+  }
+
+  if (role === "viewer") {
+    resourceIds.forEach((id) => result.set(id, { canReveal: false, canCopy: false }));
+    return result;
+  }
+
+  const { data } = await supabase
+    .from("remote_resource_permissions")
+    .select("resource_id, can_reveal, can_copy")
+    .eq("project_id", projectId)
+    .eq("user_id", userId)
+    .in("resource_id", resourceIds);
+
+  resourceIds.forEach((id) => result.set(id, { canReveal: false, canCopy: false }));
+  for (const row of data ?? []) {
+    result.set(String(row.resource_id), {
+      canReveal: Boolean(row.can_reveal),
+      canCopy: Boolean(row.can_copy),
+    });
+  }
+  return result;
+}
+
 export function maskUsername(value: string | null) {
   if (!value) return null;
   if (value.length <= 2) return "••";

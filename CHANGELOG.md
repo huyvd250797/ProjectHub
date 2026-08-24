@@ -1,5 +1,21 @@
 # Changelog
 
+## V0.9.0 — Hardening + UAT
+
+### Added
+- Production Readiness API and Hardening/UAT Center.
+- Automated checks for Auth, Project membership/RLS, schema/RPC, Remote Security environment and quick data quality.
+- Per-project manual regression checklist with copyable UAT report.
+- Workspace route loading skeleton, error boundary and themed 404.
+- Security response headers.
+- V0.9.0 additive performance-index migration.
+- `npm run preflight` release validation.
+
+### Hardened
+- Supabase-configured workspaces no longer silently fall back to the EPU demo project when no accessible Project exists.
+- Resource Vault permission access is loaded in one batch instead of an N+1 query per resource.
+- `*.tsbuildinfo` remains excluded from Git/source packages.
+
 ## V0.8.0 — Remote Server Security
 
 - Real project-scoped Resource Vault.

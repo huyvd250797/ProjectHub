@@ -11,6 +11,7 @@ const pageNames: Record<string, string> = {
   "/departments": "Phòng ban",
   "/issues": "ISSUE",
   "/resources": "Remote Server",
+  "/settings/uat": "Hardening & UAT",
   "/settings/import": "Import POC",
   "/settings": "Thiết lập",
 };

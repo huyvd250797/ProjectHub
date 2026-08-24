@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createDemoResources } from "@/lib/resources/demo";
 import { encryptResourceSecret, secretHint } from "@/lib/resources/crypto";
-import { getProjectRoleForResource, getResourceAccess, maskUsername, normalizeResource, securityEnvironmentReady } from "@/lib/resources/server";
+import { getProjectRoleForResource, getResourceAccessMap, maskUsername, normalizeResource, securityEnvironmentReady } from "@/lib/resources/server";
 import type { ResourceApiResponse, ResourceMutationResponse } from "@/lib/resources/types";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -50,12 +50,15 @@ export async function GET(request: NextRequest) {
     for (const row of secrets ?? []) hints.set(String(row.resource_id), row.secret_hint ? String(row.secret_hint) : null);
   }
 
-  const normalized = await Promise.all((rows ?? []).map(async (row: any) => {
-    const access = await getResourceAccess(supabase, projectId, String(row.id), user.id, role);
-    const visibleHint = access.canReveal || access.canCopy ? (hints.get(String(row.id)) ?? null) : null;
+  const resourceIds = (rows ?? []).map((row: any) => String(row.id));
+  const accessMap = await getResourceAccessMap(supabase, projectId, resourceIds, user.id, role);
+  const normalized = (rows ?? []).map((row: any) => {
+    const resourceId = String(row.id);
+    const access = accessMap.get(resourceId) ?? { canReveal: false, canCopy: false };
+    const visibleHint = access.canReveal || access.canCopy ? (hints.get(resourceId) ?? null) : null;
     const normalizedRow = normalizeResource(row as Record<string, unknown>, { ...access, secretHint: visibleHint });
     return role === "viewer" && normalizedRow.isSensitive ? { ...normalizedRow, username: maskUsername(normalizedRow.username) } : normalizedRow;
-  }));
+  });
   const body: ResourceApiResponse = {
     ok: true,
     data: {

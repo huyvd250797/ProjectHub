@@ -1,6 +1,6 @@
-# ASC WORKING — V0.8.0
+# ASC WORKING — V0.9.0
 
-**Remote Server Security** — Project Workspace đa dự án.
+**Hardening + UAT** — Production Candidate của Project Workspace đa dự án.
 
 ## Đã hoàn thành
 - V0.1.0 Foundation
@@ -10,40 +10,56 @@
 - V0.5.0 Department Intelligence
 - V0.6.0 ISSUE Core
 - V0.7.0 ISSUE Productivity
-- ✅ **V0.8.0 Remote Server Security**
+- V0.8.0 Remote Server Security
+- ✅ **V0.9.0 Hardening + UAT**
 
-## V0.8.0 có gì mới?
-- Remote Server / Resource Vault dùng dữ liệu thật theo project đang chọn.
-- CRUD Portal / Server / Database / Folder / Test / Other.
-- Phân môi trường Production / Staging / Test / Development.
-- Credential mã hóa **AES-256-GCM server-side**.
-- Secret tách khỏi metadata và không xuất hiện trong list API.
-- Reveal credential trong 10 giây, tự ẩn.
-- Copy credential với kiểm tra quyền.
-- PM/Admin mặc định được Reveal/Copy; Member có nền tảng grant riêng theo resource.
-- Audit: reveal/copy/open/create/update/delete/secret update/clear.
-- Search/filter và drawer bảo mật đồng bộ theme.
+## V0.9.0 có gì mới?
+- **Hardening & UAT Center** tại `/settings/uat`.
+- Automated readiness check cho Auth, Project membership/RLS, core schema, Dashboard RPC, ISSUE Productivity, Remote Security và data quality.
+- Manual regression checklist theo từng project, lưu trên browser và có thể copy UAT report.
+- Route-level loading skeleton + error boundary + trang 404 đồng bộ theme.
+- Không còn fallback EPU demo khi Supabase đã cấu hình nhưng user chưa có Project/RLS: hệ thống hiển thị đúng trạng thái chưa được cấp quyền.
+- Security response headers: nosniff, DENY frame, Referrer Policy, Permissions Policy, COOP, HSTS.
+- Tối ưu Resource Vault: permission được load theo batch thay vì query N+1 theo từng resource.
+- Migration V0.9.0 bổ sung index cho ISSUE active rows, PLHĐ, Phòng ban và Resource/Audit queries.
+- Preflight script trước release: `npm run preflight`.
 
-## Bắt buộc trước khi dùng credential thật
-1. Chạy migration:
-   `supabase/migrations/202608240001_v080_remote_security.sql`
-2. Vercel thêm server-only env:
-   `SUPABASE_SERVICE_ROLE_KEY`
-   `APP_ENCRYPTION_KEY`
-3. Redeploy.
+## Bắt buộc trước UAT/Production Candidate
+1. Đã chạy migration V0.2 → V0.8.
+2. Chạy thêm:
+   `supabase/migrations/202608240002_v090_hardening.sql`
+3. Vercel phải có:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `APP_ENCRYPTION_KEY`
+4. Redeploy.
+5. Mở **Thiết lập → Hardening & UAT Center** và xử lý mọi check `FAIL` trước V1.0.0.
 
-Xem chi tiết: `docs/REMOTE_SECURITY_V080_SETUP.md`.
+## Kiểm tra local
+```bash
+npm install
+npm run preflight
+npm run typecheck
+npm run lint
+npm run build
+```
+
+Hoặc:
+```bash
+npm run check
+```
 
 ## Deploy Vercel
 - Framework Preset: Next.js
-- Build Command: Default
+- Build Command: Default (`npm run build`)
 - Output Directory: để trống / Default
 - Không dùng `out`.
 
 ## Security
-Không commit `.env.local`, service role hoặc encryption key. Không copy credential thật từ workbook vào source. Credential cũ từng nằm plaintext nên được rotate trước khi nhập vào Resource Vault.
+Không commit `.env.local`, Service Role hoặc APP_ENCRYPTION_KEY. Không log/export plaintext credential. Nếu APP_ENCRYPTION_KEY đang dùng cho Resource Vault production thì không đổi key tùy ý nếu chưa có kế hoạch rotate/re-encrypt.
 
 ## Tiếp theo
-**V0.9.0 — Hardening + UAT**: performance, security review, responsive, loading/error states, regression/UAT fixes và chuẩn bị production.
+**V1.0.0 — Production Release**: freeze schema/scope, final migration/cut-over dữ liệu, user/role cuối, smoke test, release note và runbook vận hành.
 
 © 2026 HuyVo. All rights reserved.

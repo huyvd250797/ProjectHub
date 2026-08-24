@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { createClient } from "@/lib/supabase/server";
 import { getWorkspaceProjects } from "@/lib/projects-server";
+import { NoProjectAccess } from "@/components/no-project-access";
 
 export default async function WorkspaceLayout({
   children,
@@ -24,6 +25,10 @@ export default async function WorkspaceLayout({
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  if (!projects.length) {
+    return <NoProjectAccess userEmail={user.email} />;
+  }
 
   return (
     <AppShell demoMode={false} userEmail={user.email} projects={projects}>

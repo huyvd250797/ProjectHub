@@ -12,8 +12,9 @@ export async function getWorkspaceProjects(
       .select("id, code, slug, name, organization_name, status, created_at")
       .order("created_at", { ascending: true });
 
-    // Keep the workspace deployable before database migrations are applied.
-    if (error || !data?.length) return demoProjects;
+    // Hardening V0.9.0: when Supabase is configured, never silently fall back
+    // to the EPU demo project. Empty/forbidden data must be visible to the user.
+    if (error || !data?.length) return [];
 
     return data.map((project) => ({
       id: String(project.id),
@@ -24,6 +25,6 @@ export async function getWorkspaceProjects(
       status: (project.status ?? "active") as WorkspaceProject["status"],
     }));
   } catch {
-    return demoProjects;
+    return [];
   }
 }
