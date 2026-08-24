@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { normalizeMasterProject, requireMaster, slugify } from "@/lib/master/server";
+import {
+  MASTER_PROJECT_SELECT,
+  normalizeMasterProject,
+  requireMaster,
+  slugify,
+} from "@/lib/master/server";
 import type { MasterProjectMutationResponse } from "@/lib/master/types";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +14,16 @@ function text(value: unknown, max: number) {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, max) : null;
+}
+
+function money(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = typeof value === "number" ? value : Number(String(value).replace(/[.,\s]/g, ""));
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function setNullable(payload: Record<string, unknown>, raw: Record<string, unknown>, sourceKey: string, targetKey: string, max: number) {
+  if (Object.prototype.hasOwnProperty.call(raw, sourceKey)) payload[targetKey] = text(raw[sourceKey], max);
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ projectId: string }> }) {
@@ -21,23 +36,43 @@ export async function PATCH(request: Request, context: { params: Promise<{ proje
 
   let raw: Record<string, unknown> = {};
   try { raw = await request.json(); } catch {}
+
   const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
   const code = text(raw.code, 30)?.toUpperCase();
   const name = text(raw.name, 180);
-  const organizationName = text(raw.organizationName, 180);
   const status = text(raw.status, 20);
   const requestedSlug = text(raw.slug, 80);
-  if (code) payload.code = code;
-  if (name) payload.name = name;
-  if (Object.prototype.hasOwnProperty.call(raw, "organizationName")) payload.organization_name = organizationName;
-  if (Object.prototype.hasOwnProperty.call(raw, "contractNo")) payload.contract_no = text(raw.contractNo, 120);
-  if (Object.prototype.hasOwnProperty.call(raw, "startDate")) payload.start_date = text(raw.startDate, 10);
-  if (Object.prototype.hasOwnProperty.call(raw, "dueDate")) payload.due_date = text(raw.dueDate, 10);
-  if (requestedSlug) payload.slug = slugify(requestedSlug);
+
+  if (Object.prototype.hasOwnProperty.call(raw, "code")) {
+    if (!code) return NextResponse.json({ ok: false, code: "VALIDATION_FAILED", message: "Mã Project không được để trống." } satisfies MasterProjectMutationResponse, { status: 400 });
+    payload.code = code;
+  }
+  if (Object.prototype.hasOwnProperty.call(raw, "name")) {
+    if (!name) return NextResponse.json({ ok: false, code: "VALIDATION_FAILED", message: "Tên dự án không được để trống." } satisfies MasterProjectMutationResponse, { status: 400 });
+    payload.name = name;
+  }
+
+  setNullable(payload, raw, "description", "description", 2000);
+  setNullable(payload, raw, "organizationName", "organization_name", 180);
+  setNullable(payload, raw, "organizationCode", "organization_code", 80);
+  setNullable(payload, raw, "organizationAddress", "organization_address", 500);
+  setNullable(payload, raw, "contractNo", "contract_no", 120);
+  if (Object.prototype.hasOwnProperty.call(raw, "contractValue")) payload.contract_value = money(raw.contractValue);
+  setNullable(payload, raw, "contractDate", "contract_date", 10);
+  setNullable(payload, raw, "startDate", "start_date", 10);
+  setNullable(payload, raw, "dueDate", "due_date", 10);
+  setNullable(payload, raw, "contactName", "contact_name", 180);
+  setNullable(payload, raw, "contactTitle", "contact_title", 180);
+  setNullable(payload, raw, "contactEmail", "contact_email", 180);
+  setNullable(payload, raw, "contactPhone", "contact_phone", 60);
+  setNullable(payload, raw, "notes", "notes", 4000);
+  if (Object.prototype.hasOwnProperty.call(raw, "slug")) payload.slug = requestedSlug ? slugify(requestedSlug) : undefined;
   if (status && ["active", "paused", "completed", "archived"].includes(status)) payload.status = status;
 
+  Object.keys(payload).forEach((key) => payload[key] === undefined && delete payload[key]);
+
   const { data, error } = await supabase.from("projects").update(payload).eq("id", projectId)
-    .select("id,code,slug,name,organization_name,status,contract_no,start_date,due_date,created_at").single();
+    .select(MASTER_PROJECT_SELECT).single();
   if (error || !data) return NextResponse.json({ ok: false, code: "UPDATE_FAILED", message: error?.message ?? "Không cập nhật được Project." } satisfies MasterProjectMutationResponse, { status: 500 });
 
   const { count } = await supabase.from("project_members").select("id", { count: "exact", head: true }).eq("project_id", projectId);

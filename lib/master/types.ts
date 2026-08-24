@@ -1,17 +1,30 @@
 import type { ProjectRole } from "@/lib/issues/types";
 
+export type MasterProjectStatus = "active" | "paused" | "completed" | "archived";
+
 export type MasterProjectRow = {
   id: string;
   code: string;
   slug: string;
   name: string;
+  description: string | null;
   organizationName: string | null;
-  status: "active" | "paused" | "completed" | "archived";
+  organizationCode: string | null;
+  organizationAddress: string | null;
+  status: MasterProjectStatus;
   contractNo: string | null;
+  contractValue: number | null;
+  contractDate: string | null;
   startDate: string | null;
   dueDate: string | null;
+  contactName: string | null;
+  contactTitle: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  notes: string | null;
   memberCount: number;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type MasterProjectMember = {

@@ -19,12 +19,12 @@ export default async function MasterProjectsPage() {
       <PageHeader
         eyebrow="Global Administration"
         title="Master Project Console"
-        description="Quản trị toàn bộ Project của ASC WORKING. MASTER tự nhìn thấy mọi Project hiện tại và Project tạo trong tương lai mà không cần thêm project_members."
+        description="Quản trị toàn bộ Project của ASC WORKING. V0.9.3 cho phép cập nhật đầy đủ hồ sơ Project: tên trường/đơn vị, mô tả, hợp đồng, kế hoạch, đầu mối và thành viên."
         actions={<span className="inline-flex items-center gap-2 rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200"><Crown className="size-3.5" /> MASTER</span>}
       />
       <div className="mb-4 flex items-start gap-3 rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.035] p-4 text-xs leading-5 text-slate-500">
         <ShieldCheck className="mt-0.5 size-4 shrink-0 text-cyan-200/70" />
-        Quyền MASTER là quyền toàn cục. project_members chỉ dùng để giới hạn user thường theo từng Project; không cần tạo membership cho MASTER.
+        Quyền MASTER là quyền toàn cục. Mỗi Project có hồ sơ riêng và có thể chỉnh sửa sau khi tạo; project_members chỉ dùng để giới hạn user thường theo từng Project.
       </div>
       <MasterProjectConsole />
     </>

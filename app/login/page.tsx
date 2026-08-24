@@ -49,7 +49,7 @@ export default function LoginPage() {
             </div>
           </div>
           <div className="text-[9px] uppercase tracking-[0.2em] text-slate-700">
-            © 2026 HuyVo • ASC WORKING V0.9.2
+            © 2026 HuyVo • ASC WORKING V0.9.3
           </div>
         </section>
 

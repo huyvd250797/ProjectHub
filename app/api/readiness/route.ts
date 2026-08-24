@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "0.9.2",
+        version: "0.9.3",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "0.9.2", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "0.9.3", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -86,6 +86,22 @@ export async function GET(request: NextRequest) {
     "Master / Multi-Project access",
     globalRole === "master" ? "pass" : "warn",
     globalRole === "master" ? "Tài khoản hiện tại có quyền MASTER trên mọi Project." : "Tài khoản hiện tại dùng quyền theo từng Project.",
+  ));
+
+  const projectProfile = await timed(async () => supabase
+    .from("projects")
+    .select("id,organization_name,organization_code,organization_address,contact_name,contact_email")
+    .eq("id", projectId)
+    .maybeSingle());
+  const projectProfileError = projectProfile.error || projectProfile.value?.error;
+  checks.push(check(
+    "project_profile",
+    "Project Profile schema",
+    projectProfileError ? "fail" : "pass",
+    projectProfileError
+      ? "Không đọc được hồ sơ Project mở rộng; kiểm tra migration V0.9.3."
+      : "Project Profile V0.9.3 đã sẵn sàng cho thông tin trường/đơn vị và đầu mối.",
+    projectProfile.durationMs,
   ));
 
   const database = await timed(async () => Promise.all([
@@ -196,7 +212,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "0.9.2",
+      version: "0.9.3",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

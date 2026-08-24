@@ -46,7 +46,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="System Foundation"
         title="Thiết lập Project Workspace"
-        description="ASC WORKING là Project Workspace đa dự án. V0.9.2 bổ sung Excel Import Production: tải template theo Project, Dry-run/Preview và Apply Import transaction; MASTER vẫn truy cập toàn bộ Project."
+        description="ASC WORKING là Project Workspace đa dự án. V0.9.3 bổ sung Project Profile Management: MASTER có thể cập nhật đầy đủ thông tin trường/đơn vị, hợp đồng, kế hoạch và đầu mối của từng Project."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -84,7 +84,7 @@ export default async function SettingsPage() {
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300/60">MASTER Tool</div>
             <div className="mt-1 text-sm font-semibold text-slate-200">Master Project Console</div>
-            <div className="mt-1 text-xs leading-5 text-slate-600">Tạo Project, đổi trạng thái, xem toàn bộ Project và gán Admin/PM/Member/Viewer cho user thường.</div>
+            <div className="mt-1 text-xs leading-5 text-slate-600">Tạo Project, cập nhật hồ sơ trường/đơn vị, hợp đồng, kế hoạch, đầu mối và gán Admin/PM/Member/Viewer cho user thường.</div>
           </div>
           <div className="flex items-center gap-2 text-xs font-medium text-amber-200/80 md:ml-auto">
             Quản trị toàn hệ thống <ArrowRight className="size-4" />
@@ -130,11 +130,11 @@ export default async function SettingsPage() {
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Release</div>
         <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-lg font-semibold text-white">ASC WORKING V0.9.2</div>
-            <div className="mt-1 text-xs text-slate-500">Excel Import Production / Template Round-trip</div>
+            <div className="text-lg font-semibold text-white">ASC WORKING V0.9.3</div>
+            <div className="mt-1 text-xs text-slate-500">Project Profile / Project Management</div>
           </div>
           <span className="w-fit rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200">
-            Import Ready
+            Project Ready
           </span>
         </div>
       </div>
