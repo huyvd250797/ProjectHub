@@ -41,7 +41,9 @@ export async function GET() {
     counts.set(id, (counts.get(id) ?? 0) + 1);
   }
 
-  const projects = ((projectsResult.data ?? []) as Array<Record<string, unknown>>).map((row) => normalizeMasterProject(row, counts.get(String(row.id)) ?? 0));
+  const projects = (projectsResult.data ?? []).map((row) =>
+    normalizeMasterProject(row, counts.get(String(row.id)) ?? 0),
+  );
   return NextResponse.json({ ok: true, projects } satisfies MasterProjectsResponse, { headers: { "Cache-Control": "no-store" } });
 }
 
@@ -83,5 +85,5 @@ export async function POST(request: Request) {
   }).select(MASTER_PROJECT_SELECT).single();
 
   if (error || !data) return NextResponse.json({ ok: false, code: "CREATE_FAILED", message: error?.message ?? "Không tạo được Project." } satisfies MasterProjectMutationResponse, { status: 500 });
-  return NextResponse.json({ ok: true, project: normalizeMasterProject(data as Record<string, unknown>, 0) } satisfies MasterProjectMutationResponse);
+  return NextResponse.json({ ok: true, project: normalizeMasterProject(data, 0) } satisfies MasterProjectMutationResponse);
 }

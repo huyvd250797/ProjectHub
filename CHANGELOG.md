@@ -28,3 +28,11 @@
 - Dry-run/database preview and transactional Apply Import.
 - Merge/Insert Only modes with stable import keys.
 - RESOURCE metadata import excludes password/token/secret.
+
+## V0.9.3 Deploy Fix — Master Project Supabase typing
+
+### Fixed
+- Fixed Vercel TypeScript `TS2352` errors in Master Project API routes.
+- Changed `MASTER_PROJECT_SELECT` from runtime `Array.join()` to a compile-time literal `as const`, preserving Supabase/PostgREST select inference.
+- Removed unsafe `GenericStringError -> Record<string, unknown>` casts from Project GET/POST/PATCH flows.
+- Hardened Master Project/Member normalizers to accept `unknown` and normalize object records safely.

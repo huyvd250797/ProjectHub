@@ -3,34 +3,18 @@ import { isMasterUser } from "@/lib/access";
 import type { MasterProjectMember, MasterProjectRow } from "@/lib/master/types";
 import type { ProjectRole } from "@/lib/issues/types";
 
-export const MASTER_PROJECT_SELECT = [
-  "id",
-  "code",
-  "slug",
-  "name",
-  "description",
-  "organization_name",
-  "organization_code",
-  "organization_address",
-  "status",
-  "contract_no",
-  "contract_value",
-  "contract_date",
-  "start_date",
-  "due_date",
-  "contact_name",
-  "contact_title",
-  "contact_email",
-  "contact_phone",
-  "notes",
-  "created_at",
-  "updated_at",
-].join(",");
+export const MASTER_PROJECT_SELECT = "id,code,slug,name,description,organization_name,organization_code,organization_address,status,contract_no,contract_value,contract_date,start_date,due_date,contact_name,contact_title,contact_email,contact_phone,notes,created_at,updated_at" as const;
 
 export async function requireMaster(supabase: SupabaseClient) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { user: null, isMaster: false } as const;
   return { user, isMaster: await isMasterUser(supabase, user.id) } as const;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
 function nullableNumber(value: unknown) {
@@ -40,9 +24,10 @@ function nullableNumber(value: unknown) {
 }
 
 export function normalizeMasterProject(
-  row: Record<string, unknown>,
+  value: unknown,
   memberCount = 0,
 ): MasterProjectRow {
+  const row = asRecord(value);
   const status = String(row.status ?? "active");
   return {
     id: String(row.id),
@@ -71,9 +56,11 @@ export function normalizeMasterProject(
 }
 
 export function normalizeMasterMember(
-  membership: Record<string, unknown>,
-  profile?: Record<string, unknown>,
+  membershipValue: unknown,
+  profileValue?: unknown,
 ): MasterProjectMember {
+  const membership = asRecord(membershipValue);
+  const profile = asRecord(profileValue);
   const role = String(membership.role ?? "viewer") as ProjectRole;
   return {
     userId: String(membership.user_id),
