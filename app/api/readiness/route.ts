@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "0.9.1",
+        version: "0.9.2",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "0.9.1", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "0.9.2", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -127,6 +127,23 @@ export async function GET(request: NextRequest) {
     productivity.durationMs,
   ));
 
+  const importSchema = await timed(async () => supabase.rpc("preview_import_v092", {
+    p_project_id: projectId,
+    p_payload: {
+      projectId,
+      templateVersion: "0.9.2",
+      departments: [], people: [], stages: [], contractItems: [], contractDetails: [], releaseVersions: [], issues: [], remoteResources: [],
+    },
+  }));
+  const importSchemaError = importSchema.error || importSchema.value?.error;
+  checks.push(check(
+    "excel_import",
+    "Excel Import Production RPC",
+    importSchemaError ? "fail" : "pass",
+    importSchemaError ? "Không gọi được preview_import_v092; kiểm tra migration V0.9.2." : "Template Preview/Apply RPC đã sẵn sàng.",
+    importSchema.durationMs,
+  ));
+
   const remoteSchema = await timed(async () => supabase.from("remote_resource_permissions").select("resource_id", { count: "exact", head: true }).eq("project_id", projectId));
   const remoteSchemaError = remoteSchema.error || remoteSchema.value?.error;
   checks.push(check(
@@ -179,7 +196,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "0.9.1",
+      version: "0.9.2",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

@@ -1,10 +1,10 @@
-# ASC WORKING — V0.9.1
+# ASC WORKING — V0.9.2
 
-**Master Account / Multi-Project Access** — bổ sung quyền quản trị toàn hệ thống trước Production Release.
+**Excel Import Production / Template Round-trip**
 
-ASC WORKING là **Project Workspace đa dự án**. EPU chỉ là một Project. Từ V0.9.1, tài khoản có `profiles.global_role = 'master'` tự động nhìn thấy và quản trị mọi Project hiện tại lẫn Project tạo trong tương lai, không cần thêm một dòng `project_members` cho từng Project.
+ASC WORKING là **Project Workspace đa dự án**. EPU chỉ là Project đầu tiên. V0.9.2 giữ nguyên MASTER/Multi-Project của V0.9.1 và nâng `Data Import POC` thành luồng Excel production có template chuẩn, preview và Apply Import transaction.
 
-## Đã hoàn thành
+## Version history
 - ✅ V0.1.0 — Foundation
 - ✅ V0.2.0 — Data Model + Import POC
 - ✅ V0.3.0 — Dashboard / Real Project Data
@@ -14,82 +14,48 @@ ASC WORKING là **Project Workspace đa dự án**. EPU chỉ là một Project.
 - ✅ V0.7.0 — ISSUE Productivity
 - ✅ V0.8.0 — Remote Server Security
 - ✅ V0.9.0 — Hardening + UAT
-- ✅ **V0.9.1 — Master Account / Multi-Project Access**
+- ✅ V0.9.1 — Master Account / Multi-Project Access
+- ✅ **V0.9.2 — Excel Import Production / Template Round-trip**
+- ⏭ V1.0.0 — Production Release
 
-## V0.9.1 có gì mới?
-- `profiles.global_role`: `user | master`.
-- Helper RLS `public.is_master()`.
-- `is_project_member()` và `has_project_role()` tự hiểu MASTER.
-- MASTER nhìn thấy **tất cả Project** trong Project Switcher.
-- MASTER được map thành effective project role `admin` trong ISSUE và Resource Vault APIs.
-- MASTER có quyền Reveal/Copy credential, CRUD nghiệp vụ và quản trị thành viên theo security rules hiện tại.
-- User thường vẫn bị giới hạn bằng `project_members` với role `admin / pm / member / viewer`.
-- **Master Project Console** tại `/settings/projects`:
-  - tạo Project mới;
-  - xem toàn bộ Project;
-  - chuyển `active / paused / completed / archived`;
-  - xem số thành viên;
-  - thêm/cập nhật/xóa project member theo email và role.
-- MASTER không cần tự thêm mình vào `project_members`.
-- Nếu hệ thống chưa có Project nào, MASTER có thể bootstrap Project đầu tiên ngay tại màn hình No Project.
-- Hardening/UAT Readiness nhận diện MASTER và kiểm tra Multi-Project Access.
-- Có trigger chống user thường tự nâng `global_role` lên `master` qua profile self-update.
+## V0.9.2 có gì mới?
+- **Tải mẫu Excel theo Project** tại `Thiết lập → Excel Import Production`.
+- Template gắn `project_id`, `project_code`, `template_version` trong sheet ẩn `__META` để chống import nhầm Project.
+- Các sheet chuẩn:
+  - PROJECT
+  - GIAI ĐOẠN
+  - PHÒNG BAN
+  - NHÂN SỰ
+  - PLHĐ
+  - PLHĐ CHI TIẾT
+  - ISSUE
+  - RELEASE
+  - RESOURCE
+  - DANH MỤC
+- Upload file đã fill → **Validation / Dry-run → Database Preview → Apply Import**.
+- Preview hiển thị số `incoming / insert / update` theo entity.
+- Hai mode:
+  - **Merge**: key cũ cập nhật, key mới thêm mới.
+  - **Insert Only**: key cũ bỏ qua, chỉ thêm key mới.
+- Stable `import_key` để import lại cùng file mà không tạo duplicate theo key.
+- Apply chạy trong **một PostgreSQL transaction**; lỗi giữa chừng rollback toàn bộ.
+- Mỗi Apply thành công tạo `import_batches` với file name, SHA-256, mode, summary và user thực hiện.
+- Chỉ **MASTER / Admin / PM** được Apply. Member/Viewer có thể tải template + Dry-run.
+- Workbook legacy `[EPU] _ ASC-Working.xlsx` vẫn Dry-run được nhưng **không Apply production**.
+- `RESOURCE` chỉ import metadata; **không có password/token/secret** và không ghi đè encrypted secret hiện có.
 
-## Bắt buộc khi nâng từ V0.9.0
+## Nâng từ V0.9.1
 
-### 1. Chạy migration V0.9.1
+### 1. Chạy migration V0.9.2
 Supabase → SQL Editor:
 
 ```text
-supabase/migrations/202608240003_v091_master_multi_project.sql
+supabase/migrations/202608240004_v092_excel_import_production.sql
 ```
 
-### 2. Promote tài khoản chính thành MASTER
-Chạy:
+Không cần chạy lại migration V0.9.1 nếu database đã có MASTER/Multi-Project.
 
-```text
-supabase/promote-master.sql
-```
-
-File mẫu hiện dùng email:
-
-```text
-huywork257@gmail.com
-```
-
-Nếu dùng email khác, sửa email trong file trước khi chạy.
-
-Kết quả mong muốn:
-
-```text
-global_role = master
-is_active   = true
-```
-
-### 3. Reload / đăng nhập lại
-Sau khi promote, reload ASC WORKING. Project Switcher của MASTER sẽ tự hiển thị toàn bộ Project mà không cần thêm `project_members`.
-
-## Mô hình quyền V0.9.1
-
-```text
-ASC WORKING
-│
-├── MASTER (global)
-│   ├── Project A
-│   ├── Project B
-│   ├── Project C
-│   └── mọi Project tạo sau này
-│
-└── USER thường
-    └── project_members
-        ├── admin
-        ├── pm
-        ├── member
-        └── viewer
-```
-
-## Environment Variables
-Giữ nguyên các biến V0.9.0:
+### 2. Giữ Environment Variables hiện tại
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
@@ -100,7 +66,7 @@ APP_ENCRYPTION_KEY=
 
 Không commit `.env.local`, Service Role hoặc APP_ENCRYPTION_KEY.
 
-## Kiểm tra trước deploy
+### 3. Deploy và kiểm tra
 
 ```bash
 npm install
@@ -116,20 +82,36 @@ Hoặc:
 npm run check
 ```
 
-## Deploy Vercel
+## Luồng sử dụng Excel Import
+
+```text
+Chọn Project
+    ↓
+Tải Template V0.9.2
+    ↓
+Fill Excel
+    ↓
+Upload
+    ↓
+Validation / Dry-run
+    ↓
+Database Preview
+    ↓
+Chọn Merge / Insert Only
+    ↓
+Nhập mã Project xác nhận
+    ↓
+Apply Import transaction
+    ↓
+Batch ID + Reload Project
+```
+
+Xem chi tiết: `docs/EXCEL_IMPORT_V092_SETUP.md`.
+
+## Vercel
 - Framework Preset: **Next.js**
-- Build Command: Default (`npm run build`)
-- Output Directory: **Default / để trống**
-- Sau khi thêm/chỉnh Environment Variables phải Redeploy.
-
-## Security notes
-- `master` là quyền toàn cục, chỉ nên cấp cho tài khoản quản trị hệ thống tin cậy.
-- Không tạo `project_members` cho MASTER chỉ để nhìn thấy Project; quyền global đã bao phủ toàn bộ.
-- User thường không thể tự thay `global_role` nhờ trigger `guard_profile_global_role_trigger`.
-- Remote secret vẫn dùng AES-256-GCM server-only và audit như V0.8.0.
-- Không đổi `APP_ENCRYPTION_KEY` tùy ý sau khi đã lưu credential thật.
-
-## Tiếp theo
-**V1.0.0 — Production Release**: freeze schema/scope, cut-over dữ liệu thật, role/user cuối cùng, smoke test, release note và runbook vận hành.
+- Build Command: Default
+- Output Directory: Default / để trống
+- Không dùng `out`
 
 © 2026 HuyVo. All rights reserved.

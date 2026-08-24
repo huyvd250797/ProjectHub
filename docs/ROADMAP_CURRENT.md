@@ -10,4 +10,5 @@
 - ✅ V0.8.0 — Remote Server Security
 - ✅ V0.9.0 — Hardening + UAT
 - ✅ V0.9.1 — Master Account / Multi-Project Access
-- ⏭️ V1.0.0 — Production Release
+- ✅ V0.9.2 — Excel Import Production / Template Round-trip
+- ⏭ V1.0.0 — Production Release

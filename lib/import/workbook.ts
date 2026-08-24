@@ -249,7 +249,7 @@ export function inspectProjectWorkbook(
     messages.push({
       severity: "warning",
       code: "PROJECT_MISMATCH",
-      message: `Workbook nhận diện project ${sourceProject.code} nhưng project đang chọn là ${selectedProject.code}. V0.2.0 chỉ cảnh báo; Apply Import sau này phải xác nhận project đích rõ ràng.`,
+      message: `Workbook nhận diện project ${sourceProject.code} nhưng project đang chọn là ${selectedProject.code}. Legacy workbook chỉ Dry-run. Production Apply yêu cầu Template V0.9.2 gắn đúng Project đích.`,
     });
   }
 
@@ -265,7 +265,7 @@ export function inspectProjectWorkbook(
       severity: "info",
       code: "SECRETS_EXCLUDED",
       message:
-        "Import POC chỉ đọc metadata của LinkRemoteServer. Password/token/secret bị loại khỏi payload và không ghi database.",
+        "Legacy Dry-run chỉ đọc metadata của LinkRemoteServer. Password/token/secret bị loại khỏi payload và không ghi database.",
       sheet: "LinkRemoteServer",
     });
   }

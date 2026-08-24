@@ -46,7 +46,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="System Foundation"
         title="Thiết lập Project Workspace"
-        description="ASC WORKING là Project Workspace đa dự án. V0.9.1 bổ sung MASTER toàn hệ thống: tự truy cập mọi Project hiện tại và tương lai, trong khi user thường tiếp tục bị giới hạn bởi project_members."
+        description="ASC WORKING là Project Workspace đa dự án. V0.9.2 bổ sung Excel Import Production: tải template theo Project, Dry-run/Preview và Apply Import transaction; MASTER vẫn truy cập toàn bộ Project."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -118,11 +118,11 @@ export default async function SettingsPage() {
         </div>
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300/60">Data Tool</div>
-          <div className="mt-1 text-sm font-semibold text-slate-200">Data Import POC</div>
-          <div className="mt-1 text-xs leading-5 text-slate-600">Upload workbook dự án, kiểm tra cấu trúc sheet, record count, mapping và cảnh báo dữ liệu trước khi Apply Import.</div>
+          <div className="mt-1 text-sm font-semibold text-slate-200">Excel Import Production</div>
+          <div className="mt-1 text-xs leading-5 text-slate-600">Tải mẫu Excel theo Project, điền dữ liệu, Preview insert/update rồi Apply Import transaction vào Supabase.</div>
         </div>
         <div className="flex items-center gap-2 text-xs font-medium text-cyan-200/80 md:ml-auto">
-          Mở Import POC <ArrowRight className="size-4" />
+          Mở Excel Import <ArrowRight className="size-4" />
         </div>
       </Link>
 
@@ -130,11 +130,11 @@ export default async function SettingsPage() {
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Release</div>
         <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-lg font-semibold text-white">ASC WORKING V0.9.1</div>
-            <div className="mt-1 text-xs text-slate-500">Master Account / Multi-Project Access</div>
+            <div className="text-lg font-semibold text-white">ASC WORKING V0.9.2</div>
+            <div className="mt-1 text-xs text-slate-500">Excel Import Production / Template Round-trip</div>
           </div>
           <span className="w-fit rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200">
-            Master Ready
+            Import Ready
           </span>
         </div>
       </div>
