@@ -1,5 +1,25 @@
 # Changelog
 
+## V0.9.4 — Searchable Combobox & Sticky Grid UX
+
+### Added
+- Search box inside every shared themed combobox.
+- Accent-insensitive Vietnamese option filtering by label, description and value.
+- Searchable inline ISSUE cell comboboxes through `FloatingSelect`.
+- Clear-search action and no-result state for dropdowns.
+- Sticky ISSUE table header inside a dedicated scroll viewport.
+
+### Changed
+- Opening a combobox automatically focuses the search input.
+- `ThemedSelect` keyboard navigation now operates on filtered options.
+- ISSUE grid supports simultaneous vertical sticky header and horizontally pinned columns.
+- Grid viewport uses internal scrolling so the header remains visible through long ISSUE lists.
+
+### Compatibility
+- No database migration required.
+- V0.9.3 Project Profile schema remains unchanged.
+- V0.9.2 Excel Import template remains unchanged.
+
 ## V0.9.3 — Project Profile / Project Management
 
 ### Added

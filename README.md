@@ -1,8 +1,8 @@
-# ASC WORKING — V0.9.3
+# ASC WORKING — V0.9.4
 
-**Project Profile / Project Management**
+**Searchable Combobox & Sticky Grid UX**
 
-ASC WORKING là Project Workspace đa dự án. V0.9.3 giữ nguyên toàn bộ chức năng đến V0.9.2 và bổ sung khả năng cập nhật đầy đủ hồ sơ Project sau khi tạo.
+ASC WORKING là Project Workspace đa dự án. V0.9.4 giữ nguyên toàn bộ nghiệp vụ đến V0.9.3 và tập trung nâng trải nghiệm thao tác dữ liệu: combobox có thể gõ để tìm kiếm trên toàn hệ thống và tiêu đề lưới ISSUE được cố định trong vùng cuộn.
 
 ## Version history
 - ✅ V0.1.0 — Foundation
@@ -16,41 +16,45 @@ ASC WORKING là Project Workspace đa dự án. V0.9.3 giữ nguyên toàn bộ 
 - ✅ V0.9.0 — Hardening + UAT
 - ✅ V0.9.1 — Master Account / Multi-Project Access
 - ✅ V0.9.2 — Excel Import Production / Template Round-trip
-- ✅ **V0.9.3 — Project Profile / Project Management**
+- ✅ V0.9.3 — Project Profile / Project Management
+- ✅ **V0.9.4 — Searchable Combobox & Sticky Grid UX**
 - ⏭ V1.0.0 — Production Release
 
-## V0.9.3 có gì mới?
+## V0.9.4 có gì mới?
 
-Trong `Thiết lập → Master Project Console`, nút trước đây chỉ quản lý thành viên được nâng thành **Quản lý Project** với hai tab:
+### 1. Searchable Combobox toàn hệ thống
 
-1. **Hồ sơ dự án**
-2. **Thành viên**
+Hai component combobox dùng chung của hệ thống đều được nâng cấp:
 
-Hồ sơ dự án cho phép cập nhật:
-- Mã Project, slug, tên dự án, mô tả, trạng thái.
-- Tên trường/đơn vị, mã đơn vị, địa chỉ.
-- Số hợp đồng, giá trị hợp đồng, ngày ký.
-- Ngày bắt đầu, ngày kết thúc dự kiến.
-- Đầu mối khách hàng: họ tên, chức vụ, email, điện thoại.
-- Ghi chú vận hành cấp Project.
+- `ThemedSelect`: Project Switcher, bộ lọc, form, Master Console, PLHĐ, Phòng ban, Remote Server...
+- `FloatingSelect`: các combobox inline trong lưới ISSUE.
 
-Sau khi lưu, app refresh Server Component để Project Switcher/Dashboard sử dụng dữ liệu mới.
+Khi mở combobox, hệ thống tự focus vào ô tìm kiếm. Người dùng có thể gõ tên cần tìm rồi chọn kết quả thay vì phải cuộn danh sách dài.
 
-## Nâng từ V0.9.2
+Tìm kiếm áp dụng trên:
+- label;
+- description;
+- value/code;
+- không phân biệt chữ hoa/thường;
+- hỗ trợ tìm tiếng Việt không dấu.
 
-### 1. Chạy migration V0.9.3
+Ví dụ `quan ly dao tao` vẫn tìm được `Phòng quản lý đào tạo`.
 
-Supabase → SQL Editor:
+### 2. Sticky ISSUE Grid Header
 
-```text
-supabase/migrations/202608240005_v093_project_profile.sql
-```
+Lưới ISSUE chuyển sang vùng cuộn riêng có giới hạn theo viewport. Hàng tiêu đề:
 
-Migration chỉ mở rộng bảng `projects`, không xóa dữ liệu hiện có.
+`Mã | Nội dung yêu cầu | Trạng thái | Trạng thái KH | Ưu tiên | Module | Phòng ban | Phụ trách...`
 
-### 2. Environment Variables
+được giữ cố định ở phía trên khi cuộn qua các ISSUE.
 
-Giữ nguyên:
+Các cột pin bên trái vẫn hoạt động cùng sticky header; ô góc checkbox có z-index riêng để không bị đè khi cuộn ngang/dọc.
+
+## Nâng từ V0.9.3
+
+Không có migration database mới ở V0.9.4.
+
+Giữ nguyên Environment Variables:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
@@ -59,7 +63,7 @@ SUPABASE_SERVICE_ROLE_KEY=
 APP_ENCRYPTION_KEY=
 ```
 
-### 3. Build / deploy
+Build / deploy:
 
 ```bash
 npm install
@@ -77,11 +81,12 @@ npm run check
 
 ## Excel Import
 
-V0.9.3 tiếp tục sử dụng **Template Excel contract V0.9.2** để đảm bảo backward compatibility. Không cần đổi template chỉ vì nâng Project Profile.
+V0.9.4 tiếp tục sử dụng **Template Excel contract V0.9.2**, không thay đổi cấu trúc import.
 
 ## Tài liệu
+- `docs/V0.9.4-SCOPE.md`
+- `docs/UAT_V094_GRID_UX_CHECKLIST.md`
 - `docs/PROJECT_PROFILE_V093_SETUP.md`
-- `docs/UAT_V093_PROJECT_PROFILE_CHECKLIST.md`
 - `docs/EXCEL_IMPORT_V092_SETUP.md`
 - `docs/HARDENING_V090_SETUP.md`
 

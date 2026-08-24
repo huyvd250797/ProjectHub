@@ -46,7 +46,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="System Foundation"
         title="Thiết lập Project Workspace"
-        description="ASC WORKING là Project Workspace đa dự án. V0.9.3 bổ sung Project Profile Management: MASTER có thể cập nhật đầy đủ thông tin trường/đơn vị, hợp đồng, kế hoạch và đầu mối của từng Project."
+        description="ASC WORKING là Project Workspace đa dự án. V0.9.4 giữ Project Profile Management và nâng UX combobox/lưới: MASTER có thể cập nhật đầy đủ thông tin trường/đơn vị, hợp đồng, kế hoạch và đầu mối của từng Project."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -130,7 +130,7 @@ export default async function SettingsPage() {
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Release</div>
         <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-lg font-semibold text-white">ASC WORKING V0.9.3</div>
+            <div className="text-lg font-semibold text-white">ASC WORKING V0.9.4</div>
             <div className="mt-1 text-xs text-slate-500">Project Profile / Project Management</div>
           </div>
           <span className="w-fit rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200">

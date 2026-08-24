@@ -12,4 +12,5 @@
 - ✅ V0.9.1 — Master Account / Multi-Project Access
 - ✅ V0.9.2 — Excel Import Production / Template Round-trip
 - ✅ V0.9.3 — Project Profile / Project Management
+- ✅ V0.9.4 — Searchable Combobox & Sticky Grid UX
 - ⏭ V1.0.0 — Production Release

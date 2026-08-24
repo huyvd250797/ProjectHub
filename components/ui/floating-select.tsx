@@ -1,10 +1,18 @@
 "use client";
 
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Search, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { SelectOption } from "@/lib/issues/types";
 import { cn } from "@/lib/utils";
+
+function normalizeSearchText(value: string | null | undefined) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("vi")
+    .trim();
+}
 
 export function FloatingSelect({
   value,
@@ -26,17 +34,29 @@ export function FloatingSelect({
   tone?: string;
 }) {
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState<DOMRect | null>(null);
+  const [query, setQuery] = useState("");
   const selected = useMemo(() => options.find((item) => item.value === value), [options, value]);
+
+  const filteredOptions = useMemo(() => {
+    const needle = normalizeSearchText(query);
+    if (!needle) return options;
+    return options.filter((option) =>
+      normalizeSearchText(`${option.label} ${option.description ?? ""} ${option.value}`).includes(needle),
+    );
+  }, [options, query]);
 
   useEffect(() => {
     if (!open) return;
     const update = () => setRect(buttonRef.current?.getBoundingClientRect() ?? null);
     update();
+    const frame = window.requestAnimationFrame(() => searchRef.current?.focus());
     window.addEventListener("resize", update);
     window.addEventListener("scroll", update, true);
     return () => {
+      window.cancelAnimationFrame(frame);
       window.removeEventListener("resize", update);
       window.removeEventListener("scroll", update, true);
     };
@@ -46,11 +66,19 @@ export function FloatingSelect({
     if (!open) return;
     const close = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (!buttonRef.current?.contains(target) && !(target as HTMLElement)?.closest?.("[data-floating-select-menu]")) setOpen(false);
+      if (!buttonRef.current?.contains(target) && !(target as HTMLElement)?.closest?.("[data-floating-select-menu]")) {
+        setOpen(false);
+        setQuery("");
+      }
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
+
+  function closeMenu() {
+    setOpen(false);
+    setQuery("");
+  }
 
   return (
     <>
@@ -58,10 +86,17 @@ export function FloatingSelect({
         ref={buttonRef}
         type="button"
         aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
         disabled={disabled}
         onClick={(event) => {
           event.stopPropagation();
-          if (!disabled) setOpen((current) => !current);
+          if (!disabled) {
+            setOpen((current) => {
+              if (current) setQuery("");
+              return !current;
+            });
+          }
         }}
         className={cn(
           "flex max-w-full items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.025] text-left text-slate-400 transition hover:border-cyan-300/18 hover:text-slate-200",
@@ -78,29 +113,68 @@ export function FloatingSelect({
         ? createPortal(
             <div
               data-floating-select-menu
+              role="listbox"
               className="fixed z-[180] overflow-hidden rounded-xl border border-cyan-300/15 bg-[#0a1626]/[0.99] p-1.5 shadow-[0_22px_70px_rgba(0,0,0,0.58)] backdrop-blur-2xl"
               style={{
-                left: Math.min(rect.left, window.innerWidth - Math.max(rect.width, 220) - 12),
-                top: Math.min(rect.bottom + 7, window.innerHeight - 330),
-                width: Math.max(rect.width, 220),
+                left: Math.max(12, Math.min(rect.left, window.innerWidth - Math.max(rect.width, 250) - 12)),
+                top: Math.max(12, Math.min(rect.bottom + 7, window.innerHeight - 390)),
+                width: Math.max(rect.width, 250),
               }}
               onClick={(event) => event.stopPropagation()}
             >
+              <div className="relative mb-1.5 border-b border-white/[0.055] pb-1.5">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-[calc(50%+3px)] text-cyan-300/45" />
+                <input
+                  ref={searchRef}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      closeMenu();
+                    } else if (event.key === "Enter" && filteredOptions.length === 1) {
+                      event.preventDefault();
+                      onChange(filteredOptions[0]?.value ?? null);
+                      closeMenu();
+                    }
+                  }}
+                  placeholder="Nhập để tìm kiếm..."
+                  aria-label={`Tìm trong ${ariaLabel}`}
+                  className="h-9 w-full rounded-lg border border-white/[0.07] bg-black/15 pl-9 pr-9 text-[11px] text-slate-200 outline-none placeholder:text-slate-700 focus:border-cyan-300/25 focus:bg-cyan-300/[0.025]"
+                />
+                {query ? (
+                  <button
+                    type="button"
+                    aria-label="Xóa nội dung tìm kiếm"
+                    onClick={() => {
+                      setQuery("");
+                      searchRef.current?.focus();
+                    }}
+                    className="absolute right-2.5 top-1/2 grid size-6 -translate-y-[calc(50%+3px)] place-items-center rounded-md text-slate-600 hover:bg-white/[0.04] hover:text-slate-300"
+                  >
+                    <X className="size-3" />
+                  </button>
+                ) : null}
+              </div>
+
               <div className="scrollbar-thin max-h-[300px] overflow-y-auto">
                 <button
                   type="button"
-                  onClick={() => { onChange(null); setOpen(false); }}
+                  onClick={() => { onChange(null); closeMenu(); }}
                   className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-[11px] text-slate-600 hover:bg-white/[0.04] hover:text-slate-300"
                 >
                   {placeholder}
                 </button>
-                {options.map((option) => {
+
+                {filteredOptions.length ? filteredOptions.map((option) => {
                   const active = option.value === value;
                   return (
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => { onChange(option.value); setOpen(false); }}
+                      role="option"
+                      aria-selected={active}
+                      onClick={() => { onChange(option.value); closeMenu(); }}
                       className={cn(
                         "flex w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-left transition",
                         active
@@ -115,7 +189,12 @@ export function FloatingSelect({
                       {active ? <Check className="size-3.5 shrink-0 text-cyan-300" /> : null}
                     </button>
                   );
-                })}
+                }) : (
+                  <div className="px-3 py-5 text-center">
+                    <Search className="mx-auto size-4 text-slate-800" />
+                    <div className="mt-2 text-[11px] text-slate-600">Không tìm thấy dữ liệu phù hợp</div>
+                  </div>
+                )}
               </div>
             </div>,
             document.body,

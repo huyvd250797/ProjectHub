@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "0.9.3" ? pass("Package version", "0.9.3") : fail("Package version", `Expected 0.9.3, got ${pkg.version}`);
+pkg.version === "0.9.4" ? pass("Package version", "0.9.4") : fail("Package version", `Expected 0.9.4, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -17,6 +17,11 @@ for (const rel of [
   "app/api/master/projects/route.ts",
   "app/api/master/projects/[projectId]/route.ts",
   "components/master/master-project-console.tsx",
+  "components/ui/themed-select.tsx",
+  "components/ui/floating-select.tsx",
+  "components/issues/issue-workspace.tsx",
+  "docs/V0.9.4-SCOPE.md",
+  "docs/UAT_V094_GRID_UX_CHECKLIST.md",
   "supabase/migrations/202608240002_v090_hardening.sql",
   "supabase/migrations/202608240003_v091_master_multi_project.sql",
   "supabase/migrations/202608240004_v092_excel_import_production.sql",
@@ -47,7 +52,22 @@ for (const token of ["organizationName", "organizationAddress", "contractValue",
   masterConsole.includes(token) ? pass(`Project Profile UI: ${token}`) : fail(`Project Profile UI: ${token}`);
 }
 
-console.log("\nASC WORKING V0.9.3 - UAT Preflight\n");
+const themedSelect = fs.readFileSync(path.join(root, "components/ui/themed-select.tsx"), "utf8");
+for (const token of ["Nhập để tìm kiếm...", "normalizeSearchText", "filteredOptions"]) {
+  themedSelect.includes(token) ? pass(`Searchable ThemedSelect: ${token}`) : fail(`Searchable ThemedSelect: ${token}`);
+}
+
+const floatingSelect = fs.readFileSync(path.join(root, "components/ui/floating-select.tsx"), "utf8");
+for (const token of ["Nhập để tìm kiếm...", "normalizeSearchText", "filteredOptions"]) {
+  floatingSelect.includes(token) ? pass(`Searchable FloatingSelect: ${token}`) : fail(`Searchable FloatingSelect: ${token}`);
+}
+
+const issueWorkspace = fs.readFileSync(path.join(root, "components/issues/issue-workspace.tsx"), "utf8");
+for (const token of ["max-h-[calc(100vh-150px)]", "sticky left-0 top-0 z-50", "sticky top-0 z-30"]) {
+  issueWorkspace.includes(token) ? pass(`Sticky ISSUE grid: ${token}`) : fail(`Sticky ISSUE grid: ${token}`);
+}
+
+console.log("\nASC WORKING V0.9.4 - UAT Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);
