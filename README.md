@@ -1,71 +1,81 @@
-# ASC WORKING — V0.9.5
+# ASC WORKING — V1.0.0
 
-**Project Team / ISSUE Assignee Sync**
+**Production Release** — Project Workspace đa dự án cho triển khai phần mềm.
 
-V0.9.5 thống nhất dữ liệu **Thành viên Project** và **Phụ trách ISSUE**. Từ phiên bản này, danh sách Phụ trách không còn lấy trực tiếp từ toàn bộ `people.person_type = 'asc'` được import từ Excel. Chỉ những tài khoản đã được khai báo trong `project_members` của Project hiện tại mới xuất hiện để chọn.
+## Production scope
 
-## Luồng dữ liệu mới
+- Multi-project + Project Switcher.
+- MASTER toàn hệ thống; Admin / PM / Member / Viewer theo Project.
+- Project Profile + Project Team / ISSUE Assignee Sync.
+- Dashboard dữ liệu thật theo Project.
+- PLHĐ Unified View + virtualized detail tree.
+- Department Intelligence.
+- ISSUE Core + Productivity: CRUD, inline edit, bulk update, saved views, column preferences, export.
+- Searchable combobox toàn hệ thống + sticky ISSUE grid header.
+- Excel Import Production: tải template → fill → preview → transaction apply.
+- Remote Server Security: AES-256-GCM, Reveal/Copy permission, audit.
+- Hardening & UAT Center.
+- **Dark / Light Mode**: icon Sun/Moon ở Topbar, lưu preference trên browser và tự theo system theme khi chưa chọn.
+- **System Information**: `/settings/system`.
 
-```text
-Supabase Auth
-    ↓
-profiles
-    ↓
-project_members      ← Họ tên + Email đăng nhập + Role được quản lý tại Master Console
-    ↓
-people.user_id       ← bản ghi nhân sự ASC liên kết để giữ FK của ISSUE
-    ↓
-issues.assignee_person_id
-```
-
-## Master Console → Thành viên
-
-MASTER khai báo:
-
-- Họ tên
-- Email đăng nhập
-- Role: Admin / PM / Member / Viewer
-
-Email phải tồn tại trong Supabase Authentication. Khi lưu:
-1. `profiles.display_name` được cập nhật theo Họ tên.
-2. `project_members` được thêm/cập nhật.
-3. Hệ thống tìm bản ghi ASC cũ theo email hoặc họ tên để giữ tham chiếu ISSUE lịch sử.
-4. Nếu chưa có thì tạo `people` mới.
-5. `people.user_id` liên kết thành viên với người phụ trách ISSUE.
-
-## ISSUE
-
-- Combobox **Phụ trách** chỉ hiển thị Project Members.
-- Mỗi option hiển thị Họ tên, Email và Role.
-- API Create / Update / Bulk Update từ chối assignee không thuộc Project Member.
-- Phụ trách cũ đã bị gỡ khỏi Project vẫn được hiển thị dưới dạng `Legacy`, nhưng không thể chọn lại.
-- Gỡ member không xóa `people` để không làm mất lịch sử ISSUE.
-
-## Migration bắt buộc
-
-Nếu database đang ở V0.9.4, chạy:
-
-```text
-supabase/migrations/202608240006_v095_project_members_assignees.sql
-```
-
-Migration thêm `people.user_id`, backfill các member cũ có thể match theo email/họ tên và tạo person record còn thiếu.
-
-## Environment
-
-V0.9.5 dùng `SUPABASE_SERVICE_ROLE_KEY` phía server khi MASTER lưu thành viên để đồng bộ profile/member/person.
+## Environment variables
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 APP_ENCRYPTION_KEY=
+APP_URL=
 ```
 
-Không commit `.env.local`.
+`SUPABASE_SERVICE_ROLE_KEY` và `APP_ENCRYPTION_KEY` là **server-only**, không dùng `NEXT_PUBLIC_` và không commit vào Git. Sau khi đã lưu credential Remote Server thật, không đổi `APP_ENCRYPTION_KEY` nếu chưa có kế hoạch rotate/migrate ciphertext.
 
-## Lưu ý tài khoản đăng nhập
+## Database baseline
 
-V0.9.5 **không tự tạo tài khoản Authentication**. Email phải được tạo trước trong Supabase → Authentication → Users. Sau đó MASTER khai báo Họ tên + Email đó trong Project.
+V1.0.0 **không yêu cầu migration Supabase mới**. Production database phải đã chạy migration đến:
+
+```text
+supabase/migrations/202608240006_v095_project_members_assignees.sql
+```
+
+## Local
+
+```bash
+npm install
+npm run preflight
+npm run typecheck
+npm run lint
+npm run build
+npm run dev
+```
+
+## Vercel
+
+- Framework: Next.js.
+- Build Command: Default (`npm run build`).
+- Output Directory: **Default / để trống**, không đặt `out`.
+- Cấu hình toàn bộ environment variables rồi Redeploy.
+- Sau deploy: mở `Thiết lập → System Information` và `Hardening & UAT`.
+
+## Theme UX
+
+Nút theme nằm ở **Topbar góc phải, ngay trước chuông thông báo**. Đây là vị trí phù hợp vì theme là thiết lập toàn app, luôn truy cập được nhưng không tranh chỗ với Project Switcher. Màn hình Login cũng có cùng nút ở góc phải trên.
+
+## Production gate
+
+Trước khi coi deployment là Production Ready:
+
+1. `npm run preflight` PASS.
+2. Vercel build PASS.
+3. System Information xác nhận Supabase / Database / Service Role / Encryption.
+4. UAT Center không có FAIL blocker.
+5. Smoke test Dashboard → PLHĐ → Phòng ban → ISSUE → Excel Import → Remote Server.
+6. Backup database trước các import/migration lớn.
+
+Xem thêm:
+- `docs/PRODUCTION_V100_RELEASE.md`
+- `docs/PRODUCTION_CHECKLIST_V100.md`
+- `docs/BACKUP_RESTORE_ROLLBACK_V100.md`
+- `docs/UAT_V100_CHECKLIST.md`
 
 © 2026 HuyVo. All rights reserved.

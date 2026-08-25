@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "0.9.5" ? pass("Package version", "0.9.5") : fail("Package version", `Expected 0.9.5, got ${pkg.version}`);
+pkg.version === "1.0.0" ? pass("Package version", "1.0.0") : fail("Package version", `Expected 1.0.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -21,6 +21,14 @@ for (const rel of [
   "components/ui/floating-select.tsx",
   "components/issues/issue-workspace.tsx",
   "docs/V0.9.5-SCOPE.md",
+  "docs/V1.0.0-SCOPE.md",
+  "docs/PRODUCTION_V100_RELEASE.md",
+  "docs/PRODUCTION_CHECKLIST_V100.md",
+  "docs/BACKUP_RESTORE_ROLLBACK_V100.md",
+  "docs/UAT_V100_CHECKLIST.md",
+  "components/theme-toggle.tsx",
+  "app/(workspace)/settings/system/page.tsx",
+  "lib/app-meta.ts",
   "docs/PROJECT_TEAM_V095_SETUP.md",
   "docs/UAT_V095_PROJECT_TEAM_CHECKLIST.md",
   "app/api/master/projects/[projectId]/members/route.ts",
@@ -83,7 +91,23 @@ for (const token of ["project_members", "personByUser", "assignees", "assigneeVa
   issueServer.includes(token) ? pass(`Assignee source guard: ${token}`) : fail(`Assignee source guard: ${token}`);
 }
 
-console.log("\nASC WORKING V0.9.5 - UAT Preflight\n");
+
+const themeToggle = fs.readFileSync(path.join(root, "components/theme-toggle.tsx"), "utf8");
+for (const token of ["asc-working-theme", "Moon", "Sun", "localStorage"]) {
+  themeToggle.includes(token) ? pass(`Theme toggle: ${token}`) : fail(`Theme toggle: ${token}`);
+}
+
+const globalCss = fs.readFileSync(path.join(root, "app/globals.css"), "utf8");
+for (const token of ['data-theme="light"', "theme-toggle", "--bg: #f4f7fb"]) {
+  globalCss.includes(token) ? pass(`Light theme CSS: ${token}`) : fail(`Light theme CSS: ${token}`);
+}
+
+const systemInfo = fs.readFileSync(path.join(root, "app/(workspace)/settings/system/page.tsx"), "utf8");
+for (const token of ["System Information", "SUPABASE_SERVICE_ROLE_KEY", "APP_ENCRYPTION_KEY", "V1.0.0"]) {
+  systemInfo.includes(token) ? pass(`System Information: ${token}`) : fail(`System Information: ${token}`);
+}
+
+console.log("\nASC WORKING V1.0.0 - Production Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

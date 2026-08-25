@@ -1,6 +1,7 @@
 import { Cpu, Database, LockKeyhole, Radar } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { LoginForm } from "@/components/login-form";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export const metadata = { title: "Đăng nhập" };
@@ -10,6 +11,9 @@ export default function LoginPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden">
+      <div className="absolute right-4 top-4 z-30 md:right-8 md:top-8">
+        <ThemeToggle />
+      </div>
       <div className="absolute left-1/2 top-[-240px] h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-amber-300/[0.035] blur-3xl" />
       <div className="relative mx-auto grid min-h-screen max-w-[1380px] grid-cols-1 lg:grid-cols-[1.15fr_0.85fr]">
         <section className="hidden flex-col justify-between p-12 lg:flex xl:p-16">
@@ -49,7 +53,7 @@ export default function LoginPage() {
             </div>
           </div>
           <div className="text-[9px] uppercase tracking-[0.2em] text-slate-700">
-            © 2026 HuyVo • ASC WORKING V0.9.5
+            © 2026 HuyVo • ASC WORKING V1.0.0
           </div>
         </section>
 

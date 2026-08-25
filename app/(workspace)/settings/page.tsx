@@ -13,6 +13,7 @@ import {
   Layers3,
   ServerCog,
   Network,
+  MonitorCog,
   ShieldCheck,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
@@ -46,7 +47,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="System Foundation"
         title="Thiết lập Project Workspace"
-        description="ASC WORKING là Project Workspace đa dự án. V0.9.5 dùng Thành viên Project làm nguồn duy nhất cho Phụ trách ISSUE; họ tên hiển thị và email đăng nhập được quản lý tập trung trong Master Console."
+        description="ASC WORKING V1.0.0 là bản Production Release của Project Workspace đa dự án: Dashboard, PLHĐ, Phòng ban, ISSUE, Project Team, Excel Import và Remote Server Security đã được hợp nhất để vận hành production."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -126,15 +127,32 @@ export default async function SettingsPage() {
         </div>
       </Link>
 
+      <Link
+        href="/settings/system"
+        className="tech-panel tech-panel-hover mt-4 flex flex-col gap-4 rounded-2xl p-5 md:flex-row md:items-center md:p-6"
+      >
+        <div className="grid size-12 shrink-0 place-items-center rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.055]">
+          <MonitorCog className="size-5 text-emerald-200/80" />
+        </div>
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300/60">Production Runtime</div>
+          <div className="mt-1 text-sm font-semibold text-slate-200">System Information</div>
+          <div className="mt-1 text-xs leading-5 text-slate-600">Xem version, environment, Supabase, Auth/RLS, MASTER access, Service Role, Encryption và trạng thái các năng lực production.</div>
+        </div>
+        <div className="flex items-center gap-2 text-xs font-medium text-emerald-200/80 md:ml-auto">
+          Xem System Info <ArrowRight className="size-4" />
+        </div>
+      </Link>
+
       <div className="tech-panel mt-4 rounded-2xl p-5 md:p-6">
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Release</div>
         <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-lg font-semibold text-white">ASC WORKING V0.9.5</div>
-            <div className="mt-1 text-xs text-slate-500">Project Profile / Project Management</div>
+            <div className="text-lg font-semibold text-white">ASC WORKING V1.0.0</div>
+            <div className="mt-1 text-xs text-slate-500">Production Release</div>
           </div>
           <span className="w-fit rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200">
-            Project Ready
+            Production Ready
           </span>
         </div>
       </div>

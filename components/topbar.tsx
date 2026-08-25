@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Bell, ChevronDown, Command, Crown, LogOut, Menu, Search } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { MobileProjectChip, ProjectSwitcher } from "@/components/project-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const pageNames: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -13,7 +14,8 @@ const pageNames: Record<string, string> = {
   "/resources": "Remote Server",
   "/settings/projects": "Master Project Console",
   "/settings/uat": "Hardening & UAT",
-  "/settings/import": "Import POC",
+  "/settings/system": "System Information",
+  "/settings/import": "Excel Import",
   "/settings": "Thiết lập",
 };
 
@@ -90,6 +92,8 @@ export function Topbar({
             <Crown className="size-3" /> MASTER
           </span>
         ) : null}
+
+        <ThemeToggle />
 
         <button
           type="button"

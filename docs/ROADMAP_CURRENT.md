@@ -17,3 +17,7 @@
 
 - ✅ V0.9.5 — Project Team / ISSUE Assignee Sync
 - ⏭ V1.0.0 — Production Release
+
+
+## Production
+- ✅ V1.0.0 — Production Release / Dark-Light Theme / System Information

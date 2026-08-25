@@ -138,7 +138,7 @@ export async function getIssueLookups(supabase: SupabaseClient, projectId: strin
   );
 
   const assignees = memberships
-    .map((membership) => {
+    .map((membership): SelectOption | null => {
       const userId = String(membership.user_id ?? "");
       const profile = profileMap.get(userId);
       const person = personByUser.get(userId);

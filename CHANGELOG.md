@@ -1,5 +1,19 @@
 # Changelog
 
+## V1.0.0 — Production Release
+
+### Added
+- Dark / Light Mode toggle bằng icon Sun/Moon ở Topbar và Login.
+- Theme preference lưu trong `localStorage`, fallback theo OS theme.
+- Light theme cho app shell, panel, grid, form, dropdown và common typography.
+- `Thiết lập → System Information` để kiểm tra runtime production mà không expose secret.
+- Production release/checklist, backup/restore/rollback và final UAT docs.
+
+### Production hardening
+- Chuẩn hóa version runtime / health / readiness thành V1.0.0.
+- Giữ nguyên schema baseline đến migration V0.9.5; không tạo migration không cần thiết chỉ để đổi version.
+- Preflight mở rộng cho theme + System Information + production docs.
+
 ## V0.9.5 — Project Team / ISSUE Assignee Sync
 
 ### Added
@@ -17,6 +31,14 @@
 
 ### Database
 - `202608240006_v095_project_members_assignees.sql`
+
+## V0.9.5 Deploy Fix — ISSUE assignee SelectOption typing
+
+### Fixed
+- Fixed Vercel TypeScript `TS2677` in `lib/issues/server.ts`.
+- Explicitly typed the assignee mapping callback as `SelectOption | null` before filtering null values.
+- Preserves optional/nullable `description` semantics from the shared `SelectOption` type without unsafe casts.
+- No database migration required.
 
 ## V0.9.4 — Searchable Combobox & Sticky Grid UX
 
