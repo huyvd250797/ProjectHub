@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.0.0" ? pass("Package version", "1.0.0") : fail("Package version", `Expected 1.0.0, got ${pkg.version}`);
+pkg.version === "1.0.1" ? pass("Package version", "1.0.1") : fail("Package version", `Expected 1.0.1, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -22,6 +22,8 @@ for (const rel of [
   "components/issues/issue-workspace.tsx",
   "docs/V0.9.5-SCOPE.md",
   "docs/V1.0.0-SCOPE.md",
+  "docs/V1.0.1-SCOPE.md",
+  "docs/DARK_MODE_V101.md",
   "docs/PRODUCTION_V100_RELEASE.md",
   "docs/PRODUCTION_CHECKLIST_V100.md",
   "docs/BACKUP_RESTORE_ROLLBACK_V100.md",
@@ -102,12 +104,16 @@ for (const token of ['data-theme="light"', "theme-toggle", "--bg: #f4f7fb"]) {
   globalCss.includes(token) ? pass(`Light theme CSS: ${token}`) : fail(`Light theme CSS: ${token}`);
 }
 
+for (const token of ['ASC WORKING V1.0.1 — Dark Mode Contrast', '--bg: #0b1422', '.text-slate-600 { color: #768da5', 'border-color: rgba(158, 184, 210, 0.18)']) {
+  globalCss.includes(token) ? pass(`Dark contrast CSS: ${token}`) : fail(`Dark contrast CSS: ${token}`);
+}
+
 const systemInfo = fs.readFileSync(path.join(root, "app/(workspace)/settings/system/page.tsx"), "utf8");
-for (const token of ["System Information", "SUPABASE_SERVICE_ROLE_KEY", "APP_ENCRYPTION_KEY", "V1.0.0"]) {
+for (const token of ["System Information", "SUPABASE_SERVICE_ROLE_KEY", "APP_ENCRYPTION_KEY", "V1.0.1"]) {
   systemInfo.includes(token) ? pass(`System Information: ${token}`) : fail(`System Information: ${token}`);
 }
 
-console.log("\nASC WORKING V1.0.0 - Production Preflight\n");
+console.log("\nASC WORKING V1.0.1 - Production Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

@@ -5,7 +5,7 @@ export function GET() {
   return NextResponse.json({
     app: "ASC WORKING",
     workspace: "Project Workspace",
-    version: "1.0.0",
+    version: "1.0.1",
     release: "Production Release",
     status: "ok",
     supabaseConfigured: isSupabaseConfigured(),

@@ -1,5 +1,14 @@
 # Changelog
 
+## V1.0.1 — Dark Mode Contrast & Visual Polish
+
+### Changed
+- Nâng nền dark navy lên một cấp để giảm cảm giác đen đặc.
+- Tăng tương phản toàn bộ thang chữ slate, đặc biệt metadata/placeholder/label phụ.
+- Tăng độ rõ border, panel, input, combobox và theme toggle trong Dark Mode.
+- Giữ nguyên Light Mode và toàn bộ nghiệp vụ/database của V1.0.0.
+- Không yêu cầu migration Supabase mới.
+
 ## V1.0.0 — Production Release
 
 ### Added

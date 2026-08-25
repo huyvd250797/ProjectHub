@@ -1,4 +1,6 @@
-# ASC WORKING — V1.0.0
+# ASC WORKING — V1.0.1
+
+**Dark Mode Contrast & Visual Polish — Production Patch**
 
 **Production Release** — Project Workspace đa dự án cho triển khai phần mềm.
 
@@ -32,7 +34,7 @@ APP_URL=
 
 ## Database baseline
 
-V1.0.0 **không yêu cầu migration Supabase mới**. Production database phải đã chạy migration đến:
+V1.0.1 **không yêu cầu migration Supabase mới**. Production database phải đã chạy migration đến:
 
 ```text
 supabase/migrations/202608240006_v095_project_members_assignees.sql

@@ -68,7 +68,7 @@ export default async function SystemInformationPage() {
       <PageHeader
         eyebrow="Production Runtime"
         title="System Information"
-        description="Thông tin release và các điều kiện runtime quan trọng của ASC WORKING V1.0.0. Màn hình này không hiển thị giá trị secret, chỉ xác nhận trạng thái cấu hình."
+        description="Thông tin release và các điều kiện runtime quan trọng của ASC WORKING V1.0.1. Màn hình này không hiển thị giá trị secret, chỉ xác nhận trạng thái cấu hình."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -101,7 +101,7 @@ export default async function SystemInformationPage() {
         <div className="mt-4 grid grid-cols-1 gap-3 text-xs md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
             <div className="text-slate-600">App release</div>
-            <div className="mt-2 font-semibold text-slate-200">V1.0.0</div>
+            <div className="mt-2 font-semibold text-slate-200">V1.0.1</div>
           </div>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
             <div className="text-slate-600">Schema baseline</div>

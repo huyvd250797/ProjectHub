@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #07111f;
-  --bg-soft: #0a1626;
-  --panel: rgba(13, 27, 45, 0.72);
-  --panel-solid: #0d1b2d;
-  --line: rgba(141, 181, 220, 0.14);
-  --line-strong: rgba(54, 211, 255, 0.24);
-  --text: #eaf4ff;
-  --muted: #89a2bb;
-  --accent: #2ed3ff;
+  --bg: #0b1422;
+  --bg-soft: #101c2d;
+  --panel: rgba(20, 35, 55, 0.90);
+  --panel-solid: #14243a;
+  --line: rgba(158, 184, 210, 0.20);
+  --line-strong: rgba(57, 216, 255, 0.34);
+  --text: #f4f7fb;
+  --muted: #9aafc2;
+  --accent: #39d8ff;
   --accent-2: #7d7cff;
   --success: #42ddb0;
   --warning: #ffbd63;
@@ -28,13 +28,15 @@ body {
   margin: 0;
   color: var(--text);
   background:
-    radial-gradient(circle at 82% 5%, rgba(46, 211, 255, 0.08), transparent 25rem),
-    radial-gradient(circle at 16% 90%, rgba(125, 124, 255, 0.08), transparent 28rem),
+    radial-gradient(circle at 82% 5%, rgba(57, 216, 255, 0.105), transparent 27rem),
+    radial-gradient(circle at 16% 90%, rgba(125, 124, 255, 0.09), transparent 30rem),
     var(--bg);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 body::before {
@@ -42,10 +44,10 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.2;
+  opacity: 0.28;
   background-image:
-    linear-gradient(rgba(102, 165, 220, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(102, 165, 220, 0.055) 1px, transparent 1px);
+    linear-gradient(rgba(124, 178, 224, 0.065) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 178, 224, 0.065) 1px, transparent 1px);
   background-size: 36px 36px;
   mask-image: linear-gradient(to bottom, black, transparent 84%);
 }
@@ -65,10 +67,10 @@ textarea {
 
 .tech-panel {
   border: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(16, 32, 52, 0.88), rgba(10, 23, 39, 0.78));
+  background: linear-gradient(180deg, rgba(22, 39, 60, 0.95), rgba(15, 29, 46, 0.92));
   box-shadow:
-    0 18px 60px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.025);
+    0 18px 60px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(18px);
 }
 
@@ -82,7 +84,7 @@ textarea {
 .tech-panel-hover:hover {
   transform: translateY(-1px);
   border-color: var(--line-strong);
-  background: linear-gradient(180deg, rgba(18, 37, 60, 0.95), rgba(11, 26, 44, 0.9));
+  background: linear-gradient(180deg, rgba(26, 46, 70, 0.98), rgba(18, 34, 54, 0.96));
 }
 
 .scrollbar-thin {
@@ -106,21 +108,21 @@ textarea {
 
 .field {
   height: 2.5rem; width: 100%; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,.08);
-  background: rgba(0,0,0,.1); padding: 0 .75rem; font-size: .75rem; color: rgb(226 232 240); outline: none;
+  background: rgba(7,14,24,.28); padding: 0 .75rem; font-size: .75rem; color: #e5edf5; outline: none;
 }
-.field::placeholder { color: rgb(51 65 85); }
+.field::placeholder { color: #7289a1; }
 .field:focus { border-color: rgba(103,232,249,.25); box-shadow: 0 0 0 2px rgba(103,232,249,.04); }
 .secure-btn {
   display: inline-flex; height: 2.25rem; align-items: center; gap: .5rem; border-radius: .75rem;
   border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.025); padding: 0 .75rem;
-  font-size: .75rem; color: rgb(148 163 184); transition: 160ms ease;
+  font-size: .75rem; color: #afbdcc; transition: 160ms ease;
 }
 .secure-btn:hover { border-color: rgba(103,232,249,.15); background: rgba(103,232,249,.04); color: rgb(207 250 254); }
 .secure-btn:disabled { cursor: not-allowed; opacity: .35; }
 
 
 /* -------------------------------------------------------------------------- */
-/* ASC WORKING V1.0.0 — Light / Dark theme                                    */
+/* ASC WORKING V1.0.1 — Light / Dark theme                                    */
 /* -------------------------------------------------------------------------- */
 
 html { color-scheme: dark; }
@@ -236,3 +238,132 @@ html[data-theme="light"] .text-violet-200,
 html[data-theme="light"] .text-violet-300 { color: #6d28d9 !important; }
 html[data-theme="light"] [class*="hover:text-white"]:hover,
 html[data-theme="light"] [class*="hover:text-slate-100"]:hover { color: #0f172a !important; }
+
+
+/* -------------------------------------------------------------------------- */
+/* ASC WORKING V1.0.1 — Dark Mode Contrast & Visual Polish                    */
+/* -------------------------------------------------------------------------- */
+
+/*
+  Dark mode deliberately uses a lighter navy surface and a stronger text ramp.
+  This keeps the technology aesthetic while preventing secondary labels,
+  placeholders and grid metadata from disappearing into the background.
+*/
+html:not([data-theme="light"]) {
+  color-scheme: dark;
+  --bg: #0b1422;
+  --bg-soft: #101c2d;
+  --panel: rgba(20, 35, 55, 0.90);
+  --panel-solid: #14243a;
+  --line: rgba(158, 184, 210, 0.20);
+  --line-strong: rgba(57, 216, 255, 0.34);
+  --text: #f4f7fb;
+  --muted: #9aafc2;
+}
+
+/* WCAG-friendly dark text ramp. Even slate-700 remains readable for metadata. */
+html:not([data-theme="light"]) .text-white,
+html:not([data-theme="light"]) .text-slate-100 { color: #f4f7fb !important; }
+html:not([data-theme="light"]) .text-slate-200 { color: #e5edf5 !important; }
+html:not([data-theme="light"]) .text-slate-300 { color: #cfdae5 !important; }
+html:not([data-theme="light"]) .text-slate-400 { color: #afbdcc !important; }
+html:not([data-theme="light"]) .text-slate-500 { color: #90a4b8 !important; }
+html:not([data-theme="light"]) .text-slate-600 { color: #768da5 !important; }
+html:not([data-theme="light"]) .text-slate-700 { color: #7289a1 !important; }
+html:not([data-theme="light"]) .text-slate-800 { color: #627a92 !important; }
+
+/* Common low-opacity borders are raised one step to separate controls/grids. */
+html:not([data-theme="light"]) [class~="border-white/[0.04]"],
+html:not([data-theme="light"]) [class~="border-white/[0.05]"],
+html:not([data-theme="light"]) [class~="border-white/[0.06]"],
+html:not([data-theme="light"]) [class~="border-white/[0.07]"],
+html:not([data-theme="light"]) [class~="border-white/[0.08]"],
+html:not([data-theme="light"]) [class~="border-white/[0.1]"] {
+  border-color: rgba(158, 184, 210, 0.18) !important;
+}
+
+/* Lift the most common translucent surfaces without turning dark mode gray. */
+html:not([data-theme="light"]) [class~="bg-white/[0.02]"],
+html:not([data-theme="light"]) [class~="bg-white/[0.025]"],
+html:not([data-theme="light"]) [class~="bg-white/[0.03]"],
+html:not([data-theme="light"]) [class~="bg-white/[0.035]"] {
+  background-color: rgba(151, 177, 202, 0.055) !important;
+}
+html:not([data-theme="light"]) [class~="bg-white/[0.04]"],
+html:not([data-theme="light"]) [class~="bg-white/[0.045]"],
+html:not([data-theme="light"]) [class~="bg-white/[0.05]"] {
+  background-color: rgba(151, 177, 202, 0.075) !important;
+}
+
+/* Map legacy hard-coded navy utilities to the brighter V1.0.1 surface scale. */
+html:not([data-theme="light"]) [class*="bg-[#07111f]"],
+html:not([data-theme="light"]) [class*="bg-[#081321]"],
+html:not([data-theme="light"]) [class*="bg-[#081421]"],
+html:not([data-theme="light"]) [class*="bg-[#081523]"] {
+  background-color: rgba(12, 24, 39, 0.97) !important;
+}
+html:not([data-theme="light"]) [class*="bg-[#091625]"],
+html:not([data-theme="light"]) [class*="bg-[#0a1626]"],
+html:not([data-theme="light"]) [class*="bg-[#0a1828]"] {
+  background-color: rgba(16, 30, 48, 0.98) !important;
+}
+html:not([data-theme="light"]) [class*="bg-[#0b1727]"],
+html:not([data-theme="light"]) [class*="bg-[#0b192a]"] {
+  background-color: rgba(18, 33, 53, 0.985) !important;
+}
+html:not([data-theme="light"]) [class*="bg-[#0d1b2d]"],
+html:not([data-theme="light"]) [class*="bg-[#0e1c2e]"] {
+  background-color: rgba(21, 38, 59, 0.99) !important;
+}
+
+/* Form controls: readable placeholder + clearer inactive state. */
+html:not([data-theme="light"]) input,
+html:not([data-theme="light"]) textarea,
+html:not([data-theme="light"]) select {
+  caret-color: #39d8ff;
+}
+html:not([data-theme="light"]) input::placeholder,
+html:not([data-theme="light"]) textarea::placeholder {
+  color: #7289a1;
+  opacity: 1;
+}
+html:not([data-theme="light"]) .field {
+  border-color: rgba(158, 184, 210, 0.18);
+  background: rgba(8, 17, 29, 0.34);
+  color: #e5edf5;
+}
+html:not([data-theme="light"]) .field:focus {
+  border-color: rgba(57, 216, 255, 0.34);
+  background: rgba(13, 26, 43, 0.72);
+  box-shadow: 0 0 0 3px rgba(57, 216, 255, 0.065);
+}
+html:not([data-theme="light"]) .secure-btn {
+  border-color: rgba(158, 184, 210, 0.17);
+  background: rgba(151, 177, 202, 0.055);
+  color: #afbdcc;
+}
+
+/* Core interactive controls get a subtle edge so buttons do not sink into panels. */
+html:not([data-theme="light"]) .theme-toggle {
+  background: rgba(151, 177, 202, 0.065) !important;
+  border-color: rgba(158, 184, 210, 0.19) !important;
+  color: #cfdae5 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 8px 24px rgba(0,0,0,.14);
+}
+html:not([data-theme="light"]) .theme-toggle:hover {
+  border-color: rgba(57, 216, 255, 0.34) !important;
+  background: rgba(57, 216, 255, 0.085) !important;
+  color: #eaf9ff !important;
+}
+
+/* Accent labels stay vivid without looking neon-heavy. */
+html:not([data-theme="light"]) .text-cyan-100 { color: #d8f8ff !important; }
+html:not([data-theme="light"]) .text-cyan-200 { color: #a9efff !important; }
+html:not([data-theme="light"]) .text-cyan-300 { color: #55dcfb !important; }
+html:not([data-theme="light"]) .text-amber-100 { color: #fff0b8 !important; }
+html:not([data-theme="light"]) .text-amber-200 { color: #ffe08a !important; }
+html:not([data-theme="light"]) .text-amber-300 { color: #f6cd5d !important; }
+html:not([data-theme="light"]) .text-emerald-200,
+html:not([data-theme="light"]) .text-emerald-300 { color: #77e6c2 !important; }
+html:not([data-theme="light"]) .text-violet-200,
+html:not([data-theme="light"]) .text-violet-300 { color: #bbb8ff !important; }

@@ -19,7 +19,7 @@ export default async function MasterProjectsPage() {
       <PageHeader
         eyebrow="Global Administration"
         title="Master Project Console"
-        description="Quản trị toàn bộ Project của ASC WORKING. V1.0.0 thống nhất Project Member với Phụ trách ISSUE: khai báo họ tên, email đăng nhập và quyền ngay trong từng Project."
+        description="Quản trị toàn bộ Project của ASC WORKING. V1.0.1 thống nhất Project Member với Phụ trách ISSUE: khai báo họ tên, email đăng nhập và quyền ngay trong từng Project."
         actions={<span className="inline-flex items-center gap-2 rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200"><Crown className="size-3.5" /> MASTER</span>}
       />
       <div className="mb-4 flex items-start gap-3 rounded-2xl border border-cyan-300/10 bg-cyan-300/[0.035] p-4 text-xs leading-5 text-slate-500">
