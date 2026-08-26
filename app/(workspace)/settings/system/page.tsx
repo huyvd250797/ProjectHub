@@ -7,6 +7,7 @@ import {
   Crown,
   Database,
   FileSpreadsheet,
+  FileText,
   KeyRound,
   MonitorCog,
   Palette,
@@ -72,6 +73,14 @@ export default async function SystemInformationPage() {
     }
   }
 
+  let reportsReady = false;
+  let reportsDetail = configured ? "Chưa xác nhận migration Executive Report V1.3.0." : "Supabase chưa được cấu hình.";
+  if (supabase && user) {
+    const result = await supabase.from("report_snapshots").select("id", { count: "exact", head: true });
+    reportsReady = !result.error;
+    reportsDetail = result.error ? "Cần migration 202608260003_v130_executive_reports.sql." : "Executive Report snapshots + PM notes đã sẵn sàng.";
+  }
+
   let teamPerformanceReady = false;
   let teamPerformanceDetail = configured ? "Chưa xác nhận migration V1.1.1." : "Supabase chưa được cấu hình.";
   if (supabase && user) {
@@ -103,6 +112,7 @@ export default async function SystemInformationPage() {
     { label: "Excel Import", value: "Production", detail: "Template → Preview → Transaction Apply", ok: configured, icon: FileSpreadsheet },
     { label: "Appearance", value: "Dark / Light", detail: "Preference lưu trên browser; mặc định theo system theme.", ok: true, icon: Palette },
     { label: "Analytics / Health", value: analyticsReady ? "Ready" : "Migration required", detail: analyticsDetail, ok: analyticsReady, icon: BarChart3 },
+    { label: "Executive Reports", value: reportsReady ? "Ready" : "Migration required", detail: reportsDetail, ok: reportsReady, icon: FileText },
     { label: "Team / Performance", value: teamPerformanceReady ? "Ready" : "Migration required", detail: teamPerformanceDetail, ok: teamPerformanceReady, icon: UsersRound },
     { label: "Notifications", value: notificationsReady ? "Ready" : "Migration required", detail: notificationsDetail, ok: notificationsReady, icon: Bell },
   ];
@@ -149,7 +159,7 @@ export default async function SystemInformationPage() {
           </div>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
             <div className="text-slate-600">Schema baseline</div>
-            <div className="mt-2 font-semibold text-slate-200">Through V1.2.0 migration</div>
+            <div className="mt-2 font-semibold text-slate-200">Through V1.3.0 migration</div>
           </div>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
             <div className="text-slate-600">Deploy target</div>

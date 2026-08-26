@@ -367,3 +367,29 @@ html:not([data-theme="light"]) .text-emerald-200,
 html:not([data-theme="light"]) .text-emerald-300 { color: #77e6c2 !important; }
 html:not([data-theme="light"]) .text-violet-200,
 html:not([data-theme="light"]) .text-violet-300 { color: #bbb8ff !important; }
+
+/* ASC WORKING V1.3.0 — Executive Report print/PDF */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  #executive-report-print,
+  #executive-report-print * {
+    visibility: visible !important;
+  }
+
+  #executive-report-print {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  #executive-report-print a {
+    text-decoration: none !important;
+  }
+}

@@ -1,5 +1,20 @@
 # Changelog
 
+## V1.3.0 — Executive Report & Project Summary
+
+### Added
+- Executive Report theo Project với kỳ tuần/tháng/30d/90d/all/custom.
+- Project Summary cho quản lý: Health Score, schedule, ISSUE, handover, risk Module/Phòng ban/Member.
+- PM Comment và Kế hoạch tiếp theo.
+- Report Snapshot + so sánh snapshot trước.
+- Export CSV và print/PDF layout.
+- ISSUE Full Screen với một vùng scroll lưới duy nhất và phím `Esc` để thoát.
+
+### Database
+- `report_snapshots` + RLS theo Project.
+- MASTER/Admin/PM được lưu/cập nhật/xóa snapshot; Member/Viewer chỉ xem.
+- Activity Center ghi nhận thao tác lưu/cập nhật snapshot.
+
 ## V1.2.0 — Advanced Analytics & Project Health
 
 ### Added

@@ -17,14 +17,21 @@
 - ✅ V0.9.5 — Project Team / ISSUE Assignee Sync
 - ✅ V1.0.0 — Production Release
 - ✅ V1.0.1 — Dark Mode Contrast & Visual Polish
+- ✅ V1.1.0 — Notifications & Activity Center
+- ✅ V1.1.1 — Issue Validation / Flexible Project Team / Performance Tune
+- ✅ V1.1.2 — Project UUID Compatibility Hotfix
+- ✅ V1.1.3 — ISSUE Delete / CRUD Completion
+- ✅ V1.2.0 — Advanced Analytics & Project Health
+- ✅ V1.3.0 — Executive Report & Project Summary + ISSUE Full Screen
 
 ## Current
-- ✅ V1.1.0 — Notifications & Activity Center
+- **V1.3.0 — Executive Report & Project Summary**
 
-## Proposed next
-- ⏭ V1.2.0 — Jira Integration / Sync
-- ⏭ V1.3.0 — Advanced Analytics & Project Health
-- ⏭ V1.4.0 — Attachments / Project Documents
-- ⏭ V1.5.0 — Project Templates / Faster Project Setup
+## Deferred by product decision
+- Jira Integration / Sync
+- Attachments / Project Documents
 
-- ✅ V1.1.1 — Issue Validation / Flexible Project Team / Performance Tune
+## Candidate next
+- V1.4.0 — Project Templates & Faster Project Setup
+- V1.5.0 — Smart Reminders & Follow-up
+- V1.6.0 — Cross-Project Portfolio Dashboard

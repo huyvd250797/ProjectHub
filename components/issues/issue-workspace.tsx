@@ -15,6 +15,8 @@ import {
   Layers3,
   ListTodo,
   LoaderCircle,
+  Maximize2,
+  Minimize2,
   Plus,
   RefreshCw,
   Save,
@@ -126,6 +128,7 @@ export function IssueWorkspace() {
   const [savedViews, setSavedViews] = useState<IssueSavedView[]>([]);
   const [saveViewOpen, setSaveViewOpen] = useState(false);
   const [viewSaving, setViewSaving] = useState(false);
+  const [fullScreen, setFullScreen] = useState(false);
   const previousProject = useRef(selectedProject.id);
   const preferenceSaveTimer = useRef<number | null>(null);
 
@@ -229,6 +232,23 @@ export function IssueWorkspace() {
   }, [selectedProject.id, queryString, reloadKey, preferences.pageSize]);
 
   useEffect(() => { setSelectedIds(new Set()); }, [selectedProject.id, queryString]);
+
+  useEffect(() => {
+    if (!fullScreen) return;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFullScreen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [fullScreen]);
 
   useEffect(() => {
     if (!issueIdParam || createMode) return;
@@ -429,20 +449,22 @@ export function IssueWorkspace() {
   }
 
   return (
-    <>
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">{summaryCards.map(([title, value, Icon, tone, onClick]) => <button key={title} type="button" onClick={onClick} className="tech-panel tech-panel-hover rounded-2xl p-4 text-left"><div className="flex items-start justify-between"><div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-600">{title}</div><Icon className={cn("size-4", tone)} /></div><div className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">{formatNumber(value)}</div></button>)}</div>
+    <div className={cn(fullScreen && "fixed inset-0 z-[100] flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-[#07111f] p-3 md:p-4")} data-issue-fullscreen={fullScreen ? "true" : "false"}>
+      {fullScreen ? <div className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border border-cyan-300/12 bg-[#0b1727] px-4 py-3 shadow-xl"><div className="grid size-9 place-items-center rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] text-cyan-200"><ListTodo className="size-4" /></div><div className="min-w-0"><div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-cyan-300/60">ISSUE Full Screen</div><div className="mt-1 truncate text-xs font-medium text-slate-200">{selectedProject.code} • {formatNumber(data.total)} ISSUE theo bộ lọc</div></div><div className="ml-auto hidden items-center gap-4 text-[10px] text-slate-500 md:flex"><span>Tổng <b className="text-slate-200">{formatNumber(data.summary.total)}</b></span><span>Quá hạn <b className="text-rose-200">{formatNumber(data.summary.overdue)}</b></span><span>Thiếu phụ trách <b className="text-amber-200">{formatNumber(data.summary.missingAssignee)}</b></span></div><button type="button" onClick={() => setFullScreen(false)} className="ml-2 flex h-9 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-[10px] text-slate-300 hover:border-cyan-300/20 hover:text-white" title="Thoát toàn màn hình (Esc)"><Minimize2 className="size-3.5" /> Thoát</button></div> : null}
+      <div className={cn("mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6", fullScreen && "hidden")}>{summaryCards.map(([title, value, Icon, tone, onClick]) => <button key={title} type="button" onClick={onClick} className="tech-panel tech-panel-hover rounded-2xl p-4 text-left"><div className="flex items-start justify-between"><div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-600">{title}</div><Icon className={cn("size-4", tone)} /></div><div className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">{formatNumber(value)}</div></button>)}</div>
 
       {data.source === "demo" ? <div className="mb-4 rounded-xl border border-amber-300/12 bg-amber-300/[0.045] px-4 py-3 text-[10px] text-amber-100/55">Demo Mode • Productivity controls được hiển thị nhưng thao tác ghi dữ liệu bị khóa.</div> : null}
       {notice ? <div className="mb-4 flex items-center justify-between rounded-xl border border-emerald-300/12 bg-emerald-300/[0.045] px-4 py-3 text-[10px] text-emerald-100/65"><span>{notice}</span><button onClick={() => setNotice("")}><X className="size-3.5" /></button></div> : null}
       {error ? <div className="mb-4 flex items-center justify-between rounded-xl border border-rose-300/12 bg-rose-300/[0.045] px-4 py-3 text-[10px] text-rose-100/65"><span>{error}</span><button onClick={() => setError("")}><X className="size-3.5" /></button></div> : null}
 
-      <div className="tech-panel overflow-visible rounded-2xl">
+      <div className={cn("tech-panel overflow-visible rounded-2xl", fullScreen && "flex min-h-0 flex-1 flex-col overflow-hidden")}>
         <div className="flex flex-col gap-3 border-b border-white/[0.06] p-4 xl:flex-row xl:items-center">
           <div className="relative min-w-0 flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-600" /><input value={searchValue} onChange={(e) => setSearchValue(e.target.value)} placeholder="Tìm nội dung, Jira, Module, phòng ban, người phụ trách..." className="h-10 w-full rounded-xl border border-white/[0.07] bg-black/10 pl-9 pr-3 text-xs text-slate-300 outline-none placeholder:text-slate-700 focus:border-cyan-300/20" /></div>
           <div className="flex flex-wrap gap-2">
             <SavedViewsMenu views={savedViews} onApply={applySavedView} onDelete={deleteSavedView} disabled={data.source === "demo"} />
             <button type="button" onClick={() => setSaveViewOpen(true)} disabled={data.source === "demo"} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-slate-200 disabled:opacity-40"><Save className="size-3.5" /> Lưu View</button>
             <button type="button" onClick={() => setColumnManagerOpen(true)} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-slate-200"><Columns3 className="size-3.5" /> Cột</button>
+            <button type="button" onClick={() => setFullScreen((value) => !value)} className={cn("flex h-10 items-center gap-2 rounded-xl border px-3 text-[10px] transition", fullScreen ? "border-cyan-300/18 bg-cyan-300/[0.07] text-cyan-100" : "border-white/[0.07] bg-white/[0.025] text-slate-500 hover:text-slate-200")} title={fullScreen ? "Thoát Full Screen (Esc)" : "Xem ISSUE toàn màn hình"}>{fullScreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />} {fullScreen ? "Thu nhỏ" : "Full Screen"}</button>
             <button type="button" onClick={exportIssues} disabled={data.source === "demo"} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-slate-200 disabled:opacity-40"><Download className="size-3.5" /> Export</button>
             <button type="button" disabled={!data.canEdit || data.source === "demo"} onClick={() => setQuickOpen((value) => !value)} className={cn("flex h-10 items-center gap-2 rounded-xl border px-3 text-[10px]", quickOpen ? "border-violet-300/18 bg-violet-300/[0.07] text-violet-100" : "border-white/[0.07] bg-white/[0.025] text-slate-500")}><Zap className="size-3.5" /> Thêm nhanh</button>
             <button type="button" disabled={!data.canEdit || data.source === "demo"} onClick={() => { setSelectedIssue(null); setCreateMode(true); }} className="flex h-10 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-xs font-semibold text-[#07111f] hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"><Plus className="size-4" /> Thêm ISSUE</button>
@@ -464,9 +486,9 @@ export function IssueWorkspace() {
           <div className="ml-auto flex items-center gap-2 text-[9px] uppercase tracking-[0.12em] text-slate-700"><span className="size-1.5 rounded-full bg-emerald-300/70" /> {data.role}</div>
         </div>
 
-        {selectedIds.size ? <div className="sticky top-[76px] z-20 flex flex-col gap-2 border-b border-cyan-300/10 bg-[#0a1828]/95 px-4 py-3 shadow-lg backdrop-blur-xl lg:flex-row lg:items-center"><div className="flex items-center gap-2 text-xs font-medium text-cyan-100"><span className="grid size-6 place-items-center rounded-lg bg-cyan-300/[0.1] text-[10px]">{selectedIds.size}</span> ISSUE đã chọn</div><div className="w-[190px]"><ThemedSelect ariaLabel="Trường bulk update" value={bulkField} onChange={(value) => { setBulkField(value); setBulkValue(""); }} options={bulkFieldOptions} /></div>{bulkField === "dueDate" ? <div className="flex gap-1"><input type="date" value={bulkValue === "__clear__" ? "" : bulkValue} onChange={(e) => setBulkValue(e.target.value)} className="h-10 rounded-xl border border-white/[0.08] bg-black/10 px-3 text-xs text-slate-300 outline-none" /><button onClick={() => setBulkValue("__clear__")} className={cn("h-10 rounded-xl border px-3 text-[10px]", bulkValue === "__clear__" ? "border-rose-300/20 bg-rose-300/[0.06] text-rose-200" : "border-white/[0.07] text-slate-600")}>Xóa</button></div> : <div className="w-[240px]"><ThemedSelect ariaLabel="Giá trị bulk update" value={bulkValue} onChange={setBulkValue} options={bulkOptions()} placeholder="Chọn giá trị" menuClassName="min-w-[320px]" /></div>}<button disabled={!bulkValue || bulkSaving} onClick={() => void applyBulkUpdate()} className="flex h-10 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-[10px] font-semibold text-[#07111f] disabled:opacity-40">{bulkSaving ? <LoaderCircle className="size-3.5 animate-spin" /> : <Zap className="size-3.5" />} Cập nhật</button><button disabled={selectedIds.size !== 1 || bulkSaving} onClick={() => void duplicateSelected()} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-400 disabled:opacity-30"><CopyPlus className="size-3.5" /> Nhân bản</button>{data.canArchive ? <button disabled={bulkSaving} onClick={() => void deleteSelectedIssues()} className="flex h-10 items-center gap-2 rounded-xl border border-rose-300/15 bg-rose-300/[0.04] px-3 text-[10px] font-medium text-rose-200 hover:bg-rose-300/[0.08] disabled:opacity-40"><Trash2 className="size-3.5" /> Xóa</button> : null}<button onClick={() => setSelectedIds(new Set())} className="ml-auto flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-600"><X className="size-3.5" /> Bỏ chọn</button></div> : null}
+        {selectedIds.size ? <div className={cn("sticky z-20 flex flex-col gap-2 border-b border-cyan-300/10 bg-[#0a1828]/95 px-4 py-3 shadow-lg backdrop-blur-xl lg:flex-row lg:items-center", fullScreen ? "top-0" : "top-[76px]")}><div className="flex items-center gap-2 text-xs font-medium text-cyan-100"><span className="grid size-6 place-items-center rounded-lg bg-cyan-300/[0.1] text-[10px]">{selectedIds.size}</span> ISSUE đã chọn</div><div className="w-[190px]"><ThemedSelect ariaLabel="Trường bulk update" value={bulkField} onChange={(value) => { setBulkField(value); setBulkValue(""); }} options={bulkFieldOptions} /></div>{bulkField === "dueDate" ? <div className="flex gap-1"><input type="date" value={bulkValue === "__clear__" ? "" : bulkValue} onChange={(e) => setBulkValue(e.target.value)} className="h-10 rounded-xl border border-white/[0.08] bg-black/10 px-3 text-xs text-slate-300 outline-none" /><button onClick={() => setBulkValue("__clear__")} className={cn("h-10 rounded-xl border px-3 text-[10px]", bulkValue === "__clear__" ? "border-rose-300/20 bg-rose-300/[0.06] text-rose-200" : "border-white/[0.07] text-slate-600")}>Xóa</button></div> : <div className="w-[240px]"><ThemedSelect ariaLabel="Giá trị bulk update" value={bulkValue} onChange={setBulkValue} options={bulkOptions()} placeholder="Chọn giá trị" menuClassName="min-w-[320px]" /></div>}<button disabled={!bulkValue || bulkSaving} onClick={() => void applyBulkUpdate()} className="flex h-10 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-[10px] font-semibold text-[#07111f] disabled:opacity-40">{bulkSaving ? <LoaderCircle className="size-3.5 animate-spin" /> : <Zap className="size-3.5" />} Cập nhật</button><button disabled={selectedIds.size !== 1 || bulkSaving} onClick={() => void duplicateSelected()} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-400 disabled:opacity-30"><CopyPlus className="size-3.5" /> Nhân bản</button>{data.canArchive ? <button disabled={bulkSaving} onClick={() => void deleteSelectedIssues()} className="flex h-10 items-center gap-2 rounded-xl border border-rose-300/15 bg-rose-300/[0.04] px-3 text-[10px] font-medium text-rose-200 hover:bg-rose-300/[0.08] disabled:opacity-40"><Trash2 className="size-3.5" /> Xóa</button> : null}<button onClick={() => setSelectedIds(new Set())} className="ml-auto flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-600"><X className="size-3.5" /> Bỏ chọn</button></div> : null}
 
-        <div className="scrollbar-thin max-h-[calc(100vh-150px)] min-h-[360px] overflow-auto overscroll-contain">
+        <div className={cn("scrollbar-thin min-h-[360px] overflow-auto overscroll-contain", fullScreen ? "min-h-0 flex-1" : "max-h-[calc(100vh-150px)]")}>
           <table className="border-collapse text-left" style={{ width: totalTableWidth, minWidth: "100%" }}>
             <thead className="text-[9px] uppercase tracking-[0.13em] text-slate-600">
               <tr>
@@ -503,6 +525,6 @@ export function IssueWorkspace() {
       {(createMode || selectedIssue) ? <IssueDrawer projectId={selectedProject.id} issue={selectedIssue} createMode={createMode} lookups={data.lookups} canEdit={data.canEdit} canArchive={data.canArchive} source={data.source} onClose={closeDrawer} onSaved={onSaved} onArchived={onArchived} /> : null}
       <ColumnManager open={columnManagerOpen} value={preferences} onChange={setPreferences} onClose={() => setColumnManagerOpen(false)} />
       <SaveViewModal open={saveViewOpen} onClose={() => setSaveViewOpen(false)} onSave={(name) => void saveCurrentView(name)} saving={viewSaving} />
-    </>
+    </div>
   );
 }

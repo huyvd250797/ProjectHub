@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "1.2.0",
+        version: "1.3.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "1.2.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "1.3.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -170,6 +170,16 @@ export async function GET(request: NextRequest) {
     notificationsSchema.durationMs,
   ));
 
+  const reportSchema = await timed(async () => supabase.from("report_snapshots").select("id", { count: "exact", head: true }).eq("project_id", projectId));
+  const reportSchemaError = reportSchema.error || reportSchema.value?.error;
+  checks.push(check(
+    "executive_reports",
+    "Executive Report snapshots",
+    reportSchemaError ? "fail" : "pass",
+    reportSchemaError ? "Không đọc được report_snapshots; kiểm tra migration V1.3.0." : "Executive Report snapshot / PM notes schema sẵn sàng.",
+    reportSchema.durationMs,
+  ));
+
   const importSchema = await timed(async () => supabase.rpc("preview_import_v092", {
     p_project_id: projectId,
     p_payload: {
@@ -239,7 +249,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "1.2.0",
+      version: "1.3.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

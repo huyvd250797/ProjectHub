@@ -1,4 +1,25 @@
-# ASC WORKING — V1.2.0
+# ASC WORKING — V1.3.0
+
+## V1.3.0 có gì mới?
+
+- **Executive Report & Project Summary** tại `/reports`.
+- Báo cáo theo Tuần / Tháng / 30 ngày / 90 ngày / Toàn bộ / khoảng ngày tùy chọn.
+- Project Summary một màn hình: Health Score, schedule, ISSUE, bàn giao và top risk.
+- PM Comment + Kế hoạch tiếp theo theo từng kỳ báo cáo.
+- Snapshot để so sánh kỳ hiện tại với snapshot trước.
+- Export CSV và In / Save as PDF từ trình duyệt.
+- Dùng cùng preference ẩn/hiện Giá trị HĐ với Dashboard.
+- ISSUE có **Full Screen**: phủ toàn workspace, bỏ sidebar/topbar và chỉ còn một vùng scroll của lưới ISSUE; `Esc` để thoát.
+
+### Migration V1.3.0
+
+Chạy sau V1.2.0:
+
+```text
+supabase/migrations/202608260003_v130_executive_reports.sql
+```
+
+Migration chỉ bổ sung `report_snapshots`, RLS và Activity trigger cho snapshot báo cáo. Không cần Environment Variable mới.
 
 ## V1.2.0 có gì mới?
 

@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.2.0" ? pass("Package version", "1.2.0") : fail("Package version", `Expected 1.2.0, got ${pkg.version}`);
+pkg.version === "1.3.0" ? pass("Package version", "1.3.0") : fail("Package version", `Expected 1.3.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -75,6 +75,14 @@ for (const rel of [
   "docs/V1.2.0-SCOPE.md",
   "docs/ANALYTICS_V120_SETUP.md",
   "docs/UAT_V120_ANALYTICS_CHECKLIST.md",
+  "app/(workspace)/reports/page.tsx",
+  "app/api/reports/route.ts",
+  "components/reports/executive-report.tsx",
+  "lib/reports/types.ts",
+  "supabase/migrations/202608260003_v130_executive_reports.sql",
+  "docs/V1.3.0-SCOPE.md",
+  "docs/EXECUTIVE_REPORT_V130_SETUP.md",
+  "docs/UAT_V130_EXECUTIVE_REPORT_CHECKLIST.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -200,7 +208,22 @@ for (const token of ["500 dòng", "1000 dòng", "ALL", "Số dòng ISSUE hiển 
   issueWorkspaceV120.includes(token) ? pass(`ISSUE page size: ${token}`) : fail(`ISSUE page size: ${token}`);
 }
 
-console.log("\nASC WORKING V1.2.0 - Advanced Analytics & Project Health Preflight\n");
+
+const executiveReport = fs.readFileSync(path.join(root, "components/reports/executive-report.tsx"), "utf8");
+for (const token of ["Executive Report", "PM Comment", "Kế hoạch tiếp theo", "Lưu Snapshot", "In / PDF"]) {
+  executiveReport.includes(token) ? pass(`V1.3.0 Executive Report: ${token}`) : fail(`V1.3.0 Executive Report: ${token}`);
+}
+
+const reportMigration = fs.readFileSync(path.join(root, "supabase/migrations/202608260003_v130_executive_reports.sql"), "utf8");
+for (const token of ["report_snapshots", "report_snapshots_select_project_member", "capture_report_snapshot_activity_v130"]) {
+  reportMigration.includes(token) ? pass(`V1.3.0 report migration: ${token}`) : fail(`V1.3.0 report migration: ${token}`);
+}
+
+for (const token of ["fullScreen", "Full Screen", "Maximize2", "min-h-0 flex-1", "Escape"]) {
+  issueWorkspaceV120.includes(token) ? pass(`ISSUE Full Screen: ${token}`) : fail(`ISSUE Full Screen: ${token}`);
+}
+
+console.log("\nASC WORKING V1.3.0 - Executive Report & Project Summary Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);
