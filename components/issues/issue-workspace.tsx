@@ -231,6 +231,15 @@ export function IssueWorkspace() {
     return () => controller.abort();
   }, [selectedProject.id, queryString, reloadKey, preferences.pageSize]);
 
+  useEffect(() => {
+    const handleCatalogChanged = (event: Event) => {
+      const detail = (event as CustomEvent<{ projectId?: string }>).detail;
+      if (!detail?.projectId || detail.projectId === selectedProject.id) setReloadKey((key) => key + 1);
+    };
+    window.addEventListener("asc-working:catalog-changed", handleCatalogChanged);
+    return () => window.removeEventListener("asc-working:catalog-changed", handleCatalogChanged);
+  }, [selectedProject.id]);
+
   useEffect(() => { setSelectedIds(new Set()); }, [selectedProject.id, queryString]);
 
   useEffect(() => {

@@ -1,4 +1,5 @@
 import { Building2 } from "lucide-react";
+import { ProjectMasterDataButton } from "@/components/catalog/project-master-data-modal";
 import { DepartmentIntelligence } from "@/components/departments/department-intelligence";
 import { PageHeader } from "@/components/page-header";
 
@@ -18,11 +19,14 @@ export default async function DepartmentsPage({
       <PageHeader
         eyebrow="Department Intelligence"
         title="Phòng ban & Stakeholder"
-        description="Theo dõi mức xử lý, bàn giao, quá hạn, đầu mối và Module theo từng phòng ban của project đang chọn. Click một đơn vị để mở intelligence drawer và drill-down sang ISSUE."
+        description="Theo dõi mức xử lý, bàn giao, quá hạn, đầu mối và Module theo từng phòng ban của project đang chọn. Danh mục Phòng ban được khai báo riêng theo từng Project."
         actions={
-          <div className="flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 py-2 text-[10px] text-slate-500">
-            <Building2 className="size-3.5 text-emerald-300/60" />
-            Real Project Data • V1.3.0
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <ProjectMasterDataButton defaultTab="departments" label="Danh mục Phòng ban" />
+            <div className="flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 py-2 text-[10px] text-slate-500">
+              <Building2 className="size-3.5 text-emerald-300/60" />
+              Real Project Data • V1.3.1
+            </div>
           </div>
         }
       />

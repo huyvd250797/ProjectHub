@@ -433,6 +433,15 @@ export function DepartmentIntelligence({ initialDepartmentId = "" }: { initialDe
   }, [selectedProject.id, reloadKey]);
 
   useEffect(() => {
+    const handleCatalogChanged = (event: Event) => {
+      const detail = (event as CustomEvent<{ projectId?: string }>).detail;
+      if (!detail?.projectId || detail.projectId === selectedProject.id) setReloadKey((key) => key + 1);
+    };
+    window.addEventListener("asc-working:catalog-changed", handleCatalogChanged);
+    return () => window.removeEventListener("asc-working:catalog-changed", handleCatalogChanged);
+  }, [selectedProject.id]);
+
+  useEffect(() => {
     setSelectedDepartmentId(initialDepartmentId);
   }, [initialDepartmentId]);
 
@@ -496,7 +505,7 @@ export function DepartmentIntelligence({ initialDepartmentId = "" }: { initialDe
             <div>
               <div className="text-xs font-semibold text-amber-100">Project chưa có dữ liệu Phòng ban/ISSUE</div>
               <div className="mt-1 text-[10px] leading-5 text-amber-100/45">
-                V1.3.0 đang đọc Supabase thật và không lấy số mock để che dữ liệu trống. Hãy nạp departments, people, contract_items và issues cho project đang chọn.
+                V1.3.1 đang đọc Supabase thật và không lấy số mock để che dữ liệu trống. Hãy nạp departments, people, contract_items và issues cho project đang chọn.
               </div>
             </div>
           </div>
@@ -669,7 +678,7 @@ export function DepartmentIntelligence({ initialDepartmentId = "" }: { initialDe
 
         <div className="flex flex-col gap-2 border-t border-white/[0.04] px-4 py-3 text-[9px] uppercase tracking-[0.12em] text-slate-700 sm:flex-row sm:items-center sm:justify-between">
           <span>{filteredRows.length} / {data.departments.length} nhóm hiển thị • Source: {data.source === "database" ? "Supabase" : "Demo Mode"}</span>
-          <span>ASC WORKING V1.3.0 • Department Intelligence</span>
+          <span>ASC WORKING V1.3.1 • Department Intelligence</span>
         </div>
       </div>
 

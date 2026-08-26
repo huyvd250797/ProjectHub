@@ -1,5 +1,15 @@
 # Changelog
 
+## V1.3.1 — Project Master Data & Wide Modal UX
+
+- Bổ sung danh mục Phòng ban theo từng Project.
+- Bổ sung danh mục Module PLHĐ theo từng Project.
+- Thêm API `/api/project-catalog` với project-scope + role guard MASTER/Admin/PM.
+- Tự refresh ISSUE/PLHĐ/Department Intelligence sau thay đổi danh mục.
+- Chuyển ISSUE create/edit, Project Profile và Resource Vault sang wide modal.
+- Sửa lỗi cú pháp `finally` bị lặp trong `issue-drawer.tsx` của source V1.3.0 đóng gói.
+- Không có migration database mới.
+
 ## V1.3.0 — Executive Report & Project Summary
 
 ### Added

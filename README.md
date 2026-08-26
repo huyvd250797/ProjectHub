@@ -1,4 +1,14 @@
-# ASC WORKING — V1.3.0
+# ASC WORKING — V1.3.1
+
+## V1.3.1 có gì mới?
+
+- Project Master Data: khai báo **Phòng ban** và **Module PLHĐ** riêng theo từng Project.
+- MASTER/Admin/PM được tạo/sửa; Member/Viewer chỉ xem.
+- ISSUE/PLHĐ/Department Intelligence tự refresh sau khi danh mục thay đổi.
+- Form nhập nhiều trường chuyển sang **wide modal**: ISSUE, Hồ sơ Project và Resource Vault.
+- Không cần migration Supabase mới; database baseline vẫn đến V1.3.0.
+
+Xem `docs/V1.3.1-SCOPE.md` và `docs/UAT_V131_PROJECT_MASTER_DATA_CHECKLIST.md`.
 
 ## V1.3.0 có gì mới?
 

@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.3.0" ? pass("Package version", "1.3.0") : fail("Package version", `Expected 1.3.0, got ${pkg.version}`);
+pkg.version === "1.3.1" ? pass("Package version", "1.3.1") : fail("Package version", `Expected 1.3.1, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -83,6 +83,11 @@ for (const rel of [
   "docs/V1.3.0-SCOPE.md",
   "docs/EXECUTIVE_REPORT_V130_SETUP.md",
   "docs/UAT_V130_EXECUTIVE_REPORT_CHECKLIST.md",
+  "app/api/project-catalog/route.ts",
+  "components/catalog/project-master-data-modal.tsx",
+  "lib/catalog/types.ts",
+  "docs/V1.3.1-SCOPE.md",
+  "docs/UAT_V131_PROJECT_MASTER_DATA_CHECKLIST.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -223,7 +228,27 @@ for (const token of ["fullScreen", "Full Screen", "Maximize2", "min-h-0 flex-1",
   issueWorkspaceV120.includes(token) ? pass(`ISSUE Full Screen: ${token}`) : fail(`ISSUE Full Screen: ${token}`);
 }
 
-console.log("\nASC WORKING V1.3.0 - Executive Report & Project Summary Preflight\n");
+
+const catalogApi = fs.readFileSync(path.join(root, "app/api/project-catalog/route.ts"), "utf8");
+for (const token of ["departments", "contract_items", "item_type", "normalized_name", "FORBIDDEN_WRITE"]) {
+  catalogApi.includes(token) ? pass(`V1.3.1 Project Catalog API: ${token}`) : fail(`V1.3.1 Project Catalog API: ${token}`);
+}
+
+const projectCatalogModal = fs.readFileSync(path.join(root, "components/catalog/project-master-data-modal.tsx"), "utf8");
+for (const token of ["Project Master Data", "Danh mục Phòng ban", "Module PLHĐ", "max-w-[1240px]", "asc-working:catalog-changed"]) {
+  projectCatalogModal.includes(token) ? pass(`V1.3.1 Project Master Data UI: ${token}`) : fail(`V1.3.1 Project Master Data UI: ${token}`);
+}
+
+for (const [rel, tokens] of [
+  ["components/issues/issue-drawer.tsx", ["max-w-[1180px]", "xl:grid-cols-4", "Wide Modal"]],
+  ["components/master/master-project-console.tsx", ["max-w-[1240px]", "max-w-[1040px]", "Tạo Project mới", "xl:grid-cols-2"]],
+  ["components/resources/resource-vault.tsx", ["max-w-[1040px]", "Đóng modal"]],
+]) {
+  const content = fs.readFileSync(path.join(root, rel), "utf8");
+  for (const token of tokens) content.includes(token) ? pass(`V1.3.1 Wide Modal ${rel}: ${token}`) : fail(`V1.3.1 Wide Modal ${rel}: ${token}`);
+}
+
+console.log("\nASC WORKING V1.3.1 - Project Master Data & Wide Modal UX Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

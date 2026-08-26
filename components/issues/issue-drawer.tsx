@@ -167,7 +167,7 @@ export function IssueDrawer({
   }, [createMode, issue?.id, issue?.updatedAt, projectId, source]);
 
   const title = createMode ? "Tạo ISSUE mới" : `ISSUE #${issue?.issueNo ?? "—"}`;
-  const subtitle = createMode ? "Tạo yêu cầu trong project đang chọn" : "Chi tiết • chỉnh sửa • lịch sử thay đổi";
+  const subtitle = createMode ? "Tạo yêu cầu trong project đang chọn • Wide Modal" : "Chi tiết • chỉnh sửa • lịch sử thay đổi • Wide Modal";
   const writable = canEdit && source === "database";
 
   const assigneeOptions = useMemo(() => {
@@ -270,9 +270,9 @@ export function IssueDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-[140]">
-      <button type="button" aria-label="Đóng" onClick={onClose} className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" />
-      <aside className="absolute inset-y-0 right-0 flex w-full max-w-[720px] flex-col border-l border-white/[0.08] bg-[#07111f] shadow-[-25px_0_80px_rgba(0,0,0,0.4)]">
+    <div className="fixed inset-0 z-[140] flex items-center justify-center p-3 md:p-6">
+      <button type="button" aria-label="Đóng" onClick={onClose} className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
+      <section className="relative flex h-[min(90dvh,920px)] w-full max-w-[1180px] flex-col overflow-hidden rounded-3xl border border-white/[0.09] bg-[#07111f] shadow-[0_28px_100px_rgba(0,0,0,0.55)]">
         <div className="glow-line flex items-start gap-4 border-b border-white/[0.06] px-5 py-5 md:px-6">
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/60">ISSUE Productivity</div>
@@ -371,14 +371,14 @@ export function IssueDrawer({
                 <FieldError message={fieldErrors.content} />
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div><FieldLabel>Trạng thái *</FieldLabel><ThemedSelect ariaLabel="Trạng thái" disabled={!writable} value={draft.statusCode} onChange={(value) => setDraft((c) => ({ ...c, statusCode: value }))} options={lookups.statuses} /><FieldError message={fieldErrors.statusCode} /></div>
                 <div><FieldLabel>Trạng thái khách hàng *</FieldLabel><ThemedSelect ariaLabel="Trạng thái khách hàng" disabled={!writable} value={draft.customerStatusCode} onChange={(value) => setDraft((c) => ({ ...c, customerStatusCode: value }))} options={lookups.customerStatuses} /><FieldError message={fieldErrors.customerStatusCode} /></div>
                 <div><FieldLabel>Ưu tiên *</FieldLabel><ThemedSelect ariaLabel="Ưu tiên" disabled={!writable} value={draft.priorityCode} onChange={(value) => setDraft((c) => ({ ...c, priorityCode: value }))} options={lookups.priorities} /><FieldError message={fieldErrors.priorityCode} /></div>
                 <div><FieldLabel>Giai đoạn</FieldLabel><ThemedSelect ariaLabel="Giai đoạn" disabled={!writable} value={draft.stageCode} onChange={(value) => setDraft((c) => ({ ...c, stageCode: value }))} options={[{ value: "", label: "Chưa gán" }, ...lookups.stages]} placeholder="Chưa gán" /><FieldError message={fieldErrors.stageCode} /></div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div><FieldLabel>Module</FieldLabel><ThemedSelect ariaLabel="Module" disabled={!writable} value={draft.moduleId} onChange={(value) => setDraft((c) => ({ ...c, moduleId: value }))} options={[{ value: "", label: "Chưa xác định Module" }, ...lookups.modules]} placeholder="Chưa xác định Module" menuClassName="min-w-[360px]" /><FieldError message={fieldErrors.moduleId} /></div>
                 <div><FieldLabel>Phòng ban</FieldLabel><ThemedSelect ariaLabel="Phòng ban" disabled={!writable} value={draft.departmentId} onChange={(value) => setDraft((c) => ({ ...c, departmentId: value }))} options={[{ value: "", label: "Chưa xác định Phòng ban" }, ...lookups.departments]} placeholder="Chưa xác định Phòng ban" /><FieldError message={fieldErrors.departmentId} /></div>
                 <div><FieldLabel>Nhân sự yêu cầu</FieldLabel><ThemedSelect ariaLabel="Nhân sự yêu cầu" disabled={!writable} value={draft.requesterId} onChange={(value) => setDraft((c) => ({ ...c, requesterId: value }))} options={[{ value: "", label: "Chưa xác định" }, ...lookups.requesters]} placeholder="Chưa xác định" /><FieldError message={fieldErrors.requesterId} /></div>
@@ -399,8 +399,10 @@ export function IssueDrawer({
                 <FieldError message={fieldErrors.jiraUrl} />
               </div>
 
-              <div><FieldLabel>ASC phản hồi</FieldLabel><textarea disabled={!writable} value={draft.response} onChange={(e) => setDraft((c) => ({ ...c, response: e.target.value }))} rows={4} placeholder="Nội dung phản hồi / hướng xử lý..." className="w-full resize-y rounded-xl border border-white/[0.08] bg-black/10 px-3.5 py-3 text-xs leading-5 text-slate-300 outline-none placeholder:text-slate-700 focus:border-cyan-300/25 disabled:opacity-65" /></div>
-              <div><FieldLabel>Ghi chú</FieldLabel><textarea disabled={!writable} value={draft.notes} onChange={(e) => setDraft((c) => ({ ...c, notes: e.target.value }))} rows={3} placeholder="Ghi chú nội bộ..." className="w-full resize-y rounded-xl border border-white/[0.08] bg-black/10 px-3.5 py-3 text-xs leading-5 text-slate-300 outline-none placeholder:text-slate-700 focus:border-cyan-300/25 disabled:opacity-65" /></div>
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <div><FieldLabel>ASC phản hồi</FieldLabel><textarea disabled={!writable} value={draft.response} onChange={(e) => setDraft((c) => ({ ...c, response: e.target.value }))} rows={4} placeholder="Nội dung phản hồi / hướng xử lý..." className="w-full resize-y rounded-xl border border-white/[0.08] bg-black/10 px-3.5 py-3 text-xs leading-5 text-slate-300 outline-none placeholder:text-slate-700 focus:border-cyan-300/25 disabled:opacity-65" /></div>
+                <div><FieldLabel>Ghi chú</FieldLabel><textarea disabled={!writable} value={draft.notes} onChange={(e) => setDraft((c) => ({ ...c, notes: e.target.value }))} rows={4} placeholder="Ghi chú nội bộ..." className="w-full resize-y rounded-xl border border-white/[0.08] bg-black/10 px-3.5 py-3 text-xs leading-5 text-slate-300 outline-none placeholder:text-slate-700 focus:border-cyan-300/25 disabled:opacity-65" /></div>
+              </div>
             </div>
           )}
         </div>
@@ -418,7 +420,7 @@ export function IssueDrawer({
             </button>
           ) : null}
         </div>
-      </aside>
+      </section>
     </div>
   );
 }

@@ -280,6 +280,15 @@ export function ContractView() {
     return () => controller.abort();
   }, [selectedProject.id, reloadKey]);
 
+  useEffect(() => {
+    const handleCatalogChanged = (event: Event) => {
+      const detail = (event as CustomEvent<{ projectId?: string }>).detail;
+      if (!detail?.projectId || detail.projectId === selectedProject.id) setReloadKey((key) => key + 1);
+    };
+    window.addEventListener("asc-working:catalog-changed", handleCatalogChanged);
+    return () => window.removeEventListener("asc-working:catalog-changed", handleCatalogChanged);
+  }, [selectedProject.id]);
+
   const filteredOverview = useMemo(() => {
     if (!data) return [];
     const term = normalize(deferredSearch);
@@ -710,7 +719,7 @@ export function ContractView() {
 
         <div className="flex flex-col gap-2 border-t border-white/[0.05] px-4 py-3 text-[9px] text-slate-700 md:flex-row md:items-center md:justify-between">
           <span>{data.source === "database" ? "Supabase • project_id scoped" : "Demo Mode"} • Generated {new Date(data.generatedAt).toLocaleTimeString("vi-VN")}</span>
-          <span>V1.3.0 • PLHĐ Unified View • Virtualized Detail Tree</span>
+          <span>V1.3.1 • PLHĐ Unified View • Virtualized Detail Tree</span>
         </div>
       </div>
 
