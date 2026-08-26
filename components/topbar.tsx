@@ -1,16 +1,18 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, ChevronDown, Command, Crown, LogOut, Menu, Search } from "lucide-react";
+import { ChevronDown, Command, Crown, LogOut, Menu, Search } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { MobileProjectChip, ProjectSwitcher } from "@/components/project-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationCenter } from "@/components/notifications/notification-center";
 
 const pageNames: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/contract": "PLHĐ",
   "/departments": "Phòng ban",
   "/issues": "ISSUE",
+  "/activity": "Notifications & Activity",
   "/resources": "Remote Server",
   "/settings/projects": "Master Project Console",
   "/settings/uat": "Hardening & UAT",
@@ -95,14 +97,7 @@ export function Topbar({
 
         <ThemeToggle />
 
-        <button
-          type="button"
-          className="relative grid size-10 place-items-center rounded-xl border border-white/[0.07] bg-white/[0.025] text-slate-500 transition hover:text-slate-200"
-          aria-label="Thông báo"
-        >
-          <Bell className="size-4" />
-          <span className="absolute right-2.5 top-2.5 size-1.5 rounded-full bg-cyan-300" />
-        </button>
+        <NotificationCenter />
 
         <div className="group relative">
           <button

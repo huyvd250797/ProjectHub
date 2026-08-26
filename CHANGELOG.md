@@ -1,5 +1,23 @@
 # Changelog
 
+## V1.1.0 — Notifications & Activity Center
+
+### Added
+- Bell Notification Center với unread badge, mark read và mark all read.
+- Activity Center theo Project với filter ISSUE / Project / Import / Resource.
+- ISSUE assignment/update notifications và lazy Due Reminder.
+- Project Member, Import và Resource Vault activity events.
+- Per-user/per-project notification preferences.
+- 30-day Activity backfill cho ISSUE và Resource Vault.
+
+### Security
+- Notification inbox chỉ đọc/cập nhật bởi chính user.
+- Activity Feed tuân theo Project RLS / MASTER access.
+- Resource security events không chứa plaintext credential.
+
+### Database
+- `202608250001_v110_notifications_activity.sql`
+
 ## V1.0.1 — Dark Mode Contrast & Visual Polish
 
 ### Changed

@@ -1,4 +1,5 @@
 import {
+  Activity,
   Building2,
   CircleGauge,
   FileStack,
@@ -12,6 +13,7 @@ export const navigation = [
   { label: "PLHĐ", href: "/contract", icon: FileStack },
   { label: "Phòng ban", href: "/departments", icon: Building2 },
   { label: "ISSUE", href: "/issues", icon: ListTodo },
+  { label: "Hoạt động", href: "/activity", icon: Activity },
   { label: "Remote Server", href: "/resources", icon: RadioTower },
 ];
 

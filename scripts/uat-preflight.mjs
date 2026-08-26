@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.0.1" ? pass("Package version", "1.0.1") : fail("Package version", `Expected 1.0.1, got ${pkg.version}`);
+pkg.version === "1.1.0" ? pass("Package version", "1.1.0") : fail("Package version", `Expected 1.1.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -23,6 +23,18 @@ for (const rel of [
   "docs/V0.9.5-SCOPE.md",
   "docs/V1.0.0-SCOPE.md",
   "docs/V1.0.1-SCOPE.md",
+  "docs/V1.1.0-SCOPE.md",
+  "docs/NOTIFICATIONS_ACTIVITY_V110_SETUP.md",
+  "docs/UAT_V110_NOTIFICATIONS_CHECKLIST.md",
+  "components/notifications/notification-center.tsx",
+  "components/notifications/activity-center.tsx",
+  "app/(workspace)/activity/page.tsx",
+  "app/api/notifications/route.ts",
+  "app/api/notifications/preferences/route.ts",
+  "app/api/activity/route.ts",
+  "lib/notifications/types.ts",
+  "lib/notifications/server.ts",
+  "supabase/migrations/202608250001_v110_notifications_activity.sql",
   "docs/DARK_MODE_V101.md",
   "docs/PRODUCTION_V100_RELEASE.md",
   "docs/PRODUCTION_CHECKLIST_V100.md",
@@ -108,12 +120,27 @@ for (const token of ['ASC WORKING V1.0.1 — Dark Mode Contrast', '--bg: #0b1422
   globalCss.includes(token) ? pass(`Dark contrast CSS: ${token}`) : fail(`Dark contrast CSS: ${token}`);
 }
 
+const notificationCenter = fs.readFileSync(path.join(root, "components/notifications/notification-center.tsx"), "utf8");
+for (const token of ["unreadCount", "mark_all_read", "Activity Center", "60000"]) {
+  notificationCenter.includes(token) ? pass(`Notification Center: ${token}`) : fail(`Notification Center: ${token}`);
+}
+
+const activityCenter = fs.readFileSync(path.join(root, "components/notifications/activity-center.tsx"), "utf8");
+for (const token of ["Notifications & Activity Center", "Cài đặt thông báo", "Due Reminder", "/api/activity"]) {
+  activityCenter.includes(token) ? pass(`Activity Center: ${token}`) : fail(`Activity Center: ${token}`);
+}
+
+const notificationMigration = fs.readFileSync(path.join(root, "supabase/migrations/202608250001_v110_notifications_activity.sql"), "utf8");
+for (const token of ["activity_events", "notifications", "notification_preferences", "sync_issue_due_notifications_v110", "capture_issue_activity_v110"]) {
+  notificationMigration.includes(token) ? pass(`V1.1.0 migration: ${token}`) : fail(`V1.1.0 migration: ${token}`);
+}
+
 const systemInfo = fs.readFileSync(path.join(root, "app/(workspace)/settings/system/page.tsx"), "utf8");
-for (const token of ["System Information", "SUPABASE_SERVICE_ROLE_KEY", "APP_ENCRYPTION_KEY", "V1.0.1"]) {
+for (const token of ["System Information", "SUPABASE_SERVICE_ROLE_KEY", "APP_ENCRYPTION_KEY", "V1.1.0"]) {
   systemInfo.includes(token) ? pass(`System Information: ${token}`) : fail(`System Information: ${token}`);
 }
 
-console.log("\nASC WORKING V1.0.1 - Production Preflight\n");
+console.log("\nASC WORKING V1.1.0 - Notifications & Activity Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

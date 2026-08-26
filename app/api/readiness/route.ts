@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "1.0.1",
+        version: "1.1.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "1.0.1", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "1.1.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -143,6 +143,19 @@ export async function GET(request: NextRequest) {
     productivity.durationMs,
   ));
 
+  const notificationsSchema = await timed(async () => Promise.all([
+    supabase.from("activity_events").select("id", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("notifications").select("id", { count: "exact", head: true }).eq("project_id", projectId).eq("user_id", user.id),
+  ]));
+  const notificationsSchemaError = notificationsSchema.error || notificationsSchema.value?.find((result) => result.error)?.error;
+  checks.push(check(
+    "notifications",
+    "Notifications & Activity schema",
+    notificationsSchemaError ? "fail" : "pass",
+    notificationsSchemaError ? "Không đọc được Activity/Notifications; kiểm tra migration V1.1.0." : "Notification inbox, Activity Feed và read-state schema sẵn sàng.",
+    notificationsSchema.durationMs,
+  ));
+
   const importSchema = await timed(async () => supabase.rpc("preview_import_v092", {
     p_project_id: projectId,
     p_payload: {
@@ -212,7 +225,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "1.0.1",
+      version: "1.1.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

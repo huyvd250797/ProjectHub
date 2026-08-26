@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  Activity,
   ArrowRight,
   Building2,
   CheckCircle2,
@@ -40,6 +41,7 @@ export default async function SettingsPage() {
     { label: "Department Intelligence", text: "KPI + Stakeholder + Module + drill-down", ok: true, icon: Building2 },
     { label: "Remote Server Security", text: "AES-256-GCM + Reveal/Copy permission + Audit", ok: true, icon: ServerCog },
     { label: "Hardening + UAT", text: "Readiness checks + Regression checklist + Security headers", ok: true, icon: ClipboardCheck },
+    { label: "Notifications & Activity", text: "Bell inbox + Activity Feed + Due Reminder + Preferences", ok: true, icon: Activity },
   ];
 
   return (
@@ -47,7 +49,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="System Foundation"
         title="Thiết lập Project Workspace"
-        description="ASC WORKING V1.0.1 là bản Production Release của Project Workspace đa dự án: Dashboard, PLHĐ, Phòng ban, ISSUE, Project Team, Excel Import và Remote Server Security đã được hợp nhất để vận hành production."
+        description="ASC WORKING V1.1.0 mở rộng bản Production Release của Project Workspace đa dự án: Dashboard, PLHĐ, Phòng ban, ISSUE, Project Team, Excel Import và Remote Server Security đã được hợp nhất để vận hành production."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -103,7 +105,7 @@ export default async function SettingsPage() {
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/60">Production Tool</div>
           <div className="mt-1 text-sm font-semibold text-slate-200">Hardening & UAT Center</div>
-          <div className="mt-1 text-xs leading-5 text-slate-600">Chạy automated readiness, kiểm tra RLS/schema/security environment và đánh dấu regression testcase trước V1.0.1.</div>
+          <div className="mt-1 text-xs leading-5 text-slate-600">Chạy automated readiness, kiểm tra RLS/schema/security environment và đánh dấu regression testcase cho V1.1.0.</div>
         </div>
         <div className="flex items-center gap-2 text-xs font-medium text-cyan-200/80 md:ml-auto">
           Mở UAT Center <ArrowRight className="size-4" />
@@ -128,6 +130,23 @@ export default async function SettingsPage() {
       </Link>
 
       <Link
+        href="/activity"
+        className="tech-panel tech-panel-hover mt-4 flex flex-col gap-4 rounded-2xl p-5 md:flex-row md:items-center md:p-6"
+      >
+        <div className="grid size-12 shrink-0 place-items-center rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.055]">
+          <Activity className="size-5 text-cyan-200/80" />
+        </div>
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/60">Operations Center</div>
+          <div className="mt-1 text-sm font-semibold text-slate-200">Notifications & Activity Center</div>
+          <div className="mt-1 text-xs leading-5 text-slate-600">Xem Activity Feed của Project, ISSUE được giao, nhắc Due Date, trạng thái đã đọc và cấu hình loại thông báo theo từng user.</div>
+        </div>
+        <div className="flex items-center gap-2 text-xs font-medium text-cyan-200/80 md:ml-auto">
+          Mở Activity Center <ArrowRight className="size-4" />
+        </div>
+      </Link>
+
+      <Link
         href="/settings/system"
         className="tech-panel tech-panel-hover mt-4 flex flex-col gap-4 rounded-2xl p-5 md:flex-row md:items-center md:p-6"
       >
@@ -148,8 +167,8 @@ export default async function SettingsPage() {
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Release</div>
         <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-lg font-semibold text-white">ASC WORKING V1.0.1</div>
-            <div className="mt-1 text-xs text-slate-500">Production Release</div>
+            <div className="text-lg font-semibold text-white">ASC WORKING V1.1.0</div>
+            <div className="mt-1 text-xs text-slate-500">Notifications & Activity Center</div>
           </div>
           <span className="w-fit rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200">
             Production Ready

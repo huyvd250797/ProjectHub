@@ -1,0 +1,21 @@
+# UAT — V1.1.0 Notifications & Activity
+
+- [ ] Bell hiển thị trên Topbar ở Dark và Light Mode.
+- [ ] Badge unread đúng Project hiện tại.
+- [ ] Đổi Project → inbox đổi theo Project.
+- [ ] Giao ISSUE cho member → member nhận `Bạn được giao ISSUE mới`.
+- [ ] Đổi assignee → assignee mới nhận notification.
+- [ ] Đổi status/Due Date → assignee nhận issue update.
+- [ ] ISSUE Due <= 3 ngày → assignee nhận Due Reminder khi mở app.
+- [ ] Mark read giảm badge.
+- [ ] Mark all read đưa badge về 0.
+- [ ] Click notification ISSUE mở đúng drawer bằng `issueId`.
+- [ ] Activity Center hiển thị actor, thời gian, event type.
+- [ ] Filter ISSUE/Project/Import/Resource hoạt động.
+- [ ] Add/Update Project Member tạo Activity.
+- [ ] Apply Excel Import tạo Activity.
+- [ ] Resource Reveal/Copy/Open tạo Activity.
+- [ ] Secret/Permission change không ghi plaintext secret vào Activity.
+- [ ] Preferences lưu riêng theo user + Project.
+- [ ] Viewer đọc Activity của Project nhưng không có quyền sửa nghiệp vụ.
+- [ ] MASTER xem Activity của mọi Project thông qua Project Switcher.

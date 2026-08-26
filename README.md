@@ -1,10 +1,21 @@
-# ASC WORKING — V1.0.1
+# ASC WORKING — V1.1.0
 
-**Dark Mode Contrast & Visual Polish — Production Patch**
+**Notifications & Activity Center** — Project Workspace đa dự án cho triển khai phần mềm.
 
-**Production Release** — Project Workspace đa dự án cho triển khai phần mềm.
+## V1.1.0 có gì mới?
 
-## Production scope
+- Bell Notification Center ngay trên Topbar, theo Project đang chọn.
+- Badge số lượng chưa đọc, đánh dấu từng thông báo hoặc `Đọc tất cả`.
+- Deep-link từ thông báo đến đúng ISSUE / Project / Import / Resource.
+- Activity Center tại `/activity` với feed theo Project.
+- Filter Activity theo ISSUE / Project / Import / Resource.
+- Activity ghi nhận thay đổi ISSUE, Project Member, Excel Import và Resource Vault.
+- Due Reminder cho ISSUE đang phụ trách: còn tối đa 3 ngày, đến hạn hôm nay hoặc quá hạn.
+- Notification Preferences theo từng user + từng Project.
+- Notification cho ISSUE được giao, ISSUE cập nhật, thay đổi Project Member, Import hoàn tất và security event quan trọng.
+- Dark / Light Mode V1.0.1 được giữ nguyên.
+
+## Production scope hiện tại
 
 - Multi-project + Project Switcher.
 - MASTER toàn hệ thống; Admin / PM / Member / Viewer theo Project.
@@ -16,9 +27,10 @@
 - Searchable combobox toàn hệ thống + sticky ISSUE grid header.
 - Excel Import Production: tải template → fill → preview → transaction apply.
 - Remote Server Security: AES-256-GCM, Reveal/Copy permission, audit.
+- Notifications & Activity Center.
 - Hardening & UAT Center.
-- **Dark / Light Mode**: icon Sun/Moon ở Topbar, lưu preference trên browser và tự theo system theme khi chưa chọn.
-- **System Information**: `/settings/system`.
+- Dark / Light Mode.
+- System Information.
 
 ## Environment variables
 
@@ -30,15 +42,27 @@ APP_ENCRYPTION_KEY=
 APP_URL=
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` và `APP_ENCRYPTION_KEY` là **server-only**, không dùng `NEXT_PUBLIC_` và không commit vào Git. Sau khi đã lưu credential Remote Server thật, không đổi `APP_ENCRYPTION_KEY` nếu chưa có kế hoạch rotate/migrate ciphertext.
+`SUPABASE_SERVICE_ROLE_KEY` và `APP_ENCRYPTION_KEY` là **server-only**. Không dùng `NEXT_PUBLIC_` và không commit vào Git.
 
-## Database baseline
+## Database migration V1.1.0
 
-V1.0.1 **không yêu cầu migration Supabase mới**. Production database phải đã chạy migration đến:
+Nếu database hiện đã chạy đến V0.9.5, chạy thêm:
 
 ```text
-supabase/migrations/202608240006_v095_project_members_assignees.sql
+supabase/migrations/202608250001_v110_notifications_activity.sql
 ```
+
+Migration tạo:
+
+- `activity_events`
+- `notifications`
+- `notification_preferences`
+- ISSUE activity/notification trigger
+- Project Member activity/notification trigger
+- Resource Vault activity/security notification trigger
+- Excel Import activity notification trigger
+- lazy Due Reminder function
+- backfill Activity trong 30 ngày gần nhất
 
 ## Local
 
@@ -55,29 +79,24 @@ npm run dev
 
 - Framework: Next.js.
 - Build Command: Default (`npm run build`).
-- Output Directory: **Default / để trống**, không đặt `out`.
-- Cấu hình toàn bộ environment variables rồi Redeploy.
-- Sau deploy: mở `Thiết lập → System Information` và `Hardening & UAT`.
+- Output Directory: **Default / để trống**.
+- Cấu hình environment variables rồi Redeploy.
+- Chạy migration V1.1.0 trước khi test Notification Center.
 
-## Theme UX
+## Test nhanh V1.1.0
 
-Nút theme nằm ở **Topbar góc phải, ngay trước chuông thông báo**. Đây là vị trí phù hợp vì theme là thiết lập toàn app, luôn truy cập được nhưng không tranh chỗ với Project Switcher. Màn hình Login cũng có cùng nút ở góc phải trên.
-
-## Production gate
-
-Trước khi coi deployment là Production Ready:
-
-1. `npm run preflight` PASS.
-2. Vercel build PASS.
-3. System Information xác nhận Supabase / Database / Service Role / Encryption.
-4. UAT Center không có FAIL blocker.
-5. Smoke test Dashboard → PLHĐ → Phòng ban → ISSUE → Excel Import → Remote Server.
-6. Backup database trước các import/migration lớn.
+1. Login và chọn Project.
+2. Mở icon chuông trên Topbar.
+3. Giao một ISSUE cho user khác → user đó nhận thông báo.
+4. Đổi status/Due Date ISSUE → người phụ trách nhận update.
+5. Tạo ISSUE Due Date ≤ 3 ngày → mở app bằng assignee để nhận Due Reminder.
+6. Vào `Hoạt động` và kiểm tra Activity Feed.
+7. Vào tab `Cài đặt`, tắt một loại thông báo và xác nhận loại đó không tạo notification mới.
+8. Mark read / Mark all read và kiểm tra badge.
 
 Xem thêm:
-- `docs/PRODUCTION_V100_RELEASE.md`
-- `docs/PRODUCTION_CHECKLIST_V100.md`
-- `docs/BACKUP_RESTORE_ROLLBACK_V100.md`
-- `docs/UAT_V100_CHECKLIST.md`
+- `docs/NOTIFICATIONS_ACTIVITY_V110_SETUP.md`
+- `docs/UAT_V110_NOTIFICATIONS_CHECKLIST.md`
+- `docs/V1.1.0-SCOPE.md`
 
 © 2026 HuyVo. All rights reserved.
