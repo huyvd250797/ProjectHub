@@ -41,7 +41,12 @@ function text(value: unknown) {
 function uuidOrNull(value: unknown, field: string, errors: Record<string, string>) {
   const result = text(value);
   if (!result) return null;
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(result)) {
+  // PostgreSQL accepts UUID values in canonical 8-4-4-4-12 hexadecimal form
+  // without requiring RFC version/variant bits. ASC WORKING has legacy seeded
+  // Project IDs such as 00000000-0000-0000-0000-0000000000e1, so validation
+  // must match PostgreSQL's accepted canonical representation instead of
+  // rejecting valid database UUIDs based on version/variant nibble values.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(result)) {
     errors[field] = `${ISSUE_FIELD_LABELS[field] ?? "Giá trị"} không hợp lệ. Vui lòng chọn lại từ danh sách.`;
     return null;
   }

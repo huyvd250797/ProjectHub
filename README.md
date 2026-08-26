@@ -1,8 +1,8 @@
-# ASC WORKING — V1.1.1
+# ASC WORKING — V1.1.2
 
 **Issue Validation / Flexible Project Team / Performance Tune** — bản vận hành tối ưu trên nền Notifications & Activity Center.
 
-## V1.1.1 có gì mới?
+## V1.1.2 có gì mới?
 
 - Validation tạo ISSUE chi tiết theo field, không còn chỉ báo lỗi chung chung.
 - Project Team cho phép thêm Họ tên + Role trước, email/login bổ sung sau.
@@ -11,7 +11,7 @@
 - Tối ưu ISSUE summary thành 1 RPC aggregate; giảm query lookup và hủy stale request.
 - Notification polling tạm dừng khi tab ẩn.
 
-### Migration V1.1.1
+### Migration V1.1.2
 
 Chạy sau migration V1.1.0:
 
@@ -82,7 +82,7 @@ Migration tạo:
 - lazy Due Reminder function
 - backfill Activity trong 30 ngày gần nhất
 
-## Database migration V1.1.1
+## Database migration V1.1.2
 
 Sau migration V1.1.0, chạy thêm:
 

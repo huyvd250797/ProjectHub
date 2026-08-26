@@ -1,5 +1,13 @@
 # Changelog
 
+## V1.1.2 — Project UUID Compatibility Hotfix
+
+- Fix ISSUE create validation rejecting the legacy EPU project UUID.
+- UUID validation now matches PostgreSQL canonical UUID syntax instead of requiring RFC version/variant nibbles.
+- No database migration required.
+
+# Changelog
+
 ## V1.1.1 — Issue Validation / Flexible Project Team / Performance Tune
 
 ### Added
