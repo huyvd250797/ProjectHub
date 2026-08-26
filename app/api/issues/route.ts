@@ -127,13 +127,17 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   if (!supabase) return NextResponse.json({ ok: true, data: createDemoIssues(projectId) } satisfies IssuesApiResponse);
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Preserve the non-null Supabase client for nested query builders.
+  // TypeScript does not carry the outer null-narrowing into a hoisted local function.
+  const db = supabase;
+
+  const { data: { user } } = await db.auth.getUser();
   if (!user) {
     const body: IssuesApiResponse = { ok: false, code: "UNAUTHORIZED", message: "Phiên đăng nhập đã hết hạn." };
     return NextResponse.json(body, { status: 401 });
   }
 
-  const role = await getProjectRole(supabase, projectId, user.id);
+  const role = await getProjectRole(db, projectId, user.id);
   if (!role) {
     const body: IssuesApiResponse = { ok: false, code: "FORBIDDEN", message: "Bạn không có quyền truy cập project này." };
     return NextResponse.json(body, { status: 403 });
@@ -144,10 +148,10 @@ export async function GET(request: NextRequest) {
   const allRows = rawPageSize === "all" || rawPageSize === "0";
   const pageSize = allRows ? 0 : intParam(rawPageSize ?? null, 50, 50, 1000);
   const page = allRows ? 1 : requestedPage;
-  const myPersonId = await getCurrentAssigneePersonId(supabase, projectId, user.id);
+  const myPersonId = await getCurrentAssigneePersonId(db, projectId, user.id);
 
   function buildRowsQuery(start: number, end: number, withCount = false) {
-    let query: any = supabase
+    let query: any = db
       .from("issues")
       .select(ISSUE_SELECT, withCount ? { count: "exact" } : undefined)
       .eq("project_id", projectId)
@@ -163,8 +167,8 @@ export async function GET(request: NextRequest) {
   const firstEnd = allRows ? 999 : page * pageSize - 1;
   const [firstRowsResult, lookups, summary] = await Promise.all([
     buildRowsQuery(firstStart, firstEnd, true),
-    getIssueLookups(supabase, projectId),
-    getIssueSummary(supabase, projectId, myPersonId),
+    getIssueLookups(db, projectId),
+    getIssueSummary(db, projectId, myPersonId),
   ]);
 
   if (firstRowsResult.error) {

@@ -176,3 +176,7 @@
 - Changed `MASTER_PROJECT_SELECT` from runtime `Array.join()` to a compile-time literal `as const`, preserving Supabase/PostgREST select inference.
 - Removed unsafe `GenericStringError -> Record<string, unknown>` casts from Project GET/POST/PATCH flows.
 - Hardened Master Project/Member normalizers to accept `unknown` and normalize object records safely.
+
+## V1.2.0 DeployFix
+- Fix TypeScript TS18047 in `app/api/issues/route.ts` by using a stable non-null Supabase client inside the nested ISSUE row query builder.
+- Preserve corrected PostgreSQL `FILTER` syntax in `202608260002_v120_analytics_health.sql`.
