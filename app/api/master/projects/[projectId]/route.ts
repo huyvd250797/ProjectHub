@@ -75,6 +75,6 @@ export async function PATCH(request: Request, context: { params: Promise<{ proje
     .select(MASTER_PROJECT_SELECT).single();
   if (error || !data) return NextResponse.json({ ok: false, code: "UPDATE_FAILED", message: error?.message ?? "Không cập nhật được Project." } satisfies MasterProjectMutationResponse, { status: 500 });
 
-  const { count } = await supabase.from("project_members").select("id", { count: "exact", head: true }).eq("project_id", projectId);
+  const { count } = await supabase.from("people").select("id", { count: "exact", head: true }).eq("project_id", projectId).eq("person_type", "asc").eq("is_active", true);
   return NextResponse.json({ ok: true, project: normalizeMasterProject(data, count ?? 0) } satisfies MasterProjectMutationResponse);
 }

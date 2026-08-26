@@ -78,8 +78,39 @@ function dedupeCatalog(rows: Array<Record<string, unknown>>, category: string): 
   return [...map.values()];
 }
 
+function optionsFromRpc(value: unknown): SelectOption[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item) => item && typeof item === "object")
+    .map((item) => {
+      const row = item as Record<string, unknown>;
+      return {
+        value: String(row.value ?? ""),
+        label: String(row.label ?? row.value ?? ""),
+        description: row.description === null || row.description === undefined ? null : String(row.description),
+      } satisfies SelectOption;
+    })
+    .filter((item) => Boolean(item.value));
+}
+
 export async function getIssueLookups(supabase: SupabaseClient, projectId: string): Promise<IssueLookups> {
-  const [catalogResult, stageResult, moduleResult, departmentResult, peopleResult, membershipResult] = await Promise.all([
+  const rpcResult = await supabase.rpc("get_issue_lookups_v1111", { p_project_id: projectId });
+  if (!rpcResult.error && rpcResult.data && typeof rpcResult.data === "object") {
+    const value = rpcResult.data as unknown as Record<string, unknown>;
+    return {
+      statuses: optionsFromRpc(value.statuses),
+      customerStatuses: optionsFromRpc(value.customerStatuses),
+      priorities: optionsFromRpc(value.priorities),
+      stages: optionsFromRpc(value.stages),
+      modules: optionsFromRpc(value.modules),
+      departments: optionsFromRpc(value.departments),
+      assignees: optionsFromRpc(value.assignees),
+      requesters: optionsFromRpc(value.requesters),
+    };
+  }
+
+  // Fallback keeps the app operational before the V1.1.1 migration is applied.
+  const [catalogResult, stageResult, moduleResult, departmentResult, peopleResult] = await Promise.all([
     supabase
       .from("status_catalog")
       .select("project_id, category, code, label, sort_order, is_active")
@@ -105,53 +136,28 @@ export async function getIssueLookups(supabase: SupabaseClient, projectId: strin
       .order("name", { ascending: true }),
     supabase
       .from("people")
-      .select("id, user_id, full_name, title, person_type, department_id, email")
+      .select("id, user_id, full_name, title, person_type, department_id, email, project_role, is_active")
       .eq("project_id", projectId)
+      .eq("is_active", true)
       .order("full_name", { ascending: true })
-      .limit(2000),
-    supabase
-      .from("project_members")
-      .select("user_id, role")
-      .eq("project_id", projectId),
+      .limit(3000),
   ]);
 
   const catalog = (catalogResult.data ?? []) as Array<Record<string, unknown>>;
   const people = (peopleResult.data ?? []) as Array<Record<string, unknown>>;
-  const memberships = (membershipResult.data ?? []) as Array<Record<string, unknown>>;
-  const memberUserIds = memberships.map((row) => String(row.user_id)).filter(Boolean);
 
-  const profileResult = memberUserIds.length
-    ? await supabase
-        .from("profiles")
-        .select("id, email, display_name, is_active")
-        .in("id", memberUserIds)
-    : { data: [], error: null };
-
-  const profiles = (profileResult.data ?? []) as Array<Record<string, unknown>>;
-  const profileMap = new Map<string, Record<string, unknown>>(
-    profiles.map((row) => [String(row.id), row]),
-  );
-  const personByUser = new Map<string, Record<string, unknown>>(
-    people
-      .filter((row) => row.person_type === "asc" && row.user_id)
-      .map((row) => [String(row.user_id), row]),
-  );
-
-  const assignees = memberships
-    .map((membership): SelectOption | null => {
-      const userId = String(membership.user_id ?? "");
-      const profile = profileMap.get(userId);
-      const person = personByUser.get(userId);
-      if (!userId || !profile || profile.is_active === false || !person?.id) return null;
-      const role = String(membership.role ?? "member").toUpperCase();
-      const email = profile.email ? String(profile.email) : person.email ? String(person.email) : "";
+  const assignees: SelectOption[] = people
+    .filter((row) => row.person_type === "asc")
+    .map((person) => {
+      const email = person.email ? String(person.email) : "";
+      const role = String(person.project_role ?? "member").toUpperCase();
+      const loginState = person.user_id ? "Đã có tài khoản" : "Chưa có tài khoản";
       return {
         value: String(person.id),
-        label: String(profile.display_name ?? person.full_name ?? email ?? userId),
-        description: [email, role].filter(Boolean).join(" • "),
-      } satisfies SelectOption;
+        label: String(person.full_name ?? email ?? "Thành viên"),
+        description: [email, role, loginState].filter(Boolean).join(" • "),
+      };
     })
-    .filter((option): option is SelectOption => Boolean(option))
     .sort((a, b) => a.label.localeCompare(b.label, "vi"));
 
   return {
@@ -187,16 +193,15 @@ export async function getIssueLookups(supabase: SupabaseClient, projectId: strin
 export async function getCurrentAssigneePersonId(
   supabase: SupabaseClient,
   projectId: string,
-  email: string | undefined,
+  userId: string,
 ) {
-  if (!email) return null;
   const { data } = await supabase
     .from("people")
     .select("id")
     .eq("project_id", projectId)
     .eq("person_type", "asc")
-    .eq("email", email)
-    .not("user_id", "is", null)
+    .eq("user_id", userId)
+    .eq("is_active", true)
     .limit(1)
     .maybeSingle();
   return data?.id ? String(data.id) : null;
@@ -223,25 +228,13 @@ export async function resolveIssueRelationNames(
       ? supabase.from("people").select("full_name").eq("project_id", projectId).eq("id", ids.requesterId).maybeSingle()
       : Promise.resolve({ data: null }),
     ids.assigneeId
-      ? supabase.from("people").select("full_name,user_id").eq("project_id", projectId).eq("person_type", "asc").eq("id", ids.assigneeId).maybeSingle()
+      ? supabase.from("people").select("full_name,user_id,is_active").eq("project_id", projectId).eq("person_type", "asc").eq("id", ids.assigneeId).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 
-  let assigneeValid = true;
-  if (ids.assigneeId) {
-    const assigneeUserId = assigneeResult.data?.user_id ? String(assigneeResult.data.user_id) : null;
-    if (!assigneeUserId) {
-      assigneeValid = false;
-    } else {
-      const { data: membership } = await supabase
-        .from("project_members")
-        .select("user_id")
-        .eq("project_id", projectId)
-        .eq("user_id", assigneeUserId)
-        .maybeSingle();
-      assigneeValid = Boolean(membership?.user_id);
-    }
-  }
+  const assigneeValid = ids.assigneeId
+    ? Boolean(assigneeResult.data && assigneeResult.data.is_active !== false)
+    : true;
 
   return {
     moduleName: moduleResult.data?.name ? String(moduleResult.data.name) : null,

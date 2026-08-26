@@ -12,6 +12,7 @@ import {
   ServerCog,
   ShieldCheck,
   UserCheck,
+  UsersRound,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { isMasterUser } from "@/lib/access";
@@ -46,11 +47,24 @@ export default async function SystemInformationPage() {
   }
 
   let notificationsReady = false;
-  let notificationsDetail = configured ? "Chưa xác nhận migration V1.1.0." : "Supabase chưa được cấu hình.";
+  let notificationsDetail = configured ? "Chưa xác nhận migration Notifications V1.1.0." : "Supabase chưa được cấu hình.";
   if (supabase && user) {
     const result = await supabase.from("activity_events").select("id", { count: "exact", head: true });
     notificationsReady = !result.error;
     notificationsDetail = result.error ? "Chưa có schema Notifications & Activity V1.1.0." : "Bell Inbox + Activity Feed + Preferences đã sẵn sàng.";
+  }
+
+  let teamPerformanceReady = false;
+  let teamPerformanceDetail = configured ? "Chưa xác nhận migration V1.1.1." : "Supabase chưa được cấu hình.";
+  if (supabase && user) {
+    const [teamCheck, summaryCheck] = await Promise.all([
+      supabase.from("people").select("id,is_active", { count: "exact", head: true }).eq("person_type", "asc"),
+      supabase.rpc("get_issue_summary_v1111", { p_project_id: "00000000-0000-0000-0000-000000000000", p_person_id: null }),
+    ]);
+    teamPerformanceReady = !teamCheck.error && !summaryCheck.error;
+    teamPerformanceDetail = teamPerformanceReady
+      ? "Flexible Project Team + ISSUE summary RPC đã sẵn sàng."
+      : "Cần migration 202608260001_v1111_team_validation_performance.sql.";
   }
 
   const environment = process.env.VERCEL_ENV
@@ -70,6 +84,7 @@ export default async function SystemInformationPage() {
     { label: "Encryption", value: encryptionReady ? "Ready" : "Missing", detail: "APP_ENCRYPTION_KEY • AES-256-GCM Resource Vault", ok: encryptionReady, icon: ServerCog },
     { label: "Excel Import", value: "Production", detail: "Template → Preview → Transaction Apply", ok: configured, icon: FileSpreadsheet },
     { label: "Appearance", value: "Dark / Light", detail: "Preference lưu trên browser; mặc định theo system theme.", ok: true, icon: Palette },
+    { label: "Team / Performance", value: teamPerformanceReady ? "Ready" : "Migration required", detail: teamPerformanceDetail, ok: teamPerformanceReady, icon: UsersRound },
     { label: "Notifications", value: notificationsReady ? "Ready" : "Migration required", detail: notificationsDetail, ok: notificationsReady, icon: Bell },
   ];
 
@@ -78,7 +93,7 @@ export default async function SystemInformationPage() {
       <PageHeader
         eyebrow="Production Runtime"
         title="System Information"
-        description="Thông tin release và các điều kiện runtime quan trọng của ASC WORKING V1.1.0. Màn hình này không hiển thị giá trị secret, chỉ xác nhận trạng thái cấu hình."
+        description="Thông tin release và các điều kiện runtime quan trọng của ASC WORKING V1.1.1. Màn hình này không hiển thị giá trị secret, chỉ xác nhận trạng thái cấu hình."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -111,11 +126,11 @@ export default async function SystemInformationPage() {
         <div className="mt-4 grid grid-cols-1 gap-3 text-xs md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
             <div className="text-slate-600">App release</div>
-            <div className="mt-2 font-semibold text-slate-200">V1.1.0</div>
+            <div className="mt-2 font-semibold text-slate-200">V1.1.1</div>
           </div>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
             <div className="text-slate-600">Schema baseline</div>
-            <div className="mt-2 font-semibold text-slate-200">Through V1.1.0 migration</div>
+            <div className="mt-2 font-semibold text-slate-200">Through V1.1.1 migration</div>
           </div>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
             <div className="text-slate-600">Deploy target</div>

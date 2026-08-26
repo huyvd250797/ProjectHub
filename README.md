@@ -1,6 +1,24 @@
-# ASC WORKING — V1.1.0
+# ASC WORKING — V1.1.1
 
-**Notifications & Activity Center** — Project Workspace đa dự án cho triển khai phần mềm.
+**Issue Validation / Flexible Project Team / Performance Tune** — bản vận hành tối ưu trên nền Notifications & Activity Center.
+
+## V1.1.1 có gì mới?
+
+- Validation tạo ISSUE chi tiết theo field, không còn chỉ báo lỗi chung chung.
+- Project Team cho phép thêm Họ tên + Role trước, email/login bổ sung sau.
+- Nhân sự chưa có email vẫn có thể được giao ISSUE và thống kê workload.
+- Tự liên kết Supabase login khi email tồn tại trong profiles.
+- Tối ưu ISSUE summary thành 1 RPC aggregate; giảm query lookup và hủy stale request.
+- Notification polling tạm dừng khi tab ẩn.
+
+### Migration V1.1.1
+
+Chạy sau migration V1.1.0:
+
+```text
+supabase/migrations/202608260001_v1111_team_validation_performance.sql
+```
+
 
 ## V1.1.0 có gì mới?
 
@@ -63,6 +81,16 @@ Migration tạo:
 - Excel Import activity notification trigger
 - lazy Due Reminder function
 - backfill Activity trong 30 ngày gần nhất
+
+## Database migration V1.1.1
+
+Sau migration V1.1.0, chạy thêm:
+
+```text
+supabase/migrations/202608260001_v1111_team_validation_performance.sql
+```
+
+Migration bổ sung `people.is_active`, Project Team index, `get_issue_summary_v1111`, `get_issue_lookups_v1111` và trigram search indexes.
 
 ## Local
 

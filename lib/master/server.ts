@@ -63,14 +63,21 @@ export function normalizeMasterMember(
   const membership = asRecord(membershipValue);
   const profile = asRecord(profileValue);
   const person = asRecord(personValue);
-  const role = String(membership.role ?? "viewer") as ProjectRole;
+  const rawRole = String(membership?.role ?? person?.project_role ?? "member");
+  const role: ProjectRole = rawRole === "admin" || rawRole === "pm" || rawRole === "viewer" ? rawRole : "member";
+  const personId = person?.id ? String(person.id) : "";
+  const userId = person?.user_id ? String(person.user_id) : membership?.user_id ? String(membership.user_id) : null;
+  const email = profile?.email ? String(profile.email) : person?.email ? String(person.email) : null;
+  const displayName = person?.full_name ? String(person.full_name) : profile?.display_name ? String(profile.display_name) : null;
   return {
-    userId: String(membership.user_id),
-    personId: person?.id ? String(person.id) : null,
-    email: profile?.email ? String(profile.email) : null,
-    displayName: profile?.display_name ? String(profile.display_name) : null,
-    role: role === "admin" || role === "pm" || role === "member" ? role : "viewer",
-    isActive: profile?.is_active !== false,
+    memberId: personId,
+    userId,
+    personId,
+    email,
+    displayName,
+    role,
+    isActive: person?.is_active !== false && profile?.is_active !== false,
+    loginLinked: Boolean(userId && profile?.id),
   };
 }
 

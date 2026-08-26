@@ -394,7 +394,7 @@ function MembersPanel({ project, onChanged }: { project: MasterProjectRow; onCha
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<ProjectRole>("member");
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
 
   const load = useCallback(async () => {
@@ -417,14 +417,14 @@ function MembersPanel({ project, onChanged }: { project: MasterProjectRow; onCha
     setFullName("");
     setEmail("");
     setRole("member");
-    setEditingUserId(null);
+    setEditingMemberId(null);
   }
 
   function editMember(member: MasterProjectMember) {
     setFullName(member.displayName ?? "");
     setEmail(member.email ?? "");
     setRole(member.role);
-    setEditingUserId(member.userId);
+    setEditingMemberId(member.memberId);
     setMessage(null);
   }
 
@@ -436,14 +436,11 @@ function MembersPanel({ project, onChanged }: { project: MasterProjectRow; onCha
       const response = await fetch(`/api/master/projects/${project.id}/members`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email, role }),
+        body: JSON.stringify({ memberId: editingMemberId, fullName, email, role }),
       });
       const result = await response.json();
       if (!response.ok || !result.ok) throw new Error(result.message || "Không lưu được thành viên.");
-      setMessage({
-        type: "ok",
-        text: "Đã lưu thành viên và đồng bộ vào danh sách Phụ trách ISSUE.",
-      });
+      setMessage({ type: "ok", text: result.message || "Đã lưu thành viên và cập nhật danh sách Phụ trách ISSUE." });
       resetForm();
       await load();
       await onChanged();
@@ -454,15 +451,15 @@ function MembersPanel({ project, onChanged }: { project: MasterProjectRow; onCha
     }
   }
 
-  async function removeMember(userId: string) {
-    if (!window.confirm("Gỡ tài khoản này khỏi Project? Thành viên sẽ không còn xuất hiện trong danh sách Phụ trách mới, nhưng ISSUE lịch sử vẫn giữ tên người đã phụ trách.")) return;
-    const response = await fetch(`/api/master/projects/${project.id}/members?userId=${encodeURIComponent(userId)}`, { method: "DELETE" });
+  async function removeMember(memberId: string) {
+    if (!window.confirm("Gỡ nhân sự này khỏi Project Team? Thành viên sẽ không còn xuất hiện trong danh sách Phụ trách mới, nhưng ISSUE lịch sử vẫn giữ tên người đã phụ trách.")) return;
+    const response = await fetch(`/api/master/projects/${project.id}/members?memberId=${encodeURIComponent(memberId)}`, { method: "DELETE" });
     const result = await response.json();
     if (!response.ok || !result.ok) {
       setMessage({ type: "error", text: result.message || "Không gỡ được thành viên." });
       return;
     }
-    if (editingUserId === userId) resetForm();
+    if (editingMemberId === memberId) resetForm();
     setMessage({ type: "ok", text: "Đã gỡ thành viên khỏi Project và danh sách Phụ trách." });
     await load();
     await onChanged();
@@ -475,14 +472,14 @@ function MembersPanel({ project, onChanged }: { project: MasterProjectRow; onCha
           <div>
             <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
               <UserPlus className="size-3.5 text-cyan-300/60" />
-              {editingUserId ? "Cập nhật thành viên" : "Khai báo thành viên Project"}
+              {editingMemberId ? "Cập nhật thành viên" : "Khai báo thành viên Project"}
             </div>
             <div className="mt-2 max-w-xl text-[10px] leading-5 text-slate-600">
-              Thành viên Project là nguồn duy nhất của combobox <span className="font-semibold text-cyan-200/70">Phụ trách</span> trong ISSUE.
-              Họ tên dùng để hiển thị; email là tài khoản đăng nhập Supabase.
+              Danh sách này là nguồn của combobox <span className="font-semibold text-cyan-200/70">Phụ trách</span> trong ISSUE.
+              Chỉ cần Họ tên để giao việc và thống kê; email có thể bổ sung sau khi nhân sự cần đăng nhập.
             </div>
           </div>
-          {editingUserId ? (
+          {editingMemberId ? (
             <button type="button" onClick={resetForm} className="shrink-0 rounded-lg border border-white/[0.07] px-2.5 py-1.5 text-[9px] text-slate-500 hover:text-slate-200">
               Hủy sửa
             </button>
@@ -500,15 +497,13 @@ function MembersPanel({ project, onChanged }: { project: MasterProjectRow; onCha
               maxLength={180}
             />
           </Field>
-          <Field label="Email đăng nhập">
+          <Field label="Email đăng nhập (không bắt buộc)" hint="Để trống nếu hiện tại chỉ cần giao việc. Khi có tài khoản Supabase, bổ sung email và lưu lại để cấp quyền đăng nhập.">
             <input
               type="email"
-              required
               value={email}
-              disabled={Boolean(editingUserId)}
               onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)}
-              placeholder="user@company.com"
-              className={`${inputClass} disabled:cursor-not-allowed disabled:opacity-55`}
+              placeholder="Có thể bổ sung sau: user@company.com"
+              className={inputClass}
               maxLength={180}
             />
           </Field>
@@ -521,13 +516,13 @@ function MembersPanel({ project, onChanged }: { project: MasterProjectRow; onCha
         </div>
 
         <button disabled={saving} className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-cyan-300 text-xs font-semibold text-[#07111f] disabled:opacity-60">
-          {saving ? <LoaderCircle className="size-4 animate-spin" /> : editingUserId ? <Save className="size-4" /> : <UserPlus className="size-4" />}
-          {saving ? "Đang đồng bộ..." : editingUserId ? "Cập nhật thành viên" : "Lưu thành viên"}
+          {saving ? <LoaderCircle className="size-4 animate-spin" /> : editingMemberId ? <Save className="size-4" /> : <UserPlus className="size-4" />}
+          {saving ? "Đang đồng bộ..." : editingMemberId ? "Cập nhật thành viên" : "Lưu thành viên"}
         </button>
 
         <div className="mt-3 rounded-xl border border-amber-300/10 bg-amber-300/[0.025] px-3 py-2.5 text-[10px] leading-5 text-amber-100/45">
-          Email phải tồn tại trong <span className="font-mono text-amber-200/70">Supabase Authentication</span> để người dùng đăng nhập.
-          Sau khi lưu, hệ thống tự liên kết Project Member ↔ nhân sự ASC ↔ Phụ trách ISSUE. MASTER chỉ cần được thêm vào Project nếu muốn xuất hiện trong combobox Phụ trách.
+          <span className="font-semibold text-amber-100/70">Email không bắt buộc.</span> Thành viên chưa có email vẫn xuất hiện trong Phụ trách ISSUE và được tính thống kê.
+          Khi email trùng với một tài khoản trong <span className="font-mono text-amber-200/70">Supabase Authentication</span>, hệ thống tự liên kết quyền đăng nhập Project.
         </div>
       </form>
 
@@ -539,7 +534,7 @@ function MembersPanel({ project, onChanged }: { project: MasterProjectRow; onCha
 
       <div className="mt-5 space-y-2">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-600">Project Members • {members.length}</div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-600">Project Team • {members.length}</div>
           <div className="text-[9px] text-slate-700">Nguồn dữ liệu Phụ trách ISSUE</div>
         </div>
 
@@ -548,29 +543,29 @@ function MembersPanel({ project, onChanged }: { project: MasterProjectRow; onCha
             <LoaderCircle className="mx-auto mb-2 size-5 animate-spin" />Đang tải...
           </div>
         ) : members.length ? members.map((member) => (
-          <div key={member.userId} className="flex items-center gap-3 rounded-xl border border-white/[0.055] bg-white/[0.018] p-3">
+          <div key={member.memberId} className="flex items-center gap-3 rounded-xl border border-white/[0.055] bg-white/[0.018] p-3">
             <div className="grid size-9 place-items-center rounded-xl bg-white/[0.04] text-[10px] font-bold text-slate-400">
               {(member.displayName || member.email || "U").slice(0,2).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-xs font-medium text-slate-300">{member.displayName || member.email || member.userId}</div>
-              <div className="mt-1 truncate text-[10px] text-slate-600">{member.email || member.userId}</div>
-              <div className={`mt-1.5 inline-flex items-center gap-1 text-[9px] ${member.personId ? "text-emerald-300/65" : "text-amber-300/55"}`}>
-                {member.personId ? <CheckCircle2 className="size-3" /> : <LoaderCircle className="size-3" />}
-                {member.personId ? "Đã đồng bộ Phụ trách ISSUE" : "Chưa đồng bộ Phụ trách"}
+              <div className="truncate text-xs font-medium text-slate-300">{member.displayName || member.email || member.memberId}</div>
+              <div className="mt-1 truncate text-[10px] text-slate-600">{member.email || "Chưa có email đăng nhập"}</div>
+              <div className={`mt-1.5 inline-flex items-center gap-1 text-[9px] ${member.loginLinked ? "text-emerald-300/70" : "text-amber-300/65"}`}>
+                {member.loginLinked ? <CheckCircle2 className="size-3" /> : <UserPlus className="size-3" />}
+                {member.loginLinked ? "Đã liên kết tài khoản đăng nhập" : "Nhân sự nội bộ • chưa cần tài khoản đăng nhập"}
               </div>
             </div>
             <span className="rounded-lg border border-cyan-300/10 bg-cyan-300/[0.045] px-2 py-1 text-[9px] font-semibold uppercase text-cyan-200/75">{member.role}</span>
             <button onClick={() => editMember(member)} type="button" className="grid size-8 place-items-center rounded-lg border border-white/[0.07] text-slate-500 hover:bg-white/[0.04] hover:text-cyan-200" title="Sửa thành viên">
               <Pencil className="size-3.5" />
             </button>
-            <button onClick={() => void removeMember(member.userId)} type="button" className="grid size-8 place-items-center rounded-lg border border-rose-300/10 text-rose-300/55 hover:bg-rose-300/[0.05] hover:text-rose-200" title="Gỡ khỏi Project">
+            <button onClick={() => void removeMember(member.memberId)} type="button" className="grid size-8 place-items-center rounded-lg border border-rose-300/10 text-rose-300/55 hover:bg-rose-300/[0.05] hover:text-rose-200" title="Gỡ khỏi Project">
               <X className="size-3.5" />
             </button>
           </div>
         )) : (
           <div className="rounded-xl border border-dashed border-white/[0.07] p-8 text-center text-xs leading-6 text-slate-600">
-            Project chưa có member. Combobox Phụ trách ISSUE sẽ không có người để chọn.<br />
+            Project chưa có thành viên. Thêm Họ tên để bắt đầu giao ISSUE ngay; email có thể cập nhật sau.<br />
             MASTER vẫn có quyền toàn hệ thống nhưng không tự xuất hiện trong Phụ trách nếu chưa được thêm vào Project.
           </div>
         )}

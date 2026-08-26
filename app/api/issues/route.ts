@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createDemoIssues } from "@/lib/issues/demo";
 import { getCurrentAssigneePersonId, getIssueLookups, getProjectRole, ISSUE_SELECT, normalizeIssue, resolveIssueRelationNames } from "@/lib/issues/server";
 import type { IssueMutationResponse, IssuesApiResponse } from "@/lib/issues/types";
-import { parseIssueInput } from "@/lib/issues/validation";
+import { issueValidationMessage, parseIssueInput } from "@/lib/issues/validation";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +15,25 @@ function intParam(value: string | null, fallback: number, min: number, max: numb
 
 function dateOnly(date: Date) {
   return date.toISOString().slice(0, 10);
+}
+
+function friendlyIssueDatabaseError(error: { code?: string | null; message: string }) {
+  const message = error.message.toLowerCase();
+  const fieldErrors: Record<string, string> = {};
+  if (error.code === "23503" || /foreign key/i.test(error.message)) {
+    if (message.includes("module")) fieldErrors.moduleId = "Module đã thay đổi hoặc không thuộc Project. Vui lòng chọn lại.";
+    if (message.includes("department")) fieldErrors.departmentId = "Phòng ban đã thay đổi hoặc không thuộc Project. Vui lòng chọn lại.";
+    if (message.includes("requester")) fieldErrors.requesterId = "Nhân sự yêu cầu không còn hợp lệ. Vui lòng chọn lại.";
+    if (message.includes("assignee")) fieldErrors.assigneeId = "Người phụ trách không còn hợp lệ. Vui lòng chọn lại.";
+  }
+  if (error.code === "23502" && message.includes("content")) fieldErrors.content = "Nội dung ISSUE là bắt buộc.";
+  if (Object.keys(fieldErrors).length) {
+    return {
+      message: `Không thể tạo ISSUE. ${Object.values(fieldErrors).join(" ")}`,
+      fieldErrors,
+    };
+  }
+  return { message: `Không tạo được ISSUE: ${error.message}`, fieldErrors: undefined };
 }
 
 function applyFilters(query: any, params: URLSearchParams, myPersonId: string | null) {
@@ -68,6 +87,36 @@ async function countActive(supabase: any, projectId: string, mutate?: (query: an
   return count ?? 0;
 }
 
+async function getIssueSummary(supabase: any, projectId: string, myPersonId: string | null) {
+  const { data, error } = await supabase.rpc("get_issue_summary_v1111", {
+    p_project_id: projectId,
+    p_person_id: myPersonId,
+  });
+  if (!error && data && typeof data === "object") {
+    const value = data as unknown as Record<string, unknown>;
+    return {
+      total: Number(value.total ?? 0),
+      notHandedOver: Number(value.notHandedOver ?? 0),
+      mine: Number(value.mine ?? 0),
+      overdue: Number(value.overdue ?? 0),
+      waiting: Number(value.waiting ?? 0),
+      missingAssignee: Number(value.missingAssignee ?? 0),
+    };
+  }
+
+  // Backward-compatible fallback when the V1.1.1 performance migration has not run yet.
+  const today = dateOnly(new Date());
+  const [total, notHandedOver, mine, overdue, waiting, missingAssignee] = await Promise.all([
+    countActive(supabase, projectId),
+    countActive(supabase, projectId, (q) => q.or("customer_status_code.neq.handed_over,customer_status_code.is.null")),
+    myPersonId ? countActive(supabase, projectId, (q) => q.eq("assignee_person_id", myPersonId)) : Promise.resolve(0),
+    countActive(supabase, projectId, (q) => q.lt("due_date", today)),
+    countActive(supabase, projectId, (q) => q.eq("status_code", "waiting")),
+    countActive(supabase, projectId, (q) => q.is("assignee_person_id", null)),
+  ]);
+  return { total, notHandedOver, mine, overdue, waiting, missingAssignee };
+}
+
 export async function GET(request: NextRequest) {
   const projectId = request.nextUrl.searchParams.get("projectId")?.trim();
   if (!projectId) {
@@ -92,7 +141,7 @@ export async function GET(request: NextRequest) {
 
   const page = intParam(request.nextUrl.searchParams.get("page"), 1, 1, 100000);
   const pageSize = intParam(request.nextUrl.searchParams.get("pageSize"), 50, 10, 100);
-  const myPersonId = await getCurrentAssigneePersonId(supabase, projectId, user.email);
+  const myPersonId = await getCurrentAssigneePersonId(supabase, projectId, user.id);
 
   let query: any = supabase
     .from("issues")
@@ -105,16 +154,10 @@ export async function GET(request: NextRequest) {
     .order("updated_at", { ascending: false })
     .range((page - 1) * pageSize, page * pageSize - 1);
 
-  const today = dateOnly(new Date());
-  const [rowsResult, lookups, totalAll, notHanded, mine, overdue, waiting, missingAssignee] = await Promise.all([
+  const [rowsResult, lookups, summary] = await Promise.all([
     query,
     getIssueLookups(supabase, projectId),
-    countActive(supabase, projectId),
-    countActive(supabase, projectId, (q) => q.or("customer_status_code.neq.handed_over,customer_status_code.is.null")),
-    myPersonId ? countActive(supabase, projectId, (q) => q.eq("assignee_person_id", myPersonId)) : Promise.resolve(0),
-    countActive(supabase, projectId, (q) => q.lt("due_date", today)),
-    countActive(supabase, projectId, (q) => q.eq("status_code", "waiting")),
-    countActive(supabase, projectId, (q) => q.is("assignee_person_id", null)),
+    getIssueSummary(supabase, projectId, myPersonId),
   ]);
 
   if (rowsResult.error) {
@@ -142,14 +185,7 @@ export async function GET(request: NextRequest) {
       pageSize,
       total,
       totalPages: Math.max(1, Math.ceil(total / pageSize)),
-      summary: {
-        total: totalAll,
-        notHandedOver: notHanded,
-        mine,
-        overdue,
-        waiting,
-        missingAssignee,
-      },
+      summary,
       rows: (rowsResult.data ?? []).map((row: Record<string, unknown>) => normalizeIssue(row)),
       lookups,
     },
@@ -171,7 +207,7 @@ export async function POST(request: NextRequest) {
   try { raw = await request.json(); } catch { raw = {}; }
   const parsed = parseIssueInput(raw);
   if (!parsed.ok) {
-    return NextResponse.json({ ok: false, code: "VALIDATION_FAILED", message: "Kiểm tra lại dữ liệu ISSUE.", fieldErrors: parsed.errors } satisfies IssueMutationResponse, { status: 400 });
+    return NextResponse.json({ ok: false, code: "VALIDATION_FAILED", message: issueValidationMessage(parsed.errors), fieldErrors: parsed.errors } satisfies IssueMutationResponse, { status: 400 });
   }
 
   const role = await getProjectRole(supabase, parsed.input.projectId, user.id);
@@ -188,7 +224,7 @@ export async function POST(request: NextRequest) {
   });
   if (input.assigneeId && !relationNames.assigneeValid) {
     return NextResponse.json(
-      { ok: false, code: "ASSIGNEE_NOT_PROJECT_MEMBER", message: "Người phụ trách phải là Thành viên của Project." } satisfies IssueMutationResponse,
+      { ok: false, code: "ASSIGNEE_NOT_PROJECT_MEMBER", message: "Người phụ trách không còn nằm trong danh sách nhân sự đang hoạt động của Project.", fieldErrors: { assigneeId: "Vui lòng chọn lại người phụ trách từ danh sách Project Team." } } satisfies IssueMutationResponse,
       { status: 400 },
     );
   }
@@ -221,14 +257,14 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     const migrationMissing = /issue_no|set_issue_audit_fields|does not exist/i.test(error.message);
+    const friendly = friendlyIssueDatabaseError(error);
     return NextResponse.json({
       ok: false,
       code: migrationMissing ? "V060_MIGRATION_REQUIRED" : "ISSUE_CREATE_FAILED",
-      message: migrationMissing
-        ? "Hãy chạy migration V0.6.0 trước khi tạo ISSUE."
-        : `Không tạo được ISSUE: ${error.message}`,
+      message: migrationMissing ? "Hãy chạy migration V0.6.0 trước khi tạo ISSUE." : friendly.message,
+      fieldErrors: migrationMissing ? undefined : friendly.fieldErrors,
     } satisfies IssueMutationResponse, { status: migrationMissing ? 503 : 500 });
   }
 
-  return NextResponse.json({ ok: true, issue: normalizeIssue(data as Record<string, unknown>) } satisfies IssueMutationResponse, { status: 201 });
+  return NextResponse.json({ ok: true, issue: normalizeIssue(data as unknown as Record<string, unknown>) } satisfies IssueMutationResponse, { status: 201 });
 }

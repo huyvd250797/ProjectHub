@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getProjectRole, ISSUE_SELECT, normalizeIssue, resolveIssueRelationNames } from "@/lib/issues/server";
 import type { IssueDetailApiResponse, IssueMutationResponse } from "@/lib/issues/types";
-import { parseIssuePatch } from "@/lib/issues/validation";
+import { issueValidationMessage, parseIssuePatch } from "@/lib/issues/validation";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -87,7 +87,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   if (!role || role === "viewer") return NextResponse.json({ ok: false, code: "FORBIDDEN", message: "Bạn chỉ có quyền xem ISSUE." } satisfies IssueMutationResponse, { status: 403 });
 
   const parsed = parseIssuePatch(raw);
-  if (!parsed.ok) return NextResponse.json({ ok: false, code: "VALIDATION_FAILED", message: "Kiểm tra lại dữ liệu ISSUE.", fieldErrors: parsed.errors } satisfies IssueMutationResponse, { status: 400 });
+  if (!parsed.ok) return NextResponse.json({ ok: false, code: "VALIDATION_FAILED", message: issueValidationMessage(parsed.errors), fieldErrors: parsed.errors } satisfies IssueMutationResponse, { status: 400 });
   if (!Object.keys(parsed.patch).length) return NextResponse.json({ ok: false, code: "EMPTY_PATCH", message: "Không có dữ liệu thay đổi." } satisfies IssueMutationResponse, { status: 400 });
 
   const relationFields = {
@@ -99,7 +99,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const names = await resolveIssueRelationNames(supabase, projectId, relationFields);
   if (relationFields.assigneeId && !names.assigneeValid) {
     return NextResponse.json(
-      { ok: false, code: "ASSIGNEE_NOT_PROJECT_MEMBER", message: "Người phụ trách phải là Thành viên của Project." } satisfies IssueMutationResponse,
+      { ok: false, code: "ASSIGNEE_NOT_PROJECT_MEMBER", message: "Người phụ trách không còn nằm trong danh sách nhân sự đang hoạt động của Project.", fieldErrors: { assigneeId: "Vui lòng chọn lại người phụ trách từ danh sách Project Team." } } satisfies IssueMutationResponse,
       { status: 400 },
     );
   }

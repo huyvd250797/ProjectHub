@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getProjectRole, resolveIssueRelationNames } from "@/lib/issues/server";
 import type { IssueBulkMutationResponse } from "@/lib/issues/types";
-import { parseIssuePatch } from "@/lib/issues/validation";
+import { issueValidationMessage, parseIssuePatch } from "@/lib/issues/validation";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -64,7 +64,7 @@ export async function PATCH(request: NextRequest) {
   const parsed = parseIssuePatch(patchInput);
   if (!parsed.ok) {
     return NextResponse.json(
-      { ok: false, code: "VALIDATION_FAILED", message: "Kiểm tra lại dữ liệu bulk update.", fieldErrors: parsed.errors } satisfies IssueBulkMutationResponse,
+      { ok: false, code: "VALIDATION_FAILED", message: issueValidationMessage(parsed.errors), fieldErrors: parsed.errors } satisfies IssueBulkMutationResponse,
       { status: 400 },
     );
   }
@@ -84,7 +84,7 @@ export async function PATCH(request: NextRequest) {
   const names = await resolveIssueRelationNames(supabase, projectId, relationFields);
   if (relationFields.assigneeId && !names.assigneeValid) {
     return NextResponse.json(
-      { ok: false, code: "ASSIGNEE_NOT_PROJECT_MEMBER", message: "Người phụ trách phải là Thành viên của Project." } satisfies IssueBulkMutationResponse,
+      { ok: false, code: "ASSIGNEE_NOT_PROJECT_MEMBER", message: "Người phụ trách không còn nằm trong danh sách nhân sự đang hoạt động của Project.", fieldErrors: { assigneeId: "Vui lòng chọn lại người phụ trách từ Project Team." } } satisfies IssueBulkMutationResponse,
       { status: 400 },
     );
   }

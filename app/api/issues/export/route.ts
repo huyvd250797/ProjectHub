@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ ok: false, message: "Phiên đăng nhập đã hết hạn." }, { status: 401 });
   const role = await getProjectRole(supabase, projectId, user.id);
   if (!role) return NextResponse.json({ ok: false, message: "Bạn không có quyền truy cập project." }, { status: 403 });
-  const [lookups, myPersonId] = await Promise.all([getIssueLookups(supabase, projectId), getCurrentAssigneePersonId(supabase, projectId, user.email)]);
+  const [lookups, myPersonId] = await Promise.all([getIssueLookups(supabase, projectId), getCurrentAssigneePersonId(supabase, projectId, user.id)]);
 
   const all: ReturnType<typeof normalizeIssue>[] = [];
   const batchSize = 1000;

@@ -19,6 +19,10 @@ function cleanEmail(value: unknown) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
+function validEmail(value: string) {
+  return !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 async function authorize() {
   const supabase = await createClient();
   if (!supabase) return { supabase: null, status: 409, message: "Demo Mode không có Master Console." } as const;
@@ -38,58 +42,69 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ pr
     );
   }
 
-  const { data: memberships, error } = await auth.supabase
-    .from("project_members")
-    .select("user_id,role")
+  // Project Team is authoritative in people. Login/project_members is optional.
+  const { data: peopleRows, error: peopleError } = await auth.supabase
+    .from("people")
+    .select("id,user_id,full_name,email,project_role,is_active")
     .eq("project_id", projectId)
-    .order("role");
+    .eq("person_type", "asc")
+    .eq("is_active", true)
+    .order("full_name", { ascending: true });
 
-  if (error) {
-    return NextResponse.json(
-      { ok: false, code: "MEMBERS_READ_FAILED", message: error.message } satisfies MasterMembersResponse,
-      { status: 500 },
-    );
-  }
-
-  const ids = ((memberships ?? []) as Array<{ user_id: unknown; role: unknown }>).map((row) => String(row.user_id));
-  const [profiles, people] = await Promise.all([
-    ids.length
-      ? auth.supabase.from("profiles").select("id,email,display_name,is_active").in("id", ids)
-      : Promise.resolve({ data: [], error: null }),
-    ids.length
-      ? auth.supabase.from("people").select("id,user_id,full_name,email").eq("project_id", projectId).eq("person_type", "asc").in("user_id", ids)
-      : Promise.resolve({ data: [], error: null }),
-  ]);
-
-  if (profiles.error) {
-    return NextResponse.json(
-      { ok: false, code: "PROFILES_READ_FAILED", message: profiles.error.message } satisfies MasterMembersResponse,
-      { status: 500 },
-    );
-  }
-  if (people.error) {
+  if (peopleError) {
+    const migrationMissing = /is_active|column .* does not exist/i.test(peopleError.message);
     return NextResponse.json(
       {
         ok: false,
-        code: "ASSIGNEE_LINK_READ_FAILED",
-        message: `${people.error.message}. Hãy chạy migration V0.9.5 để liên kết Project Member với Phụ trách ISSUE.`,
+        code: migrationMissing ? "V1111_MIGRATION_REQUIRED" : "TEAM_READ_FAILED",
+        message: migrationMissing
+          ? "Project Team V1.1.1 cần chạy migration 202608260001_v1111_team_validation_performance.sql."
+          : peopleError.message,
       } satisfies MasterMembersResponse,
+      { status: migrationMissing ? 503 : 500 },
+    );
+  }
+
+  const people = (peopleRows ?? []) as Array<Record<string, unknown>>;
+  const userIds = [...new Set(people.map((row) => row.user_id ? String(row.user_id) : "").filter(Boolean))];
+
+  const [profilesResult, membershipsResult] = await Promise.all([
+    userIds.length
+      ? auth.supabase.from("profiles").select("id,email,display_name,is_active").in("id", userIds)
+      : Promise.resolve({ data: [], error: null }),
+    userIds.length
+      ? auth.supabase.from("project_members").select("user_id,role").eq("project_id", projectId).in("user_id", userIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  if (profilesResult.error) {
+    return NextResponse.json(
+      { ok: false, code: "PROFILES_READ_FAILED", message: profilesResult.error.message } satisfies MasterMembersResponse,
+      { status: 500 },
+    );
+  }
+  if (membershipsResult.error) {
+    return NextResponse.json(
+      { ok: false, code: "MEMBERSHIPS_READ_FAILED", message: membershipsResult.error.message } satisfies MasterMembersResponse,
       { status: 500 },
     );
   }
 
-  const profileRows = (profiles.data ?? []) as Array<Record<string, unknown>>;
-  const peopleRows = (people.data ?? []) as Array<Record<string, unknown>>;
-  const profileMap = new Map<string, Record<string, unknown>>(profileRows.map((row) => [String(row.id), row]));
-  const personMap = new Map<string, Record<string, unknown>>(peopleRows.map((row) => [String(row.user_id), row]));
-  const memberRows = (memberships ?? []) as Array<Record<string, unknown>>;
-  const members = memberRows.map((row) =>
-    normalizeMasterMember(row, profileMap.get(String(row.user_id)), personMap.get(String(row.user_id))),
+  const profileMap = new Map<string, Record<string, unknown>>(
+    ((profilesResult.data ?? []) as Array<Record<string, unknown>>).map((row) => [String(row.id), row]),
   );
+  const membershipMap = new Map<string, Record<string, unknown>>(
+    ((membershipsResult.data ?? []) as Array<Record<string, unknown>>).map((row) => [String(row.user_id), row]),
+  );
+
+  const members = people.map((person) => {
+    const userId = person.user_id ? String(person.user_id) : "";
+    return normalizeMasterMember(userId ? membershipMap.get(userId) : { role: person.project_role }, userId ? profileMap.get(userId) : undefined, person);
+  });
 
   return NextResponse.json(
     { ok: true, members } satisfies MasterMembersResponse,
-    { headers: { "Cache-Control": "no-store" } },
+    { headers: { "Cache-Control": "private, max-age=10, stale-while-revalidate=20" } },
   );
 }
 
@@ -109,196 +124,186 @@ export async function POST(request: Request, context: { params: Promise<{ projec
       {
         ok: false,
         code: "SERVICE_ROLE_REQUIRED",
-        message: "Cần SUPABASE_SERVICE_ROLE_KEY để quản lý hồ sơ thành viên và đồng bộ Phụ trách ISSUE.",
+        message: "Cần SUPABASE_SERVICE_ROLE_KEY để quản lý Project Team và liên kết tài khoản đăng nhập.",
       } satisfies MasterMemberMutationResponse,
       { status: 503 },
     );
   }
 
   let raw: Record<string, unknown> = {};
-  try {
-    raw = await request.json();
-  } catch {}
+  try { raw = await request.json(); } catch {}
 
+  const memberId = typeof raw.memberId === "string" ? raw.memberId.trim() : "";
   const fullName = cleanName(raw.fullName);
   const email = cleanEmail(raw.email);
   const role = validRole(raw.role);
+  const fieldErrors: Record<string, string> = {};
 
-  if (!fullName || fullName.length < 2 || !email || !email.includes("@") || !role) {
+  if (!fullName || fullName.length < 2) fieldErrors.fullName = "Họ tên là bắt buộc và phải có ít nhất 2 ký tự.";
+  if (email && !validEmail(email)) fieldErrors.email = "Email chưa đúng định dạng.";
+  if (!role) fieldErrors.role = "Vui lòng chọn quyền trong Project.";
+
+  if (Object.keys(fieldErrors).length) {
     return NextResponse.json(
-      {
-        ok: false,
-        code: "VALIDATION_FAILED",
-        message: "Họ tên, email đăng nhập và role hợp lệ là bắt buộc.",
-      } satisfies MasterMemberMutationResponse,
+      { ok: false, code: "VALIDATION_FAILED", message: "Vui lòng kiểm tra thông tin thành viên.", fieldErrors } satisfies MasterMemberMutationResponse,
       { status: 400 },
     );
   }
 
-  const { data: profileRows, error: profileReadError } = await service
-    .from("profiles")
-    .select("id,email,display_name,is_active")
-    .ilike("email", email)
-    .limit(1);
-
-  if (profileReadError) {
-    return NextResponse.json(
-      { ok: false, code: "PROFILE_READ_FAILED", message: profileReadError.message } satisfies MasterMemberMutationResponse,
-      { status: 500 },
-    );
-  }
-
-  const profile = profileRows?.[0] as Record<string, unknown> | undefined;
-  if (!profile?.id) {
-    return NextResponse.json(
-      {
-        ok: false,
-        code: "PROFILE_NOT_FOUND",
-        message: "Email này chưa có tài khoản Supabase Auth. Hãy tạo tài khoản đăng nhập bằng email này trước, sau đó thêm lại vào Project.",
-      } satisfies MasterMemberMutationResponse,
-      { status: 404 },
-    );
-  }
-
-  if (profile.is_active === false) {
-    return NextResponse.json(
-      { ok: false, code: "PROFILE_INACTIVE", message: "Tài khoản đang bị vô hiệu hóa." } satisfies MasterMemberMutationResponse,
-      { status: 409 },
-    );
-  }
-
-  const userId = String(profile.id);
-
-  const { error: profileUpdateError } = await service
-    .from("profiles")
-    .update({ display_name: fullName, updated_at: new Date().toISOString() })
-    .eq("id", userId);
-
-  if (profileUpdateError) {
-    return NextResponse.json(
-      { ok: false, code: "PROFILE_UPDATE_FAILED", message: profileUpdateError.message } satisfies MasterMemberMutationResponse,
-      { status: 500 },
-    );
-  }
-
-  const { data: membership, error: membershipError } = await service
-    .from("project_members")
-    .upsert({ project_id: projectId, user_id: userId, role }, { onConflict: "project_id,user_id" })
-    .select("user_id,role")
-    .single();
-
-  if (membershipError || !membership) {
-    return NextResponse.json(
-      {
-        ok: false,
-        code: "MEMBER_SAVE_FAILED",
-        message: membershipError?.message ?? "Không lưu được thành viên.",
-      } satisfies MasterMemberMutationResponse,
-      { status: 500 },
-    );
-  }
-
-  const { data: linkedPeople, error: personLookupError } = await service
-    .from("people")
-    .select("id,user_id,full_name,email")
-    .eq("project_id", projectId)
-    .eq("person_type", "asc")
-    .eq("user_id", userId)
-    .limit(1);
-
-  if (personLookupError) {
-    return NextResponse.json(
-      {
-        ok: false,
-        code: "ASSIGNEE_LOOKUP_FAILED",
-        message: `${personLookupError.message}. Hãy chạy migration V0.9.5 trước.`,
-      } satisfies MasterMemberMutationResponse,
-      { status: 500 },
-    );
-  }
-
-  let person = linkedPeople?.[0] as Record<string, unknown> | undefined;
-
-  if (!person) {
-    const { data: emailMatch } = await service
+  if (email) {
+    let duplicateQuery = service
       .from("people")
-      .select("id,user_id,full_name,email")
+      .select("id,full_name")
       .eq("project_id", projectId)
       .eq("person_type", "asc")
+      .eq("is_active", true)
       .ilike("email", email)
       .limit(1);
-    person = emailMatch?.[0] as Record<string, unknown> | undefined;
+    if (memberId) duplicateQuery = duplicateQuery.neq("id", memberId);
+    const { data: duplicateRows, error: duplicateError } = await duplicateQuery;
+    if (duplicateError) {
+      return NextResponse.json({ ok: false, code: "TEAM_EMAIL_CHECK_FAILED", message: duplicateError.message } satisfies MasterMemberMutationResponse, { status: 500 });
+    }
+    if (duplicateRows?.length) {
+      return NextResponse.json(
+        { ok: false, code: "EMAIL_ALREADY_USED", message: `Email này đã được dùng bởi ${duplicateRows[0].full_name ?? "một thành viên khác"}.`, fieldErrors: { email: "Email đã tồn tại trong Project Team." } } satisfies MasterMemberMutationResponse,
+        { status: 409 },
+      );
+    }
   }
 
-  if (!person) {
-    const { data: nameMatch } = await service
-      .from("people")
-      .select("id,user_id,full_name,email")
-      .eq("project_id", projectId)
-      .eq("person_type", "asc")
-      .ilike("full_name", fullName)
-      .limit(1);
-    person = nameMatch?.[0] as Record<string, unknown> | undefined;
-  }
-
-  let savedPerson: Record<string, unknown> | null = null;
-
-  if (person?.id) {
+  let existingPerson: Record<string, unknown> | null = null;
+  if (memberId) {
     const { data, error } = await service
       .from("people")
-      .update({
-        user_id: userId,
-        full_name: fullName,
-        email,
-        project_role: role,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", String(person.id))
-      .select("id,user_id,full_name,email")
-      .single();
-
+      .select("id,user_id,full_name,email,project_role,is_active")
+      .eq("id", memberId)
+      .eq("project_id", projectId)
+      .eq("person_type", "asc")
+      .maybeSingle();
     if (error) {
+      return NextResponse.json({ ok: false, code: "TEAM_MEMBER_READ_FAILED", message: error.message } satisfies MasterMemberMutationResponse, { status: 500 });
+    }
+    if (!data) {
+      return NextResponse.json({ ok: false, code: "TEAM_MEMBER_NOT_FOUND", message: "Không tìm thấy thành viên trong Project." } satisfies MasterMemberMutationResponse, { status: 404 });
+    }
+    existingPerson = data as Record<string, unknown>;
+  }
+
+  const oldUserId = existingPerson?.user_id ? String(existingPerson.user_id) : null;
+  let linkedProfile: Record<string, unknown> | null = null;
+  let newUserId: string | null = null;
+
+  // Email is optional. If it matches an existing Supabase profile, link login access automatically.
+  if (email) {
+    const { data: profiles, error } = await service
+      .from("profiles")
+      .select("id,email,display_name,is_active")
+      .ilike("email", email)
+      .limit(1);
+    if (error) {
+      return NextResponse.json({ ok: false, code: "PROFILE_READ_FAILED", message: error.message } satisfies MasterMemberMutationResponse, { status: 500 });
+    }
+    const profile = profiles?.[0] as Record<string, unknown> | undefined;
+    if (profile?.id && profile.is_active !== false) {
+      linkedProfile = profile;
+      newUserId = String(profile.id);
+    }
+  }
+
+  if (newUserId) {
+    const { data: usedByOtherPerson, error } = await service
+      .from("people")
+      .select("id,full_name")
+      .eq("project_id", projectId)
+      .eq("person_type", "asc")
+      .eq("user_id", newUserId)
+      .neq("id", memberId || "00000000-0000-0000-0000-000000000000")
+      .limit(1);
+    if (error) {
+      return NextResponse.json({ ok: false, code: "LOGIN_LINK_CHECK_FAILED", message: error.message } satisfies MasterMemberMutationResponse, { status: 500 });
+    }
+    if (usedByOtherPerson?.length) {
       return NextResponse.json(
-        { ok: false, code: "ASSIGNEE_SYNC_FAILED", message: error.message } satisfies MasterMemberMutationResponse,
-        { status: 500 },
+        { ok: false, code: "EMAIL_ALREADY_LINKED", message: `Email này đã được liên kết với ${usedByOtherPerson[0].full_name ?? "một thành viên khác"} trong Project.`, fieldErrors: { email: "Email đã được dùng bởi thành viên khác." } } satisfies MasterMemberMutationResponse,
+        { status: 409 },
       );
+    }
+  }
+
+  const personPayload = {
+    project_id: projectId,
+    user_id: newUserId,
+    person_type: "asc",
+    full_name: fullName,
+    email: email || null,
+    project_role: role,
+    is_active: true,
+    updated_at: new Date().toISOString(),
+  };
+
+  let savedPerson: Record<string, unknown>;
+  if (existingPerson?.id) {
+    const { data, error } = await service
+      .from("people")
+      .update(personPayload)
+      .eq("id", String(existingPerson.id))
+      .select("id,user_id,full_name,email,project_role,is_active")
+      .single();
+    if (error || !data) {
+      return NextResponse.json({ ok: false, code: "TEAM_MEMBER_UPDATE_FAILED", message: error?.message ?? "Không cập nhật được thành viên." } satisfies MasterMemberMutationResponse, { status: 500 });
     }
     savedPerson = data as Record<string, unknown>;
   } else {
     const { data, error } = await service
       .from("people")
-      .insert({
-        project_id: projectId,
-        user_id: userId,
-        person_type: "asc",
-        full_name: fullName,
-        email,
-        project_role: role,
-      })
-      .select("id,user_id,full_name,email")
+      .insert(personPayload)
+      .select("id,user_id,full_name,email,project_role,is_active")
       .single();
-
-    if (error) {
-      return NextResponse.json(
-        { ok: false, code: "ASSIGNEE_CREATE_FAILED", message: error.message } satisfies MasterMemberMutationResponse,
-        { status: 500 },
-      );
+    if (error || !data) {
+      return NextResponse.json({ ok: false, code: "TEAM_MEMBER_CREATE_FAILED", message: error?.message ?? "Không tạo được thành viên." } satisfies MasterMemberMutationResponse, { status: 500 });
     }
     savedPerson = data as Record<string, unknown>;
   }
 
-  const updatedProfile = {
-    ...profile,
-    display_name: fullName,
-    email,
-  };
+  // Keep project_members only for members who actually have a login profile.
+  if (oldUserId && oldUserId !== newUserId) {
+    await service.from("project_members").delete().eq("project_id", projectId).eq("user_id", oldUserId);
+  }
+
+  let membership: Record<string, unknown> = { role };
+  if (newUserId) {
+    const { error: profileUpdateError } = await service
+      .from("profiles")
+      .update({ display_name: fullName, updated_at: new Date().toISOString() })
+      .eq("id", newUserId);
+    if (profileUpdateError) {
+      return NextResponse.json({ ok: false, code: "PROFILE_UPDATE_FAILED", message: profileUpdateError.message } satisfies MasterMemberMutationResponse, { status: 500 });
+    }
+
+    const { data, error } = await service
+      .from("project_members")
+      .upsert({ project_id: projectId, user_id: newUserId, role }, { onConflict: "project_id,user_id" })
+      .select("user_id,role")
+      .single();
+    if (error || !data) {
+      return NextResponse.json({ ok: false, code: "MEMBER_ACCESS_SAVE_FAILED", message: error?.message ?? "Không lưu được quyền đăng nhập Project." } satisfies MasterMemberMutationResponse, { status: 500 });
+    }
+    membership = data as Record<string, unknown>;
+    linkedProfile = { ...(linkedProfile ?? {}), id: newUserId, email, display_name: fullName, is_active: true };
+  } else if (oldUserId) {
+    await service.from("project_members").delete().eq("project_id", projectId).eq("user_id", oldUserId);
+  }
+
+  const member = normalizeMasterMember(membership, linkedProfile, savedPerson);
+  const loginMessage = newUserId
+    ? "Đã lưu thành viên và liên kết tài khoản đăng nhập."
+    : email
+      ? "Đã lưu thành viên để giao việc. Email chưa có tài khoản Supabase; sau khi tạo tài khoản, mở thành viên và bấm Lưu lại để liên kết đăng nhập."
+      : "Đã lưu thành viên để giao việc. Có thể bổ sung email đăng nhập sau.";
 
   return NextResponse.json(
-    {
-      ok: true,
-      member: normalizeMasterMember(membership, updatedProfile, savedPerson),
-      assigneeSynced: true,
-    } satisfies MasterMemberMutationResponse,
+    { ok: true, member, assigneeSynced: true, loginLinked: Boolean(newUserId), message: loginMessage } satisfies MasterMemberMutationResponse,
   );
 }
 
@@ -312,26 +317,35 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     );
   }
 
-  const userId = request.nextUrl.searchParams.get("userId")?.trim();
-  if (!userId) {
-    return NextResponse.json(
-      { ok: false, code: "USER_REQUIRED", message: "Thiếu userId." } satisfies MasterMemberMutationResponse,
-      { status: 400 },
-    );
+  const memberId = request.nextUrl.searchParams.get("memberId")?.trim();
+  if (!memberId) {
+    return NextResponse.json({ ok: false, code: "MEMBER_REQUIRED", message: "Thiếu memberId." } satisfies MasterMemberMutationResponse, { status: 400 });
   }
 
-  const { error } = await auth.supabase
-    .from("project_members")
-    .delete()
+  const service = createServiceClient();
+  if (!service) {
+    return NextResponse.json({ ok: false, code: "SERVICE_ROLE_REQUIRED", message: "Thiếu SUPABASE_SERVICE_ROLE_KEY." } satisfies MasterMemberMutationResponse, { status: 503 });
+  }
+
+  const { data: person, error: readError } = await service
+    .from("people")
+    .select("id,user_id")
+    .eq("id", memberId)
     .eq("project_id", projectId)
-    .eq("user_id", userId);
+    .eq("person_type", "asc")
+    .maybeSingle();
+  if (readError) return NextResponse.json({ ok: false, code: "TEAM_MEMBER_READ_FAILED", message: readError.message } satisfies MasterMemberMutationResponse, { status: 500 });
+  if (!person) return NextResponse.json({ ok: false, code: "TEAM_MEMBER_NOT_FOUND", message: "Không tìm thấy thành viên." } satisfies MasterMemberMutationResponse, { status: 404 });
 
-  if (error) {
-    return NextResponse.json(
-      { ok: false, code: "MEMBER_REMOVE_FAILED", message: error.message } satisfies MasterMemberMutationResponse,
-      { status: 500 },
-    );
+  const { error } = await service
+    .from("people")
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq("id", memberId);
+  if (error) return NextResponse.json({ ok: false, code: "TEAM_MEMBER_REMOVE_FAILED", message: error.message } satisfies MasterMemberMutationResponse, { status: 500 });
+
+  if (person.user_id) {
+    await service.from("project_members").delete().eq("project_id", projectId).eq("user_id", String(person.user_id));
   }
 
-  return NextResponse.json({ ok: true, removedUserId: userId } satisfies MasterMemberMutationResponse);
+  return NextResponse.json({ ok: true, removedMemberId: memberId } satisfies MasterMemberMutationResponse);
 }

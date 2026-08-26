@@ -31,7 +31,7 @@ export async function GET() {
 
   const [projectsResult, membersResult] = await Promise.all([
     supabase.from("projects").select(MASTER_PROJECT_SELECT).order("created_at", { ascending: true }),
-    supabase.from("project_members").select("project_id"),
+    supabase.from("people").select("project_id").eq("person_type", "asc").eq("is_active", true),
   ]);
   if (projectsResult.error) return NextResponse.json({ ok: false, code: "PROJECTS_READ_FAILED", message: projectsResult.error.message } satisfies MasterProjectsResponse, { status: 500 });
 

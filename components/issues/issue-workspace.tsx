@@ -200,16 +200,23 @@ export function IssueWorkspace() {
   }, [preferences, preferencesReady, data?.source, selectedProject.id]);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     setLoading(true); setError("");
     const params = new URLSearchParams(searchParams.toString());
     params.set("projectId", selectedProject.id);
     params.set("pageSize", String(preferences.pageSize));
-    fetch(`/api/issues?${params.toString()}`, { cache: "no-store" })
-      .then(async (response) => { const body = (await response.json()) as IssuesApiResponse; if (!body.ok) throw new Error(body.message); if (!cancelled) setData(body.data); })
-      .catch((reason) => !cancelled && setError(reason instanceof Error ? reason.message : "Không tải được ISSUE."))
-      .finally(() => !cancelled && setLoading(false));
-    return () => { cancelled = true; };
+    fetch(`/api/issues?${params.toString()}`, { cache: "no-store", signal: controller.signal })
+      .then(async (response) => {
+        const body = (await response.json()) as IssuesApiResponse;
+        if (!body.ok) throw new Error(body.message);
+        if (!controller.signal.aborted) setData(body.data);
+      })
+      .catch((reason) => {
+        if (controller.signal.aborted) return;
+        setError(reason instanceof Error ? reason.message : "Không tải được ISSUE.");
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, [selectedProject.id, queryString, reloadKey, preferences.pageSize]);
 
   useEffect(() => { setSelectedIds(new Set()); }, [selectedProject.id, queryString]);

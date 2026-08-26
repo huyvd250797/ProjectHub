@@ -76,8 +76,13 @@ export function NotificationCenter() {
   }, [selectedProject.id, load]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => void load(true), 60000);
-    return () => window.clearInterval(timer);
+    const refresh = () => { if (document.visibilityState === "visible") void load(true); };
+    const timer = window.setInterval(refresh, 90000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, [load]);
 
   useEffect(() => {

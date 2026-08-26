@@ -1,5 +1,19 @@
 # Changelog
 
+## V1.1.1 — Issue Validation / Flexible Project Team / Performance Tune
+
+### Added
+- ISSUE create validation now reports exact missing/invalid fields in the drawer.
+- Project Team members can be created with name + role only; email/login can be linked later.
+- Active Project Team members are the assignee source even when they do not have a Supabase account yet.
+- Single-RPC ISSUE summary aggregation with fallback for pre-migration environments.
+
+### Improved
+- Reduced ISSUE lookup requests by removing unnecessary profile/membership joins for assignee choices.
+- Cancels stale ISSUE list requests during rapid filter/search changes.
+- Notification polling pauses while the browser tab is hidden.
+- Added trigram indexes for ISSUE and team search.
+
 ## V1.1.0 — Notifications & Activity Center
 
 ### Added

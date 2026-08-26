@@ -16,6 +16,22 @@ export type IssueInput = {
   notes: string | null;
 };
 
+export const ISSUE_FIELD_LABELS: Record<string, string> = {
+  projectId: "Project",
+  content: "Nội dung yêu cầu",
+  statusCode: "Trạng thái",
+  customerStatusCode: "Trạng thái khách hàng",
+  priorityCode: "Ưu tiên",
+  stageCode: "Giai đoạn",
+  jiraUrl: "Link Jira",
+  releaseDate: "Ngày release",
+  dueDate: "Due Date",
+  moduleId: "Module",
+  departmentId: "Phòng ban",
+  requesterId: "Nhân sự yêu cầu",
+  assigneeId: "Phụ trách yêu cầu",
+};
+
 function text(value: unknown) {
   if (value === null || value === undefined) return null;
   const result = String(value).trim();
@@ -26,7 +42,7 @@ function uuidOrNull(value: unknown, field: string, errors: Record<string, string
   const result = text(value);
   if (!result) return null;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(result)) {
-    errors[field] = "Giá trị không hợp lệ.";
+    errors[field] = `${ISSUE_FIELD_LABELS[field] ?? "Giá trị"} không hợp lệ. Vui lòng chọn lại từ danh sách.`;
     return null;
   }
   return result;
@@ -36,7 +52,7 @@ function dateOrNull(value: unknown, field: string, errors: Record<string, string
   const result = text(value);
   if (!result) return null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(result) || Number.isNaN(Date.parse(`${result}T00:00:00Z`))) {
-    errors[field] = "Ngày không hợp lệ.";
+    errors[field] = `${ISSUE_FIELD_LABELS[field] ?? "Ngày"} không hợp lệ.`;
     return null;
   }
   return result;
@@ -47,7 +63,7 @@ function urlOrNull(value: unknown, errors: Record<string, string>) {
   if (!result) return null;
   try {
     const parsed = new URL(result);
-    if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('protocol');
+    if (!["http:", "https:"].includes(parsed.protocol)) throw new Error("protocol");
     return result;
   } catch {
     errors.jiraUrl = "Link Jira phải là URL http/https hợp lệ.";
@@ -55,22 +71,35 @@ function urlOrNull(value: unknown, errors: Record<string, string>) {
   }
 }
 
+export function issueValidationMessage(errors: Record<string, string>) {
+  const labels = Object.keys(errors).map((field) => ISSUE_FIELD_LABELS[field] ?? field);
+  if (!labels.length) return "Dữ liệu ISSUE chưa hợp lệ.";
+  return `Vui lòng kiểm tra: ${labels.join(", ")}.`;
+}
+
 export function parseIssueInput(raw: unknown, requireProject = true) {
   const body = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   const errors: Record<string, string> = {};
   const content = text(body.content);
   if (!content) errors.content = "Nội dung ISSUE là bắt buộc.";
-  if (content && content.length > 10000) errors.content = "Nội dung ISSUE quá dài.";
+  if (content && content.length > 10000) errors.content = "Nội dung ISSUE quá dài (tối đa 10.000 ký tự).";
 
   const projectId = uuidOrNull(body.projectId, "projectId", errors);
-  if (requireProject && !projectId) errors.projectId = errors.projectId ?? "Thiếu project.";
+  if (requireProject && !projectId) errors.projectId = errors.projectId ?? "Chưa xác định Project để tạo ISSUE.";
+
+  const statusCode = text(body.statusCode);
+  const customerStatusCode = text(body.customerStatusCode);
+  const priorityCode = text(body.priorityCode);
+  if (!statusCode) errors.statusCode = "Vui lòng chọn Trạng thái.";
+  if (!customerStatusCode) errors.customerStatusCode = "Vui lòng chọn Trạng thái khách hàng.";
+  if (!priorityCode) errors.priorityCode = "Vui lòng chọn Ưu tiên.";
 
   const input: IssueInput = {
     projectId: projectId ?? "",
     content: content ?? "",
-    statusCode: text(body.statusCode),
-    customerStatusCode: text(body.customerStatusCode),
-    priorityCode: text(body.priorityCode),
+    statusCode,
+    customerStatusCode,
+    priorityCode,
     stageCode: text(body.stageCode),
     jiraUrl: urlOrNull(body.jiraUrl, errors),
     releaseDate: dateOrNull(body.releaseDate, "releaseDate", errors),
@@ -94,6 +123,7 @@ export function parseIssuePatch(raw: unknown) {
   if ("content" in body) {
     const value = text(body.content);
     if (!value) errors.content = "Nội dung ISSUE là bắt buộc.";
+    else if (value.length > 10000) errors.content = "Nội dung ISSUE quá dài (tối đa 10.000 ký tự).";
     else patch.content = value;
   }
   if ("statusCode" in body) patch.status_code = text(body.statusCode);

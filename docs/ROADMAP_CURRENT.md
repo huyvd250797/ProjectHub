@@ -26,3 +26,5 @@
 - ⏭ V1.3.0 — Advanced Analytics & Project Health
 - ⏭ V1.4.0 — Attachments / Project Documents
 - ⏭ V1.5.0 — Project Templates / Faster Project Setup
+
+- ✅ V1.1.1 — Issue Validation / Flexible Project Team / Performance Tune

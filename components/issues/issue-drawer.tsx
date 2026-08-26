@@ -104,6 +104,10 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   return <div className="mb-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-600">{children}</div>;
 }
 
+function FieldError({ message }: { message?: string }) {
+  return message ? <div className="mt-1.5 text-[10px] leading-4 text-rose-300/90">{message}</div> : null;
+}
+
 export function IssueDrawer({
   projectId,
   issue,
@@ -201,8 +205,31 @@ export function IssueDrawer({
     notes: draft.notes || null,
   }), [draft, projectId]);
 
+  function validateBeforeSave() {
+    const errors: Record<string, string> = {};
+    if (!draft.content.trim()) errors.content = "Nội dung ISSUE là bắt buộc.";
+    if (!draft.statusCode) errors.statusCode = "Vui lòng chọn Trạng thái.";
+    if (!draft.customerStatusCode) errors.customerStatusCode = "Vui lòng chọn Trạng thái khách hàng.";
+    if (!draft.priorityCode) errors.priorityCode = "Vui lòng chọn Ưu tiên.";
+    if (draft.jiraUrl.trim()) {
+      try {
+        const url = new URL(draft.jiraUrl.trim());
+        if (!["http:", "https:"].includes(url.protocol)) throw new Error("protocol");
+      } catch {
+        errors.jiraUrl = "Link Jira phải là URL http/https hợp lệ.";
+      }
+    }
+    return errors;
+  }
+
   async function save() {
     if (!writable || saving) return;
+    const clientErrors = validateBeforeSave();
+    if (Object.keys(clientErrors).length) {
+      setFieldErrors(clientErrors);
+      setError(`Chưa thể ${createMode ? "tạo" : "lưu"} ISSUE. Vui lòng bổ sung/kiểm tra các trường được đánh dấu bên dưới.`);
+      return;
+    }
     setSaving(true);
     setError("");
     setFieldErrors({});
@@ -321,8 +348,13 @@ export function IssueDrawer({
               ) : null}
 
               {error ? (
-                <div className="flex gap-2 rounded-xl border border-rose-300/15 bg-rose-300/[0.05] px-4 py-3 text-xs text-rose-100/80">
-                  <ShieldAlert className="mt-0.5 size-4 shrink-0" /> {error}
+                <div className="rounded-xl border border-rose-300/18 bg-rose-300/[0.06] px-4 py-3 text-xs text-rose-100/90">
+                  <div className="flex gap-2 font-medium"><ShieldAlert className="mt-0.5 size-4 shrink-0" /> {error}</div>
+                  {Object.keys(fieldErrors).length ? (
+                    <ul className="mt-2 space-y-1 pl-6 text-[10px] leading-4 text-rose-200/80">
+                      {Object.entries(fieldErrors).map(([field, message]) => <li key={field}>• {message}</li>)}
+                    </ul>
+                  ) : null}
                 </div>
               ) : null}
 
@@ -336,26 +368,26 @@ export function IssueDrawer({
                   placeholder="Mô tả ISSUE / yêu cầu nghiệp vụ..."
                   className="w-full resize-y rounded-xl border border-white/[0.08] bg-black/10 px-3.5 py-3 text-sm leading-6 text-slate-200 outline-none placeholder:text-slate-700 focus:border-cyan-300/25 disabled:opacity-65"
                 />
-                {fieldErrors.content ? <div className="mt-1.5 text-[10px] text-rose-300/80">{fieldErrors.content}</div> : null}
+                <FieldError message={fieldErrors.content} />
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div><FieldLabel>Trạng thái</FieldLabel><ThemedSelect ariaLabel="Trạng thái" disabled={!writable} value={draft.statusCode} onChange={(value) => setDraft((c) => ({ ...c, statusCode: value }))} options={lookups.statuses} /></div>
-                <div><FieldLabel>Trạng thái khách hàng</FieldLabel><ThemedSelect ariaLabel="Trạng thái khách hàng" disabled={!writable} value={draft.customerStatusCode} onChange={(value) => setDraft((c) => ({ ...c, customerStatusCode: value }))} options={lookups.customerStatuses} /></div>
-                <div><FieldLabel>Ưu tiên</FieldLabel><ThemedSelect ariaLabel="Ưu tiên" disabled={!writable} value={draft.priorityCode} onChange={(value) => setDraft((c) => ({ ...c, priorityCode: value }))} options={lookups.priorities} /></div>
-                <div><FieldLabel>Giai đoạn</FieldLabel><ThemedSelect ariaLabel="Giai đoạn" disabled={!writable} value={draft.stageCode} onChange={(value) => setDraft((c) => ({ ...c, stageCode: value }))} options={[{ value: "", label: "Chưa gán" }, ...lookups.stages]} placeholder="Chưa gán" /></div>
+                <div><FieldLabel>Trạng thái *</FieldLabel><ThemedSelect ariaLabel="Trạng thái" disabled={!writable} value={draft.statusCode} onChange={(value) => setDraft((c) => ({ ...c, statusCode: value }))} options={lookups.statuses} /><FieldError message={fieldErrors.statusCode} /></div>
+                <div><FieldLabel>Trạng thái khách hàng *</FieldLabel><ThemedSelect ariaLabel="Trạng thái khách hàng" disabled={!writable} value={draft.customerStatusCode} onChange={(value) => setDraft((c) => ({ ...c, customerStatusCode: value }))} options={lookups.customerStatuses} /><FieldError message={fieldErrors.customerStatusCode} /></div>
+                <div><FieldLabel>Ưu tiên *</FieldLabel><ThemedSelect ariaLabel="Ưu tiên" disabled={!writable} value={draft.priorityCode} onChange={(value) => setDraft((c) => ({ ...c, priorityCode: value }))} options={lookups.priorities} /><FieldError message={fieldErrors.priorityCode} /></div>
+                <div><FieldLabel>Giai đoạn</FieldLabel><ThemedSelect ariaLabel="Giai đoạn" disabled={!writable} value={draft.stageCode} onChange={(value) => setDraft((c) => ({ ...c, stageCode: value }))} options={[{ value: "", label: "Chưa gán" }, ...lookups.stages]} placeholder="Chưa gán" /><FieldError message={fieldErrors.stageCode} /></div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div><FieldLabel>Module</FieldLabel><ThemedSelect ariaLabel="Module" disabled={!writable} value={draft.moduleId} onChange={(value) => setDraft((c) => ({ ...c, moduleId: value }))} options={[{ value: "", label: "Chưa xác định Module" }, ...lookups.modules]} placeholder="Chưa xác định Module" menuClassName="min-w-[360px]" /></div>
-                <div><FieldLabel>Phòng ban</FieldLabel><ThemedSelect ariaLabel="Phòng ban" disabled={!writable} value={draft.departmentId} onChange={(value) => setDraft((c) => ({ ...c, departmentId: value }))} options={[{ value: "", label: "Chưa xác định Phòng ban" }, ...lookups.departments]} placeholder="Chưa xác định Phòng ban" /></div>
-                <div><FieldLabel>Nhân sự yêu cầu</FieldLabel><ThemedSelect ariaLabel="Nhân sự yêu cầu" disabled={!writable} value={draft.requesterId} onChange={(value) => setDraft((c) => ({ ...c, requesterId: value }))} options={[{ value: "", label: "Chưa xác định" }, ...lookups.requesters]} placeholder="Chưa xác định" /></div>
-                <div><FieldLabel>Phụ trách yêu cầu</FieldLabel><ThemedSelect ariaLabel="Phụ trách" disabled={!writable} value={draft.assigneeId} onChange={(value) => setDraft((c) => ({ ...c, assigneeId: value }))} options={assigneeOptions} placeholder="Chưa phụ trách" /></div>
+                <div><FieldLabel>Module</FieldLabel><ThemedSelect ariaLabel="Module" disabled={!writable} value={draft.moduleId} onChange={(value) => setDraft((c) => ({ ...c, moduleId: value }))} options={[{ value: "", label: "Chưa xác định Module" }, ...lookups.modules]} placeholder="Chưa xác định Module" menuClassName="min-w-[360px]" /><FieldError message={fieldErrors.moduleId} /></div>
+                <div><FieldLabel>Phòng ban</FieldLabel><ThemedSelect ariaLabel="Phòng ban" disabled={!writable} value={draft.departmentId} onChange={(value) => setDraft((c) => ({ ...c, departmentId: value }))} options={[{ value: "", label: "Chưa xác định Phòng ban" }, ...lookups.departments]} placeholder="Chưa xác định Phòng ban" /><FieldError message={fieldErrors.departmentId} /></div>
+                <div><FieldLabel>Nhân sự yêu cầu</FieldLabel><ThemedSelect ariaLabel="Nhân sự yêu cầu" disabled={!writable} value={draft.requesterId} onChange={(value) => setDraft((c) => ({ ...c, requesterId: value }))} options={[{ value: "", label: "Chưa xác định" }, ...lookups.requesters]} placeholder="Chưa xác định" /><FieldError message={fieldErrors.requesterId} /></div>
+                <div><FieldLabel>Phụ trách yêu cầu</FieldLabel><ThemedSelect ariaLabel="Phụ trách" disabled={!writable} value={draft.assigneeId} onChange={(value) => setDraft((c) => ({ ...c, assigneeId: value }))} options={assigneeOptions} placeholder="Chưa phụ trách" /><FieldError message={fieldErrors.assigneeId} /></div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <label className="block"><FieldLabel>Due Date</FieldLabel><div className="relative"><CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-600" /><input type="date" disabled={!writable} value={draft.dueDate} onChange={(e) => setDraft((c) => ({ ...c, dueDate: e.target.value }))} className="h-10 w-full rounded-xl border border-white/[0.08] bg-black/10 pl-9 pr-3 text-xs text-slate-300 outline-none focus:border-cyan-300/25 disabled:opacity-65" /></div></label>
-                <label className="block"><FieldLabel>Ngày release</FieldLabel><div className="relative"><CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-600" /><input type="date" disabled={!writable} value={draft.releaseDate} onChange={(e) => setDraft((c) => ({ ...c, releaseDate: e.target.value }))} className="h-10 w-full rounded-xl border border-white/[0.08] bg-black/10 pl-9 pr-3 text-xs text-slate-300 outline-none focus:border-cyan-300/25 disabled:opacity-65" /></div></label>
+                <label className="block"><FieldLabel>Due Date</FieldLabel><div className="relative"><CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-600" /><input type="date" disabled={!writable} value={draft.dueDate} onChange={(e) => setDraft((c) => ({ ...c, dueDate: e.target.value }))} className="h-10 w-full rounded-xl border border-white/[0.08] bg-black/10 pl-9 pr-3 text-xs text-slate-300 outline-none focus:border-cyan-300/25 disabled:opacity-65" /></div><FieldError message={fieldErrors.dueDate} /></label>
+                <label className="block"><FieldLabel>Ngày release</FieldLabel><div className="relative"><CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-600" /><input type="date" disabled={!writable} value={draft.releaseDate} onChange={(e) => setDraft((c) => ({ ...c, releaseDate: e.target.value }))} className="h-10 w-full rounded-xl border border-white/[0.08] bg-black/10 pl-9 pr-3 text-xs text-slate-300 outline-none focus:border-cyan-300/25 disabled:opacity-65" /></div><FieldError message={fieldErrors.releaseDate} /></label>
               </div>
 
               <div>
@@ -364,7 +396,7 @@ export function IssueDrawer({
                   <input disabled={!writable} value={draft.jiraUrl} onChange={(e) => setDraft((c) => ({ ...c, jiraUrl: e.target.value }))} placeholder="https://.../browse/PROJECT-123" className="h-10 min-w-0 flex-1 rounded-xl border border-white/[0.08] bg-black/10 px-3.5 text-xs text-slate-300 outline-none placeholder:text-slate-700 focus:border-cyan-300/25 disabled:opacity-65" />
                   {draft.jiraUrl ? <a href={draft.jiraUrl} target="_blank" rel="noreferrer" className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/[0.08] text-slate-500 hover:border-cyan-300/18 hover:text-cyan-200"><ExternalLink className="size-3.5" /></a> : null}
                 </div>
-                {fieldErrors.jiraUrl ? <div className="mt-1.5 text-[10px] text-rose-300/80">{fieldErrors.jiraUrl}</div> : null}
+                <FieldError message={fieldErrors.jiraUrl} />
               </div>
 
               <div><FieldLabel>ASC phản hồi</FieldLabel><textarea disabled={!writable} value={draft.response} onChange={(e) => setDraft((c) => ({ ...c, response: e.target.value }))} rows={4} placeholder="Nội dung phản hồi / hướng xử lý..." className="w-full resize-y rounded-xl border border-white/[0.08] bg-black/10 px-3.5 py-3 text-xs leading-5 text-slate-300 outline-none placeholder:text-slate-700 focus:border-cyan-300/25 disabled:opacity-65" /></div>

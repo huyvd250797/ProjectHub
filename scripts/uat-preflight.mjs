@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.1.0" ? pass("Package version", "1.1.0") : fail("Package version", `Expected 1.1.0, got ${pkg.version}`);
+pkg.version === "1.1.1" ? pass("Package version", "1.1.1") : fail("Package version", `Expected 1.1.1, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -24,6 +24,10 @@ for (const rel of [
   "docs/V1.0.0-SCOPE.md",
   "docs/V1.0.1-SCOPE.md",
   "docs/V1.1.0-SCOPE.md",
+  "docs/V1.1.1-SCOPE.md",
+  "docs/V1.1.1-SETUP.md",
+  "docs/UAT_V1111_CHECKLIST.md",
+  "supabase/migrations/202608260001_v1111_team_validation_performance.sql",
   "docs/NOTIFICATIONS_ACTIVITY_V110_SETUP.md",
   "docs/UAT_V110_NOTIFICATIONS_CHECKLIST.md",
   "components/notifications/notification-center.tsx",
@@ -96,12 +100,12 @@ for (const token of ["max-h-[calc(100vh-150px)]", "sticky left-0 top-0 z-50", "s
 
 
 const memberPanel = fs.readFileSync(path.join(root, "components/master/master-project-console.tsx"), "utf8");
-for (const token of ["Họ tên", "Email đăng nhập", "Đã đồng bộ Phụ trách ISSUE", "fullName"]) {
+for (const token of ["Họ tên", "Email đăng nhập (không bắt buộc)", "Nhân sự nội bộ", "fullName", "editingMemberId"]) {
   memberPanel.includes(token) ? pass(`Project Member / Assignee: ${token}`) : fail(`Project Member / Assignee: ${token}`);
 }
 
 const issueServer = fs.readFileSync(path.join(root, "lib/issues/server.ts"), "utf8");
-for (const token of ["project_members", "personByUser", "assignees", "assigneeValid"]) {
+for (const token of ["is_active", "Chưa có tài khoản", "assignees", "assigneeValid"]) {
   issueServer.includes(token) ? pass(`Assignee source guard: ${token}`) : fail(`Assignee source guard: ${token}`);
 }
 
@@ -121,7 +125,7 @@ for (const token of ['ASC WORKING V1.0.1 — Dark Mode Contrast', '--bg: #0b1422
 }
 
 const notificationCenter = fs.readFileSync(path.join(root, "components/notifications/notification-center.tsx"), "utf8");
-for (const token of ["unreadCount", "mark_all_read", "Activity Center", "60000"]) {
+for (const token of ["unreadCount", "mark_all_read", "Activity Center", "90000", "visibilitychange"]) {
   notificationCenter.includes(token) ? pass(`Notification Center: ${token}`) : fail(`Notification Center: ${token}`);
 }
 
@@ -136,11 +140,21 @@ for (const token of ["activity_events", "notifications", "notification_preferenc
 }
 
 const systemInfo = fs.readFileSync(path.join(root, "app/(workspace)/settings/system/page.tsx"), "utf8");
-for (const token of ["System Information", "SUPABASE_SERVICE_ROLE_KEY", "APP_ENCRYPTION_KEY", "V1.1.0"]) {
+for (const token of ["System Information", "SUPABASE_SERVICE_ROLE_KEY", "APP_ENCRYPTION_KEY", "V1.1.1"]) {
   systemInfo.includes(token) ? pass(`System Information: ${token}`) : fail(`System Information: ${token}`);
 }
 
-console.log("\nASC WORKING V1.1.0 - Notifications & Activity Preflight\n");
+const v1111Migration = fs.readFileSync(path.join(root, "supabase/migrations/202608260001_v1111_team_validation_performance.sql"), "utf8");
+for (const token of ["people_project_team_active_idx", "get_issue_summary_v1111", "get_issue_lookups_v1111", "pg_trgm"]) {
+  v1111Migration.includes(token) ? pass(`V1.1.1 migration: ${token}`) : fail(`V1.1.1 migration: ${token}`);
+}
+
+const issueDrawer = fs.readFileSync(path.join(root, "components/issues/issue-drawer.tsx"), "utf8");
+for (const token of ["validateBeforeSave", "FieldError", "Chưa thể", "fieldErrors"]) {
+  issueDrawer.includes(token) ? pass(`Issue validation UX: ${token}`) : fail(`Issue validation UX: ${token}`);
+}
+
+console.log("\nASC WORKING V1.1.1 - Validation / Flexible Team / Performance Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);
