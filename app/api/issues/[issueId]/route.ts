@@ -132,7 +132,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   if (!user) return NextResponse.json({ ok: false, code: "UNAUTHORIZED", message: "Phiên đăng nhập đã hết hạn." } satisfies IssueMutationResponse, { status: 401 });
 
   const role = await getProjectRole(supabase, projectId, user.id);
-  if (role !== "admin" && role !== "pm") return NextResponse.json({ ok: false, code: "FORBIDDEN", message: "Chỉ PM/Admin được archive ISSUE." } satisfies IssueMutationResponse, { status: 403 });
+  if (!role || role === "viewer") return NextResponse.json({ ok: false, code: "FORBIDDEN", message: "Bạn không có quyền xóa ISSUE." } satisfies IssueMutationResponse, { status: 403 });
 
   const { data, error } = await supabase
     .from("issues")
@@ -143,6 +143,6 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     .select(ISSUE_SELECT)
     .single();
 
-  if (error) return NextResponse.json({ ok: false, code: "ISSUE_ARCHIVE_FAILED", message: `Không archive được ISSUE: ${error.message}` } satisfies IssueMutationResponse, { status: 500 });
+  if (error) return NextResponse.json({ ok: false, code: "ISSUE_DELETE_FAILED", message: `Không xóa được ISSUE: ${error.message}` } satisfies IssueMutationResponse, { status: 500 });
   return NextResponse.json({ ok: true, issue: normalizeIssue(data as Record<string, unknown>) } satisfies IssueMutationResponse);
 }

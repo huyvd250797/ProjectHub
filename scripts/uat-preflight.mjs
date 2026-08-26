@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.1.1" ? pass("Package version", "1.1.1") : fail("Package version", `Expected 1.1.1, got ${pkg.version}`);
+pkg.version === "1.1.3" ? pass("Package version", "1.1.3") : fail("Package version", `Expected 1.1.3, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -26,6 +26,7 @@ for (const rel of [
   "docs/V1.1.0-SCOPE.md",
   "docs/V1.1.1-SCOPE.md",
   "docs/V1.1.1-SETUP.md",
+  "docs/V1.1.3-ISSUE-DELETE.md",
   "docs/UAT_V1111_CHECKLIST.md",
   "supabase/migrations/202608260001_v1111_team_validation_performance.sql",
   "docs/NOTIFICATIONS_ACTIVITY_V110_SETUP.md",
@@ -154,7 +155,22 @@ for (const token of ["validateBeforeSave", "FieldError", "Chưa thể", "fieldEr
   issueDrawer.includes(token) ? pass(`Issue validation UX: ${token}`) : fail(`Issue validation UX: ${token}`);
 }
 
-console.log("\nASC WORKING V1.1.1 - Validation / Flexible Team / Performance Preflight\n");
+const issueDrawerV113 = fs.readFileSync(path.join(root, "components/issues/issue-drawer.tsx"), "utf8");
+for (const token of ["Xóa ISSUE", "Trash2", "method: \"DELETE\""]) {
+  issueDrawerV113.includes(token) ? pass(`ISSUE delete drawer: ${token}`) : fail(`ISSUE delete drawer: ${token}`);
+}
+
+const issueWorkspaceV113 = fs.readFileSync(path.join(root, "components/issues/issue-workspace.tsx"), "utf8");
+for (const token of ["deleteSelectedIssues", "Xóa", "method: \"DELETE\""]) {
+  issueWorkspaceV113.includes(token) ? pass(`ISSUE bulk delete: ${token}`) : fail(`ISSUE bulk delete: ${token}`);
+}
+
+const issueBulkV113 = fs.readFileSync(path.join(root, "app/api/issues/bulk/route.ts"), "utf8");
+for (const token of ["export async function DELETE", "archived_at", "BULK_DELETE_FAILED"]) {
+  issueBulkV113.includes(token) ? pass(`ISSUE bulk delete API: ${token}`) : fail(`ISSUE bulk delete API: ${token}`);
+}
+
+console.log("\nASC WORKING V1.1.3 - ISSUE Delete / CRUD Completion Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

@@ -20,6 +20,7 @@ import {
   Save,
   Search,
   Sparkles,
+  Trash2,
   UserRound,
   X,
   Zap,
@@ -296,6 +297,29 @@ export function IssueWorkspace() {
     finally { setQuickSaving(false); }
   }
 
+  async function deleteSelectedIssues() {
+    if (!data || !selectedIds.size || !data.canArchive || data.source !== "database" || bulkSaving) return;
+    const count = selectedIds.size;
+    if (!window.confirm(`Xóa ${count} ISSUE đã chọn? Các ISSUE sẽ được ẩn khỏi danh sách hoạt động nhưng vẫn được lưu an toàn để phục hồi khi cần.`)) return;
+    setBulkSaving(true); setError(""); setNotice("");
+    try {
+      const response = await fetch("/api/issues/bulk", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: selectedProject.id, issueIds: [...selectedIds] }),
+      });
+      const body = (await response.json()) as IssueBulkMutationResponse;
+      if (!body.ok) throw new Error(body.message);
+      setNotice(`Đã xóa ${body.updated} ISSUE khỏi danh sách hoạt động.`);
+      setSelectedIds(new Set());
+      setReloadKey((key) => key + 1);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Không xóa được ISSUE đã chọn.");
+    } finally {
+      setBulkSaving(false);
+    }
+  }
+
   async function duplicateSelected() {
     if (!data || selectedIds.size !== 1 || data.source !== "database") return;
     const issue = data.rows.find((row) => selectedIds.has(row.id));
@@ -346,7 +370,7 @@ export function IssueWorkspace() {
   function openIssue(issue: IssueRow) { setCreateMode(false); setSelectedIssue(issue); replaceParams((params) => params.set("issueId", issue.id)); }
   function closeDrawer() { setCreateMode(false); setSelectedIssue(null); replaceParams((params) => params.delete("issueId")); }
   function onSaved(issue: IssueRow) { setSelectedIssue(issue); setCreateMode(false); replaceParams((params) => params.set("issueId", issue.id)); setNotice(`Đã lưu ISSUE #${issue.issueNo ?? "—"}`); setReloadKey((key) => key + 1); }
-  function onArchived(issueId: string) { if (selectedIssue?.id === issueId) closeDrawer(); setNotice("Đã archive ISSUE."); setReloadKey((key) => key + 1); }
+  function onArchived(issueId: string) { if (selectedIssue?.id === issueId) closeDrawer(); setNotice("Đã xóa ISSUE khỏi danh sách hoạt động."); setSelectedIds((current) => { const next = new Set(current); next.delete(issueId); return next; }); setReloadKey((key) => key + 1); }
 
   function bulkOptions(): SelectOption[] {
     const clear = [{ value: "__clear__", label: "Xóa / Chưa gán" }];
@@ -432,7 +456,7 @@ export function IssueWorkspace() {
           <div className="ml-auto flex items-center gap-2 text-[9px] uppercase tracking-[0.12em] text-slate-700"><span className="size-1.5 rounded-full bg-emerald-300/70" /> {data.role}</div>
         </div>
 
-        {selectedIds.size ? <div className="sticky top-[76px] z-20 flex flex-col gap-2 border-b border-cyan-300/10 bg-[#0a1828]/95 px-4 py-3 shadow-lg backdrop-blur-xl lg:flex-row lg:items-center"><div className="flex items-center gap-2 text-xs font-medium text-cyan-100"><span className="grid size-6 place-items-center rounded-lg bg-cyan-300/[0.1] text-[10px]">{selectedIds.size}</span> ISSUE đã chọn</div><div className="w-[190px]"><ThemedSelect ariaLabel="Trường bulk update" value={bulkField} onChange={(value) => { setBulkField(value); setBulkValue(""); }} options={bulkFieldOptions} /></div>{bulkField === "dueDate" ? <div className="flex gap-1"><input type="date" value={bulkValue === "__clear__" ? "" : bulkValue} onChange={(e) => setBulkValue(e.target.value)} className="h-10 rounded-xl border border-white/[0.08] bg-black/10 px-3 text-xs text-slate-300 outline-none" /><button onClick={() => setBulkValue("__clear__")} className={cn("h-10 rounded-xl border px-3 text-[10px]", bulkValue === "__clear__" ? "border-rose-300/20 bg-rose-300/[0.06] text-rose-200" : "border-white/[0.07] text-slate-600")}>Xóa</button></div> : <div className="w-[240px]"><ThemedSelect ariaLabel="Giá trị bulk update" value={bulkValue} onChange={setBulkValue} options={bulkOptions()} placeholder="Chọn giá trị" menuClassName="min-w-[320px]" /></div>}<button disabled={!bulkValue || bulkSaving} onClick={() => void applyBulkUpdate()} className="flex h-10 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-[10px] font-semibold text-[#07111f] disabled:opacity-40">{bulkSaving ? <LoaderCircle className="size-3.5 animate-spin" /> : <Zap className="size-3.5" />} Cập nhật</button><button disabled={selectedIds.size !== 1 || bulkSaving} onClick={() => void duplicateSelected()} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-400 disabled:opacity-30"><CopyPlus className="size-3.5" /> Nhân bản</button><button onClick={() => setSelectedIds(new Set())} className="ml-auto flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-600"><X className="size-3.5" /> Bỏ chọn</button></div> : null}
+        {selectedIds.size ? <div className="sticky top-[76px] z-20 flex flex-col gap-2 border-b border-cyan-300/10 bg-[#0a1828]/95 px-4 py-3 shadow-lg backdrop-blur-xl lg:flex-row lg:items-center"><div className="flex items-center gap-2 text-xs font-medium text-cyan-100"><span className="grid size-6 place-items-center rounded-lg bg-cyan-300/[0.1] text-[10px]">{selectedIds.size}</span> ISSUE đã chọn</div><div className="w-[190px]"><ThemedSelect ariaLabel="Trường bulk update" value={bulkField} onChange={(value) => { setBulkField(value); setBulkValue(""); }} options={bulkFieldOptions} /></div>{bulkField === "dueDate" ? <div className="flex gap-1"><input type="date" value={bulkValue === "__clear__" ? "" : bulkValue} onChange={(e) => setBulkValue(e.target.value)} className="h-10 rounded-xl border border-white/[0.08] bg-black/10 px-3 text-xs text-slate-300 outline-none" /><button onClick={() => setBulkValue("__clear__")} className={cn("h-10 rounded-xl border px-3 text-[10px]", bulkValue === "__clear__" ? "border-rose-300/20 bg-rose-300/[0.06] text-rose-200" : "border-white/[0.07] text-slate-600")}>Xóa</button></div> : <div className="w-[240px]"><ThemedSelect ariaLabel="Giá trị bulk update" value={bulkValue} onChange={setBulkValue} options={bulkOptions()} placeholder="Chọn giá trị" menuClassName="min-w-[320px]" /></div>}<button disabled={!bulkValue || bulkSaving} onClick={() => void applyBulkUpdate()} className="flex h-10 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-[10px] font-semibold text-[#07111f] disabled:opacity-40">{bulkSaving ? <LoaderCircle className="size-3.5 animate-spin" /> : <Zap className="size-3.5" />} Cập nhật</button><button disabled={selectedIds.size !== 1 || bulkSaving} onClick={() => void duplicateSelected()} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-400 disabled:opacity-30"><CopyPlus className="size-3.5" /> Nhân bản</button>{data.canArchive ? <button disabled={bulkSaving} onClick={() => void deleteSelectedIssues()} className="flex h-10 items-center gap-2 rounded-xl border border-rose-300/15 bg-rose-300/[0.04] px-3 text-[10px] font-medium text-rose-200 hover:bg-rose-300/[0.08] disabled:opacity-40"><Trash2 className="size-3.5" /> Xóa</button> : null}<button onClick={() => setSelectedIds(new Set())} className="ml-auto flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-600"><X className="size-3.5" /> Bỏ chọn</button></div> : null}
 
         <div className="scrollbar-thin max-h-[calc(100vh-150px)] min-h-[360px] overflow-auto overscroll-contain">
           <table className="border-collapse text-left" style={{ width: totalTableWidth, minWidth: "100%" }}>

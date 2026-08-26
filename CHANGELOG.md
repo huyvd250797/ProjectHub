@@ -1,5 +1,18 @@
 # Changelog
 
+## V1.1.3 — ISSUE Delete / CRUD Completion
+
+### Added
+- Hiển thị rõ nút `Xóa ISSUE` trong drawer chi tiết.
+- Xóa nhiều ISSUE trực tiếp từ thanh thao tác hàng loạt.
+- User có quyền chỉnh sửa ISSUE cũng có quyền xóa; Viewer vẫn chỉ đọc.
+
+### Safety
+- Xóa là soft-delete qua `archived_at`, không hard-delete dữ liệu nghiệp vụ.
+- ISSUE đã xóa biến khỏi danh sách hoạt động nhưng lịch sử/audit vẫn được giữ.
+- Có confirm trước khi xóa một hoặc nhiều ISSUE.
+- Không yêu cầu migration Supabase mới vì `archived_at` đã có từ ISSUE Core.
+
 ## V1.1.2 — Project UUID Compatibility Hotfix
 
 - Fix ISSUE create validation rejecting the legacy EPU project UUID.

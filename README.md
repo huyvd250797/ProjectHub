@@ -1,6 +1,15 @@
-# ASC WORKING — V1.1.2
+# ASC WORKING — V1.1.3
 
-**Issue Validation / Flexible Project Team / Performance Tune** — bản vận hành tối ưu trên nền Notifications & Activity Center.
+**ISSUE Delete / CRUD Completion** — hoàn thiện CRUD ISSUE với xóa mềm an toàn và bulk delete.
+
+
+## V1.1.3 có gì mới?
+
+- Nút **Xóa ISSUE** hiển thị rõ trong drawer chi tiết.
+- Chọn nhiều ISSUE → **Xóa** hàng loạt.
+- User có quyền sửa ISSUE cũng được phép xóa; Viewer không được xóa.
+- Xóa sử dụng `archived_at` (soft delete), không hard-delete record.
+- Không cần migration Supabase mới.
 
 ## V1.1.2 có gì mới?
 

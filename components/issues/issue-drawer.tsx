@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Archive,
+  Trash2,
   CalendarDays,
   Check,
   Clock3,
@@ -252,9 +252,9 @@ export function IssueDrawer({
     }
   }
 
-  async function archive() {
+  async function deleteIssue() {
     if (!issue || !canArchive || source !== "database" || archiving) return;
-    if (!window.confirm(`Archive ISSUE #${issue.issueNo ?? "—"}? ISSUE sẽ không còn xuất hiện trong danh sách đang hoạt động.`)) return;
+    if (!window.confirm(`Xóa ISSUE #${issue.issueNo ?? "—"}? ISSUE sẽ được ẩn khỏi danh sách hoạt động nhưng vẫn được lưu an toàn để phục hồi khi cần.`)) return;
     setArchiving(true);
     setError("");
     try {
@@ -263,7 +263,7 @@ export function IssueDrawer({
       if (!body.ok) throw new Error("message" in body ? body.message : "Không tải được dữ liệu.");
       onArchived(issue.id);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Không archive được ISSUE.");
+      setError(reason instanceof Error ? reason.message : "Không xóa được ISSUE.");
     } finally {
       setArchiving(false);
     }
@@ -407,8 +407,8 @@ export function IssueDrawer({
 
         <div className="flex items-center gap-2 border-t border-white/[0.06] bg-[#07111f]/95 px-5 py-4 md:px-6">
           {!createMode && canArchive && source === "database" ? (
-            <button type="button" disabled={archiving || saving} onClick={archive} className="flex h-10 items-center gap-2 rounded-xl border border-rose-300/12 bg-rose-300/[0.04] px-3 text-xs font-medium text-rose-200/70 hover:bg-rose-300/[0.07] disabled:opacity-45">
-              {archiving ? <LoaderCircle className="size-3.5 animate-spin" /> : <Archive className="size-3.5" />} Archive
+            <button type="button" disabled={archiving || saving} onClick={deleteIssue} className="flex h-10 items-center gap-2 rounded-xl border border-rose-300/12 bg-rose-300/[0.04] px-3 text-xs font-medium text-rose-200/70 hover:bg-rose-300/[0.07] disabled:opacity-45">
+              {archiving ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />} {archiving ? "Đang xóa..." : "Xóa ISSUE"}
             </button>
           ) : null}
           <button type="button" onClick={onClose} className="ml-auto h-10 rounded-xl border border-white/[0.08] px-4 text-xs text-slate-500 hover:text-slate-200">Đóng</button>

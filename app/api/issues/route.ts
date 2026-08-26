@@ -180,7 +180,7 @@ export async function GET(request: NextRequest) {
       projectId,
       role,
       canEdit: role !== "viewer",
-      canArchive: role === "admin" || role === "pm",
+      canArchive: role !== "viewer",
       page,
       pageSize,
       total,

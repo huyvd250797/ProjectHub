@@ -110,3 +110,75 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json({ ok: true, updated: data?.length ?? 0 } satisfies IssueBulkMutationResponse);
 }
+
+
+export async function DELETE(request: NextRequest) {
+  const supabase = await createClient();
+  if (!supabase) {
+    return NextResponse.json(
+      { ok: false, code: "DEMO_READONLY", message: "Demo Mode không xóa dữ liệu." } satisfies IssueBulkMutationResponse,
+      { status: 409 },
+    );
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json(
+      { ok: false, code: "UNAUTHORIZED", message: "Phiên đăng nhập đã hết hạn." } satisfies IssueBulkMutationResponse,
+      { status: 401 },
+    );
+  }
+
+  let raw: unknown;
+  try { raw = await request.json(); } catch { raw = {}; }
+  const body = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
+  const projectId = typeof body.projectId === "string" ? body.projectId.trim() : "";
+  const issueIds = Array.isArray(body.issueIds)
+    ? [...new Set(body.issueIds.filter((value): value is string => typeof value === "string" && value.length > 0))]
+    : [];
+
+  if (!projectId) {
+    return NextResponse.json(
+      { ok: false, code: "PROJECT_REQUIRED", message: "Thiếu projectId." } satisfies IssueBulkMutationResponse,
+      { status: 400 },
+    );
+  }
+  if (!issueIds.length) {
+    return NextResponse.json(
+      { ok: false, code: "ISSUES_REQUIRED", message: "Chưa chọn ISSUE cần xóa." } satisfies IssueBulkMutationResponse,
+      { status: 400 },
+    );
+  }
+  if (issueIds.length > MAX_BULK) {
+    return NextResponse.json(
+      { ok: false, code: "BULK_LIMIT", message: `Mỗi lần chỉ xóa tối đa ${MAX_BULK} ISSUE.` } satisfies IssueBulkMutationResponse,
+      { status: 400 },
+    );
+  }
+
+  const role = await getProjectRole(supabase, projectId, user.id);
+  if (!role || role === "viewer") {
+    return NextResponse.json(
+      { ok: false, code: "FORBIDDEN", message: "Bạn không có quyền xóa ISSUE." } satisfies IssueBulkMutationResponse,
+      { status: 403 },
+    );
+  }
+
+  const archivedAt = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("issues")
+    .update({ archived_at: archivedAt })
+    .eq("project_id", projectId)
+    .in("id", issueIds)
+    .is("archived_at", null)
+    .select("id");
+
+  if (error) {
+    return NextResponse.json(
+      { ok: false, code: "BULK_DELETE_FAILED", message: `Không xóa được ISSUE: ${error.message}` } satisfies IssueBulkMutationResponse,
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({ ok: true, updated: data?.length ?? 0 } satisfies IssueBulkMutationResponse);
+}
