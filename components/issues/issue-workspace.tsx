@@ -79,6 +79,14 @@ const filterKeys = [
   "missingModule", "missingDepartment", "missingAssignee", "overdue", "nearDue", "mine",
 ];
 const savedViewKeys = ["search", ...filterKeys];
+const pageSizeOptions: SelectOption[] = [
+  { value: "50", label: "50 dòng" },
+  { value: "100", label: "100 dòng" },
+  { value: "500", label: "500 dòng" },
+  { value: "1000", label: "1000 dòng" },
+  { value: "0", label: "ALL", description: "Tải toàn bộ ISSUE theo bộ lọc" },
+];
+
 const bulkFieldOptions: SelectOption[] = [
   { value: "statusCode", label: "Trạng thái" },
   { value: "customerStatusCode", label: "Trạng thái khách hàng" },
@@ -477,7 +485,19 @@ export function IssueWorkspace() {
           </table>
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-white/[0.05] px-4 py-3 text-[10px] text-slate-600 sm:flex-row sm:items-center sm:justify-between"><div>Hiển thị {data.rows.length ? (data.page - 1) * data.pageSize + 1 : 0}–{Math.min(data.page * data.pageSize, data.total)} / {formatNumber(data.total)} ISSUE theo bộ lọc • {preferences.pageSize}/trang</div><div className="flex items-center gap-2">{loading ? <LoaderCircle className="mr-2 size-3.5 animate-spin text-cyan-300/60" /> : null}<button disabled={page <= 1} onClick={() => setPage(page - 1)} className="grid size-8 place-items-center rounded-lg border border-white/[0.07] disabled:opacity-25"><ChevronLeft className="size-3.5" /></button><span className="min-w-[72px] text-center">Trang {data.page}/{data.totalPages}</span><button disabled={page >= data.totalPages} onClick={() => setPage(page + 1)} className="grid size-8 place-items-center rounded-lg border border-white/[0.07] disabled:opacity-25"><ChevronRight className="size-3.5" /></button></div></div>
+        <div className="flex flex-col gap-3 border-t border-white/[0.05] px-4 py-3 text-[10px] text-slate-600 lg:flex-row lg:items-center lg:justify-between">
+          <div>Hiển thị {data.rows.length ? (data.pageSize === 0 ? 1 : (data.page - 1) * data.pageSize + 1) : 0}–{data.pageSize === 0 ? data.rows.length : Math.min(data.page * data.pageSize, data.total)} / {formatNumber(data.total)} ISSUE theo bộ lọc</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[9px] uppercase tracking-[0.12em] text-slate-700">Số dòng</span>
+            <ThemedSelect ariaLabel="Số dòng ISSUE hiển thị" value={String(preferences.pageSize)} onChange={(value) => { setPreferences((current) => ({ ...current, pageSize: Number(value) })); setPage(1); }} options={pageSizeOptions} className="w-[140px]" menuClassName="min-w-[190px]" />
+            {loading ? <LoaderCircle className="mr-2 size-3.5 animate-spin text-cyan-300/60" /> : null}
+            {data.pageSize === 0 ? <span className="rounded-lg border border-amber-300/12 bg-amber-300/[0.04] px-2.5 py-2 text-[9px] text-amber-200/75">ALL • {formatNumber(data.rows.length)} dòng</span> : <>
+              <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="grid size-8 place-items-center rounded-lg border border-white/[0.07] disabled:opacity-25"><ChevronLeft className="size-3.5" /></button>
+              <span className="min-w-[72px] text-center">Trang {data.page}/{data.totalPages}</span>
+              <button disabled={page >= data.totalPages} onClick={() => setPage(page + 1)} className="grid size-8 place-items-center rounded-lg border border-white/[0.07] disabled:opacity-25"><ChevronRight className="size-3.5" /></button>
+            </>}
+          </div>
+        </div>
       </div>
 
       {(createMode || selectedIssue) ? <IssueDrawer projectId={selectedProject.id} issue={selectedIssue} createMode={createMode} lookups={data.lookups} canEdit={data.canEdit} canArchive={data.canArchive} source={data.source} onClose={closeDrawer} onSaved={onSaved} onArchived={onArchived} /> : null}

@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "1.1.1",
+        version: "1.2.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "1.1.1", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "1.2.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -131,6 +131,20 @@ export async function GET(request: NextRequest) {
     dashboardError ? "fail" : "pass",
     dashboardError ? "Không gọi được get_project_dashboard; kiểm tra migration V0.3.0." : "Dashboard aggregate RPC hoạt động.",
     dashboard.durationMs,
+  ));
+
+  const analytics = await timed(async () => supabase.rpc("get_project_analytics_v120", {
+    p_project_id: projectId,
+    p_from: new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10),
+    p_to: new Date().toISOString().slice(0, 10),
+  }));
+  const analyticsError = analytics.error || analytics.value?.error;
+  checks.push(check(
+    "analytics_rpc",
+    "Advanced Analytics / Project Health",
+    analyticsError ? "fail" : "pass",
+    analyticsError ? "Không gọi được get_project_analytics_v120; kiểm tra migration V1.2.0." : "Project Health, backlog aging và risk analytics đã sẵn sàng.",
+    analytics.durationMs,
   ));
 
   const productivity = await timed(async () => supabase.from("issue_saved_views").select("id", { count: "exact", head: true }).eq("project_id", projectId).eq("user_id", user.id));
@@ -225,7 +239,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "1.1.1",
+      version: "1.2.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

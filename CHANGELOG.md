@@ -1,5 +1,23 @@
 # Changelog
 
+## V1.2.0 — Advanced Analytics & Project Health
+
+### Added
+- Advanced Analytics theo Project với Project Health Score 0–100.
+- Trend ISSUE tạo mới / xử lý theo thời gian.
+- Backlog Aging và phân bổ trạng thái / ưu tiên.
+- Risk Ranking cho Module, Phòng ban và Thành viên.
+- Export CSV Project Health.
+- Sidebar Analytics.
+- Ẩn/hiện Giá trị hợp đồng trên Dashboard, lưu preference ở browser.
+- ISSUE page size 50 / 100 / 500 / 1000 / ALL.
+- ALL được tải theo chunk server-side thay vì một response không giới hạn.
+
+### Database
+- RPC `get_project_analytics_v120`.
+- Index analytics cho ISSUE / history.
+- Mở rộng constraint `issue_user_preferences.page_size`.
+
 ## V1.1.3 — ISSUE Delete / CRUD Completion
 
 ### Added

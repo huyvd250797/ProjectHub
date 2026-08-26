@@ -139,40 +139,65 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(body, { status: 403 });
   }
 
-  const page = intParam(request.nextUrl.searchParams.get("page"), 1, 1, 100000);
-  const pageSize = intParam(request.nextUrl.searchParams.get("pageSize"), 50, 10, 100);
+  const requestedPage = intParam(request.nextUrl.searchParams.get("page"), 1, 1, 100000);
+  const rawPageSize = request.nextUrl.searchParams.get("pageSize")?.trim().toLowerCase();
+  const allRows = rawPageSize === "all" || rawPageSize === "0";
+  const pageSize = allRows ? 0 : intParam(rawPageSize ?? null, 50, 50, 1000);
+  const page = allRows ? 1 : requestedPage;
   const myPersonId = await getCurrentAssigneePersonId(supabase, projectId, user.id);
 
-  let query: any = supabase
-    .from("issues")
-    .select(ISSUE_SELECT, { count: "exact" })
-    .eq("project_id", projectId)
-    .is("archived_at", null);
-  query = applyFilters(query, request.nextUrl.searchParams, myPersonId);
-  query = query
-    .order("issue_no", { ascending: false, nullsFirst: false })
-    .order("updated_at", { ascending: false })
-    .range((page - 1) * pageSize, page * pageSize - 1);
+  function buildRowsQuery(start: number, end: number, withCount = false) {
+    let query: any = supabase
+      .from("issues")
+      .select(ISSUE_SELECT, withCount ? { count: "exact" } : undefined)
+      .eq("project_id", projectId)
+      .is("archived_at", null);
+    query = applyFilters(query, request.nextUrl.searchParams, myPersonId);
+    return query
+      .order("issue_no", { ascending: false, nullsFirst: false })
+      .order("updated_at", { ascending: false })
+      .range(start, end);
+  }
 
-  const [rowsResult, lookups, summary] = await Promise.all([
-    query,
+  const firstStart = allRows ? 0 : (page - 1) * pageSize;
+  const firstEnd = allRows ? 999 : page * pageSize - 1;
+  const [firstRowsResult, lookups, summary] = await Promise.all([
+    buildRowsQuery(firstStart, firstEnd, true),
     getIssueLookups(supabase, projectId),
     getIssueSummary(supabase, projectId, myPersonId),
   ]);
 
-  if (rowsResult.error) {
-    const migrationMissing = /issue_no|column .* does not exist/i.test(rowsResult.error.message);
+  if (firstRowsResult.error) {
+    const migrationMissing = /issue_no|column .* does not exist/i.test(firstRowsResult.error.message);
     const body: IssuesApiResponse = {
       ok: false,
       code: migrationMissing ? "V060_MIGRATION_REQUIRED" : "ISSUE_QUERY_FAILED",
       message: migrationMissing
         ? "ISSUE Core V0.6.0 cần chạy migration 202608220005_v060_issue_core.sql trên Supabase."
-        : `Không tải được ISSUE: ${rowsResult.error.message}`,
+        : `Không tải được ISSUE: ${firstRowsResult.error.message}`,
     };
     return NextResponse.json(body, { status: migrationMissing ? 503 : 500 });
   }
 
-  const total = rowsResult.count ?? 0;
+  const total = firstRowsResult.count ?? 0;
+  let rawRows = [...(firstRowsResult.data ?? [])] as Array<Record<string, unknown>>;
+
+  // ALL is fetched in server-side chunks so it remains compatible with the default
+  // Supabase/PostgREST max-row response while avoiding one unbounded database response.
+  if (allRows && total > 1000) {
+    const starts: number[] = [];
+    for (let start = 1000; start < total; start += 1000) starts.push(start);
+    for (let offset = 0; offset < starts.length; offset += 4) {
+      const batch = starts.slice(offset, offset + 4);
+      const results = await Promise.all(batch.map((start) => buildRowsQuery(start, Math.min(start + 999, total - 1))));
+      const failed = results.find((result) => result.error);
+      if (failed?.error) {
+        return NextResponse.json({ ok: false, code: "ISSUE_QUERY_FAILED", message: `Không tải được toàn bộ ISSUE: ${failed.error.message}` } satisfies IssuesApiResponse, { status: 500 });
+      }
+      for (const result of results) rawRows.push(...((result.data ?? []) as Array<Record<string, unknown>>));
+    }
+  }
+
   const body: IssuesApiResponse = {
     ok: true,
     data: {
@@ -184,9 +209,9 @@ export async function GET(request: NextRequest) {
       page,
       pageSize,
       total,
-      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      totalPages: allRows ? 1 : Math.max(1, Math.ceil(total / pageSize)),
       summary,
-      rows: (rowsResult.data ?? []).map((row: Record<string, unknown>) => normalizeIssue(row)),
+      rows: rawRows.map((row) => normalizeIssue(row)),
       lookups,
     },
   };

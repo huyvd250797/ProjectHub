@@ -65,13 +65,13 @@ export function ColumnManager({
     <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm" onMouseDown={(e) => e.currentTarget === e.target && onClose()}>
       <div className="tech-panel w-full max-w-[720px] overflow-hidden rounded-2xl shadow-2xl">
         <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
-          <div><div className="text-sm font-semibold text-white">Cấu hình cột ISSUE</div><div className="mt-1 text-[10px] text-slate-600">Ẩn/hiện • thứ tự • độ rộng • ghim cột • số dòng/trang</div></div>
+          <div><div className="text-sm font-semibold text-white">Cấu hình cột ISSUE</div><div className="mt-1 text-[10px] text-slate-600">Ẩn/hiện • thứ tự • độ rộng • ghim cột • 50/100/500/1000/ALL</div></div>
           <button onClick={onClose} className="grid size-9 place-items-center rounded-xl border border-white/[0.07] text-slate-500 hover:text-white"><X className="size-4" /></button>
         </div>
         <div className="scrollbar-thin max-h-[65vh] overflow-y-auto p-4">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
             <div className="text-[10px] text-slate-500">Số ISSUE mỗi trang</div>
-            <div className="flex gap-1.5">{[25,50,100].map((size) => <button key={size} onClick={() => update({ pageSize: size })} className={cn("h-8 rounded-lg border px-3 text-[10px]", value.pageSize === size ? "border-cyan-300/20 bg-cyan-300/[0.08] text-cyan-100" : "border-white/[0.06] text-slate-500")}>{size}</button>)}</div>
+            <div className="flex flex-wrap gap-1.5">{[50,100,500,1000,0].map((size) => <button key={size} onClick={() => update({ pageSize: size })} className={cn("h-8 rounded-lg border px-3 text-[10px]", value.pageSize === size ? "border-cyan-300/20 bg-cyan-300/[0.08] text-cyan-100" : "border-white/[0.06] text-slate-500")}>{size === 0 ? "ALL" : size}</button>)}</div>
           </div>
           <div className="space-y-2">
             {ordered.map((column, index) => {

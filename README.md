@@ -1,4 +1,25 @@
-# ASC WORKING — V1.1.3
+# ASC WORKING — V1.2.0
+
+## V1.2.0 có gì mới?
+
+- **Advanced Analytics & Project Health** theo Project.
+- Project Health Score dựa trên tiến độ ISSUE, bàn giao, quá hạn, chất lượng dữ liệu và kế hoạch.
+- Trend ISSUE, Backlog Aging, risk Module/Phòng ban/Member.
+- Export CSV báo cáo Project Health.
+- Dashboard cho phép ẩn/hiện Giá trị HĐ.
+- ISSUE cho phép 50 / 100 / 500 / 1000 / ALL dòng.
+- `ALL` tải theo chunk server-side để giảm rủi ro giới hạn PostgREST.
+
+### Migration V1.2.0
+
+Chạy trong Supabase SQL Editor:
+
+```text
+supabase/migrations/202608260002_v120_analytics_health.sql
+```
+
+Không cần Environment Variable mới.
+
 
 **ISSUE Delete / CRUD Completion** — hoàn thiện CRUD ISSUE với xóa mềm an toàn và bulk delete.
 

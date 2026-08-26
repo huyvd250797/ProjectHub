@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Bell,
   CheckCircle2,
   CircleDashed,
@@ -54,6 +55,23 @@ export default async function SystemInformationPage() {
     notificationsDetail = result.error ? "Chưa có schema Notifications & Activity V1.1.0." : "Bell Inbox + Activity Feed + Preferences đã sẵn sàng.";
   }
 
+  let analyticsReady = false;
+  let analyticsDetail = configured ? "Chưa xác nhận migration Analytics V1.2.0." : "Supabase chưa được cấu hình.";
+  if (supabase && user) {
+    const projectResult = await supabase.from("projects").select("id").limit(1).maybeSingle();
+    if (projectResult.data?.id) {
+      const result = await supabase.rpc("get_project_analytics_v120", {
+        p_project_id: projectResult.data.id,
+        p_from: new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10),
+        p_to: new Date().toISOString().slice(0, 10),
+      });
+      analyticsReady = !result.error;
+      analyticsDetail = result.error ? "Cần migration 202608260002_v120_analytics_health.sql." : "Project Health + trends + risk ranking đã sẵn sàng.";
+    } else {
+      analyticsDetail = "Chưa có Project để chạy health check.";
+    }
+  }
+
   let teamPerformanceReady = false;
   let teamPerformanceDetail = configured ? "Chưa xác nhận migration V1.1.1." : "Supabase chưa được cấu hình.";
   if (supabase && user) {
@@ -84,6 +102,7 @@ export default async function SystemInformationPage() {
     { label: "Encryption", value: encryptionReady ? "Ready" : "Missing", detail: "APP_ENCRYPTION_KEY • AES-256-GCM Resource Vault", ok: encryptionReady, icon: ServerCog },
     { label: "Excel Import", value: "Production", detail: "Template → Preview → Transaction Apply", ok: configured, icon: FileSpreadsheet },
     { label: "Appearance", value: "Dark / Light", detail: "Preference lưu trên browser; mặc định theo system theme.", ok: true, icon: Palette },
+    { label: "Analytics / Health", value: analyticsReady ? "Ready" : "Migration required", detail: analyticsDetail, ok: analyticsReady, icon: BarChart3 },
     { label: "Team / Performance", value: teamPerformanceReady ? "Ready" : "Migration required", detail: teamPerformanceDetail, ok: teamPerformanceReady, icon: UsersRound },
     { label: "Notifications", value: notificationsReady ? "Ready" : "Migration required", detail: notificationsDetail, ok: notificationsReady, icon: Bell },
   ];
@@ -130,7 +149,7 @@ export default async function SystemInformationPage() {
           </div>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
             <div className="text-slate-600">Schema baseline</div>
-            <div className="mt-2 font-semibold text-slate-200">Through V1.1.1 migration</div>
+            <div className="mt-2 font-semibold text-slate-200">Through V1.2.0 migration</div>
           </div>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
             <div className="text-slate-600">Deploy target</div>

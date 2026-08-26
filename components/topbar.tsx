@@ -9,6 +9,7 @@ import { NotificationCenter } from "@/components/notifications/notification-cent
 
 const pageNames: Record<string, string> = {
   "/dashboard": "Dashboard",
+  "/analytics": "Advanced Analytics",
   "/contract": "PLHĐ",
   "/departments": "Phòng ban",
   "/issues": "ISSUE",

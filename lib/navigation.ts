@@ -1,5 +1,6 @@
 import {
   Activity,
+  BarChart3,
   Building2,
   CircleGauge,
   FileStack,
@@ -10,6 +11,7 @@ import {
 
 export const navigation = [
   { label: "Dashboard", href: "/dashboard", icon: CircleGauge },
+  { label: "Analytics", href: "/analytics", icon: BarChart3 },
   { label: "PLHĐ", href: "/contract", icon: FileStack },
   { label: "Phòng ban", href: "/departments", icon: Building2 },
   { label: "ISSUE", href: "/issues", icon: ListTodo },

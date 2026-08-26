@@ -28,7 +28,7 @@ function normalize(row?: Record<string, unknown> | null): IssueColumnPreferences
     columnOrder: order,
     columnWidths: widths,
     pinnedColumns: columnList(row?.pinned_columns, ["issueNo", "content"]),
-    pageSize: [25,50,100].includes(Number(row?.page_size)) ? Number(row?.page_size) : 50,
+    pageSize: [50,100,500,1000,0].includes(Number(row?.page_size)) ? Number(row?.page_size) : 50,
   };
 }
 

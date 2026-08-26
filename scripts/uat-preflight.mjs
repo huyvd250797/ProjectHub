@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.1.3" ? pass("Package version", "1.1.3") : fail("Package version", `Expected 1.1.3, got ${pkg.version}`);
+pkg.version === "1.2.0" ? pass("Package version", "1.2.0") : fail("Package version", `Expected 1.2.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -66,6 +66,15 @@ for (const rel of [
   "docs/UAT_V093_PROJECT_PROFILE_CHECKLIST.md",
   "docs/EXCEL_IMPORT_V092_SETUP.md",
   "docs/UAT_V092_IMPORT_CHECKLIST.md",
+  "app/(workspace)/analytics/page.tsx",
+  "app/api/analytics/route.ts",
+  "components/analytics/project-analytics.tsx",
+  "lib/analytics-types.ts",
+  "lib/analytics/demo.ts",
+  "supabase/migrations/202608260002_v120_analytics_health.sql",
+  "docs/V1.2.0-SCOPE.md",
+  "docs/ANALYTICS_V120_SETUP.md",
+  "docs/UAT_V120_ANALYTICS_CHECKLIST.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -141,7 +150,7 @@ for (const token of ["activity_events", "notifications", "notification_preferenc
 }
 
 const systemInfo = fs.readFileSync(path.join(root, "app/(workspace)/settings/system/page.tsx"), "utf8");
-for (const token of ["System Information", "SUPABASE_SERVICE_ROLE_KEY", "APP_ENCRYPTION_KEY", "V1.1.1"]) {
+for (const token of ["System Information", "SUPABASE_SERVICE_ROLE_KEY", "APP_ENCRYPTION_KEY", "Analytics / Health"]) {
   systemInfo.includes(token) ? pass(`System Information: ${token}`) : fail(`System Information: ${token}`);
 }
 
@@ -170,7 +179,28 @@ for (const token of ["export async function DELETE", "archived_at", "BULK_DELETE
   issueBulkV113.includes(token) ? pass(`ISSUE bulk delete API: ${token}`) : fail(`ISSUE bulk delete API: ${token}`);
 }
 
-console.log("\nASC WORKING V1.1.3 - ISSUE Delete / CRUD Completion Preflight\n");
+
+const analyticsComponent = fs.readFileSync(path.join(root, "components/analytics/project-analytics.tsx"), "utf8");
+for (const token of ["Advanced Analytics & Project Health", "Project Health Score", "Backlog Aging", "Top Module rủi ro", "Export"]) {
+  analyticsComponent.includes(token) ? pass(`V1.2.0 Analytics UI: ${token}`) : fail(`V1.2.0 Analytics UI: ${token}`);
+}
+
+const analyticsMigration = fs.readFileSync(path.join(root, "supabase/migrations/202608260002_v120_analytics_health.sql"), "utf8");
+for (const token of ["get_project_analytics_v120", "issue_user_preferences_page_size_check", "500,1000,0", "aging as", "risk_score"]) {
+  analyticsMigration.includes(token) ? pass(`V1.2.0 migration: ${token}`) : fail(`V1.2.0 migration: ${token}`);
+}
+
+const dashboardV120 = fs.readFileSync(path.join(root, "components/dashboard/project-dashboard.tsx"), "utf8");
+for (const token of ["asc-working-show-project-money", "Ẩn số tiền dự án", "Hiện số tiền dự án"]) {
+  dashboardV120.includes(token) ? pass(`Project money visibility: ${token}`) : fail(`Project money visibility: ${token}`);
+}
+
+const issueWorkspaceV120 = fs.readFileSync(path.join(root, "components/issues/issue-workspace.tsx"), "utf8");
+for (const token of ["500 dòng", "1000 dòng", "ALL", "Số dòng ISSUE hiển thị"]) {
+  issueWorkspaceV120.includes(token) ? pass(`ISSUE page size: ${token}`) : fail(`ISSUE page size: ${token}`);
+}
+
+console.log("\nASC WORKING V1.2.0 - Advanced Analytics & Project Health Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   CircleGauge,
   Clock3,
+  Eye,
+  EyeOff,
   FileStack,
   Layers3,
   ListTodo,
@@ -137,6 +139,20 @@ export function ProjectDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [showProjectMoney, setShowProjectMoney] = useState(true);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("asc-working-show-project-money");
+    if (saved !== null) setShowProjectMoney(saved === "1");
+  }, []);
+
+  function toggleProjectMoney() {
+    setShowProjectMoney((current) => {
+      const next = !current;
+      window.localStorage.setItem("asc-working-show-project-money", next ? "1" : "0");
+      return next;
+    });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -274,13 +290,21 @@ export function ProjectDashboard() {
                   ["Ngày ký", formatDate(data.project.contractDate)],
                   ["Ngày bắt đầu", formatDate(data.project.startDate)],
                   ["Ngày kết thúc", formatDate(data.project.dueDate)],
-                  ["Giá trị HĐ", formatMoney(data.project.contractValue)],
                 ].map(([label, value]) => (
                   <div key={label}>
                     <div className="text-[9px] uppercase tracking-[0.14em] text-slate-700">{label}</div>
                     <div className="mt-1.5 truncate text-xs font-medium text-slate-300">{value}</div>
                   </div>
                 ))}
+                <div>
+                  <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.14em] text-slate-700">
+                    <span>Giá trị HĐ</span>
+                    <button type="button" onClick={toggleProjectMoney} className="grid size-6 place-items-center rounded-md border border-white/[0.06] text-slate-600 transition hover:border-cyan-300/15 hover:text-cyan-200" aria-label={showProjectMoney ? "Ẩn số tiền dự án" : "Hiện số tiền dự án"} title={showProjectMoney ? "Ẩn số tiền dự án" : "Hiện số tiền dự án"}>
+                      {showProjectMoney ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
+                    </button>
+                  </div>
+                  <div className="mt-1.5 truncate text-xs font-medium text-slate-300">{showProjectMoney ? formatMoney(data.project.contractValue) : "•••••••• ₫"}</div>
+                </div>
               </div>
             </div>
 
