@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.3.1" ? pass("Package version", "1.3.1") : fail("Package version", `Expected 1.3.1, got ${pkg.version}`);
+pkg.version === "1.3.2" ? pass("Package version", "1.3.2") : fail("Package version", `Expected 1.3.2, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -88,6 +88,17 @@ for (const rel of [
   "lib/catalog/types.ts",
   "docs/V1.3.1-SCOPE.md",
   "docs/UAT_V131_PROJECT_MASTER_DATA_CHECKLIST.md",
+  "lib/catalog/quick-import-types.ts",
+  "lib/catalog/quick-import-server.ts",
+  "components/catalog/quick-import-modal.tsx",
+  "app/api/project-catalog/import/template/route.ts",
+  "app/api/project-catalog/import/preview/route.ts",
+  "app/api/project-catalog/import/apply/route.ts",
+  "supabase/migrations/202608260004_v132_bulk_master_data_import.sql",
+  "docs/V1.3.2-SCOPE.md",
+  "docs/V1.3.2-DIRECT-EXCEL-IMPORT.md",
+  "docs/V1.3.2-VALIDATION.md",
+  "docs/UAT_V132_BULK_IMPORT_CHECKLIST.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -248,7 +259,42 @@ for (const [rel, tokens] of [
   for (const token of tokens) content.includes(token) ? pass(`V1.3.1 Wide Modal ${rel}: ${token}`) : fail(`V1.3.1 Wide Modal ${rel}: ${token}`);
 }
 
-console.log("\nASC WORKING V1.3.1 - Project Master Data & Wide Modal UX Preflight\n");
+
+
+const quickImportLib = fs.readFileSync(path.join(root, "lib/catalog/quick-import-server.ts"), "utf8");
+for (const token of ["parseQuickCatalogWorkbook", "loadQuickCatalogReference", "stableKey", "SHEET_ALIASES", "PLHĐ chi tiết", "import_key"]) {
+  quickImportLib.includes(token) ? pass(`V1.3.2 Direct Import server: ${token}`) : fail(`V1.3.2 Direct Import server: ${token}`);
+}
+
+const quickImportUi = fs.readFileSync(path.join(root, "components/catalog/quick-import-modal.tsx"), "utf8");
+for (const token of ["Import Phòng ban", "PLHĐ / Module", "Preview dữ liệu", "Apply Import", "20 MB", "initialSections", "file 3 sheet đơn giản"]) {
+  quickImportUi.includes(token) ? pass(`V1.3.2 Direct Import UI: ${token}`) : fail(`V1.3.2 Direct Import UI: ${token}`);
+}
+
+const quickPreviewRoute = fs.readFileSync(path.join(root, "app/api/project-catalog/import/preview/route.ts"), "utf8");
+for (const token of ["20 * 1024 * 1024", "loadQuickCatalogReference", "preview_quick_master_import_v132", "canWrite", "Preview nhưng chỉ MASTER/Admin/PM", "202608260004_v132_bulk_master_data_import.sql"]) {
+  quickPreviewRoute.includes(token) ? pass(`V1.3.2 Quick Preview API: ${token}`) : fail(`V1.3.2 Quick Preview API: ${token}`);
+}
+
+const quickApplyRoute = fs.readFileSync(path.join(root, "app/api/project-catalog/import/apply/route.ts"), "utf8");
+for (const token of ["loadQuickCatalogReference", "apply_quick_master_import_v132", "sha256ArrayBuffer", 'p_mode: "merge"']) {
+  quickApplyRoute.includes(token) ? pass(`V1.3.2 Quick Apply API: ${token}`) : fail(`V1.3.2 Quick Apply API: ${token}`);
+}
+
+const quickImportMigration = fs.readFileSync(path.join(root, "supabase/migrations/202608260004_v132_bulk_master_data_import.sql"), "utf8");
+for (const token of ["ensure_master_data_import_key_v132", "departments_import_key_v132", "contract_items_import_key_v132", "contract_detail_items_import_key_v132", "preview_quick_master_import_v132", "apply_quick_master_import_v132"]) {
+  quickImportMigration.includes(token) ? pass(`V1.3.2 Direct Import migration: ${token}`) : fail(`V1.3.2 Direct Import migration: ${token}`);
+}
+
+for (const [rel, tokens] of [
+  ["app/(workspace)/departments/page.tsx", ['initialSections={["departments"]}', "Import Phòng ban"]],
+  ["app/(workspace)/contract/page.tsx", ['initialSections={["contractItems", "contractDetails"]}', "Import PLHĐ / Chi tiết"]],
+]) {
+  const content = fs.readFileSync(path.join(root, rel), "utf8");
+  for (const token of tokens) content.includes(token) ? pass(`V1.3.2 Import scope ${rel}: ${token}`) : fail(`V1.3.2 Import scope ${rel}: ${token}`);
+}
+
+console.log("\nASC WORKING V1.3.2 - Bulk Master Data Import Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

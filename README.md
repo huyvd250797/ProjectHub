@@ -1,4 +1,15 @@
-# ASC WORKING — V1.3.1
+# ASC WORKING — V1.3.2
+
+## V1.3.2 có gì mới?
+
+- Import trực tiếp danh sách **Phòng ban**, **PLHĐ** và **PLHĐ chi tiết** từ Excel hiện có.
+- Hỗ trợ file đơn giản 3 sheet, kể cả file không header/không key như `IMP-PLHD-PhongBan.xlsx`.
+- Preview trước khi Apply: số dòng, cấu trúc tự nhận diện, cảnh báo mapping, số bản ghi Thêm/Cập nhật.
+- Import Merge theo Project, chống trùng khi import lại và không xóa dữ liệu ngoài file.
+- Nút Import nằm ngay tại Phòng ban, PLHĐ và modal Danh mục Project.
+- Migration `202608260004_v132_bulk_master_data_import.sql` bổ sung import key + RPC preview/apply cho Direct Excel.
+
+Xem `docs/V1.3.2-SCOPE.md`, `docs/V1.3.2-DIRECT-EXCEL-IMPORT.md` và `docs/UAT_V132_BULK_IMPORT_CHECKLIST.md`.
 
 ## V1.3.1 có gì mới?
 

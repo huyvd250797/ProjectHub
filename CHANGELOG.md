@@ -1,5 +1,19 @@
 # Changelog
 
+## V1.3.2 — Bulk Master Data Import / Direct Excel
+
+- Import trực tiếp Excel cho Phòng ban, PLHĐ và PLHĐ chi tiết theo từng Project.
+- Hỗ trợ file 3 sheet đơn giản hiện có; không bắt buộc header, `__META`, key hay template chuẩn.
+- Tự suy luận cấu trúc Nhóm / Phân hệ / Module từ sheet PLHĐ một cột.
+- Tự dựng cây PLHĐ chi tiết từ mã A / I / 1 / 1.1 / 1,1... và cố gắng mapping Module theo tên.
+- Preview số dòng + Insert/Update + cảnh báo trước Apply.
+- Merge transaction, không xóa dữ liệu ngoài file.
+- Chống duplicate khi import lại nhờ import_key + business identity + reference Project hiện có.
+- Import nhanh có sẵn tại Phòng ban, PLHĐ và Danh mục Project; phạm vi mặc định theo màn hình.
+- **Tải mẫu Excel chuẩn trước khi Import**; template có HƯỚNG DẪN + 3 sheet dữ liệu và được đóng gói sẵn trong `public/templates`.
+- Backfill + tự sinh import_key cho dữ liệu master tạo thủ công.
+- RPC mới: `preview_quick_master_import_v132` và `apply_quick_master_import_v132`.
+
 ## V1.3.1 — Project Master Data & Wide Modal UX
 
 - Bổ sung danh mục Phòng ban theo từng Project.

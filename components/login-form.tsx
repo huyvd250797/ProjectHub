@@ -121,7 +121,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
       {!configured ? (
         <div className="mt-6 border-t border-white/[0.06] pt-5">
           <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300/70">
-            V1.3.1 Demo Mode
+            V1.3.2 Demo Mode
           </div>
           <p className="mb-4 text-xs leading-5 text-slate-500">
             Chưa có biến môi trường Supabase. Bạn vẫn có thể xem toàn bộ Dashboard và giao diện workspace.

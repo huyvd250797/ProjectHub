@@ -4,6 +4,7 @@ import {
   Building2,
   Check,
   DatabaseZap,
+  Download,
   Layers3,
   LoaderCircle,
   Pencil,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useProject } from "@/components/project-context";
+import { ProjectQuickImportButton } from "@/components/catalog/quick-import-modal";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import type {
   ProjectCatalogData,
@@ -187,10 +189,12 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
         <header className="flex items-start gap-4 border-b border-white/[0.06] px-5 py-4 md:px-6">
           <div className="grid size-11 shrink-0 place-items-center rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.05]"><Settings2 className="size-4.5 text-cyan-200/80" /></div>
           <div className="min-w-0 flex-1">
-            <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/60">Project Master Data • V1.3.1</div>
+            <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/60">Project Master Data • V1.3.2</div>
             <h2 className="mt-1 text-lg font-semibold text-white">Danh mục {selectedProject.code} • {selectedProject.name}</h2>
             <p className="mt-1 text-[10px] text-slate-500">Phòng ban và Module được khai báo riêng theo từng Project, dùng chung cho ISSUE, PLHĐ, Analytics và báo cáo.</p>
           </div>
+          <a href="/templates/ASC-WORKING-V1.3.2-Mau-Import-PhongBan-PLHD.xlsx" className="hidden h-9 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 text-[10px] font-medium text-slate-400 transition hover:border-cyan-300/15 hover:text-cyan-100 sm:flex" title="Tải mẫu Excel trước khi nhập dữ liệu"><Download className="size-3.5" /> Tải mẫu Excel</a>
+          {data?.canManage ? <ProjectQuickImportButton label={tab === "departments" ? "Import Phòng ban" : "Import PLHĐ / Chi tiết"} initialSections={tab === "departments" ? ["departments"] : ["contractItems", "contractDetails"]} onApplied={() => void load()} /> : null}
           <button type="button" onClick={() => void load()} className="grid size-9 place-items-center rounded-xl border border-white/[0.07] text-slate-500 hover:text-cyan-200" title="Tải lại"><RefreshCw className={cn("size-4", loading && "animate-spin")} /></button>
           <button type="button" onClick={onClose} className="grid size-9 place-items-center rounded-xl border border-white/[0.07] text-slate-500 hover:text-white"><X className="size-4" /></button>
         </header>

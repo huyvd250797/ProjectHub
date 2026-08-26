@@ -1,6 +1,7 @@
 import { DatabaseZap, FileStack } from "lucide-react";
 import { ProjectMasterDataButton } from "@/components/catalog/project-master-data-modal";
 import { ContractView } from "@/components/contract-view";
+import { ProjectQuickImportButton } from "@/components/catalog/quick-import-modal";
 import { PageHeader } from "@/components/page-header";
 import { CurrentProjectContractDescription } from "@/components/current-project";
 
@@ -15,10 +16,11 @@ export default function ContractPage() {
         description={<CurrentProjectContractDescription />}
         actions={
           <div className="flex flex-wrap items-center justify-end gap-2">
+            <ProjectQuickImportButton label="Import PLHĐ / Chi tiết" initialSections={["contractItems", "contractDetails"]} />
             <ProjectMasterDataButton defaultTab="modules" label="Danh mục Module" />
             <div className="flex items-center gap-2 rounded-xl border border-cyan-300/10 bg-cyan-300/[0.04] px-3 py-2 text-[10px] text-cyan-100/60">
               <DatabaseZap className="size-3.5" />
-              Real Project Data • V1.3.1
+              Real Project Data • V1.3.2
               <FileStack className="ml-1 size-3.5 text-violet-300/60" />
             </div>
           </div>

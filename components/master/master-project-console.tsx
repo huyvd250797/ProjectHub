@@ -202,7 +202,7 @@ export function MasterProjectConsole() {
             <form onSubmit={createProject} className="relative w-full max-w-[1040px] overflow-hidden rounded-3xl border border-white/[0.09] bg-[#081421] shadow-[0_28px_100px_rgba(0,0,0,.55)]">
               <header className="flex items-start gap-4 border-b border-white/[0.06] px-5 py-4 md:px-6">
                 <div className="grid size-11 shrink-0 place-items-center rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.05]"><BriefcaseBusiness className="size-4.5 text-cyan-200/80" /></div>
-                <div className="min-w-0 flex-1"><div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/60">Master Project Console • V1.3.1</div><h3 className="mt-1 text-lg font-semibold text-white">Tạo Project mới</h3><p className="mt-1 text-[10px] text-slate-500">Nhập thông tin nền tảng. Sau khi tạo, hệ thống sẽ mở Hồ sơ Project để bạn bổ sung đầy đủ thông tin và thành viên.</p></div>
+                <div className="min-w-0 flex-1"><div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/60">Master Project Console • V1.3.2</div><h3 className="mt-1 text-lg font-semibold text-white">Tạo Project mới</h3><p className="mt-1 text-[10px] text-slate-500">Nhập thông tin nền tảng. Sau khi tạo, hệ thống sẽ mở Hồ sơ Project để bạn bổ sung đầy đủ thông tin và thành viên.</p></div>
                 <button type="button" disabled={saving} onClick={() => setShowCreate(false)} className="grid size-9 place-items-center rounded-xl border border-white/[0.07] text-slate-500 hover:text-white disabled:opacity-40"><X className="size-4" /></button>
               </header>
               <div className="grid gap-4 p-5 md:grid-cols-2 md:p-6 xl:grid-cols-3">
