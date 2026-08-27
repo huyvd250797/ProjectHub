@@ -164,7 +164,7 @@ export default async function SystemInformationPage() {
           </div>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
             <div className="text-slate-600">Schema baseline</div>
-            <div className="mt-2 font-semibold text-slate-200">Through V1.4.0 migration</div>
+            <div className="mt-2 font-semibold text-slate-200">Through V1.5.0 migration</div>
           </div>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
             <div className="text-slate-600">Deploy target</div>

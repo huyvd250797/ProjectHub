@@ -2,11 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, Crown, X } from "lucide-react";
+import { ChevronLeft, Crown, SlidersHorizontal, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { navigation, secondaryNavigation } from "@/lib/navigation";
 import { Logo } from "@/components/logo";
+import { NavigationOrderManager } from "@/components/navigation-order-manager";
 import { useProject } from "@/components/project-context";
+import { DEFAULT_NAV_ORDER, normalizeNavigationOrder } from "@/lib/workspace-preferences";
+import type { NavigationHref, WorkspacePreferencesApiResponse } from "@/lib/workspace-preferences";
 import { cn } from "@/lib/utils";
+
+const NAV_ORDER_STORAGE_KEY = "asc-working-nav-order-v150";
 
 export function Sidebar({
   collapsed,
@@ -21,6 +27,52 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const { selectedProject, isMaster } = useProject();
+  const [navigationOrder, setNavigationOrder] = useState<NavigationHref[]>([...DEFAULT_NAV_ORDER]);
+  const [navigationManagerOpen, setNavigationManagerOpen] = useState(false);
+  const [navigationSaving, setNavigationSaving] = useState(false);
+  const navigationLabels = useMemo(() => Object.fromEntries(navigation.map((item) => [item.href, item.label])), []);
+  const orderedNavigation = navigationOrder
+    .map((href) => navigation.find((item) => item.href === href))
+    .filter((item): item is (typeof navigation)[number] => Boolean(item));
+
+  useEffect(() => {
+    let cancelled = false;
+    let localOrder: NavigationHref[] | null = null;
+    const saved = window.localStorage.getItem(NAV_ORDER_STORAGE_KEY);
+    if (saved) {
+      try { localOrder = normalizeNavigationOrder(JSON.parse(saved)); } catch {}
+    }
+    fetch("/api/workspace/preferences", { cache: "no-store" })
+      .then(async (response) => (await response.json()) as WorkspacePreferencesApiResponse)
+      .then((body) => {
+        if (cancelled) return;
+        if (body.ok && body.source === "database") setNavigationOrder(body.preferences.navigationOrder);
+        else if (localOrder) setNavigationOrder(localOrder);
+      })
+      .catch(() => { if (!cancelled && localOrder) setNavigationOrder(localOrder); });
+    return () => { cancelled = true; };
+  }, []);
+
+  async function saveNavigationOrder() {
+    const normalized = normalizeNavigationOrder(navigationOrder);
+    setNavigationOrder(normalized);
+    window.localStorage.setItem(NAV_ORDER_STORAGE_KEY, JSON.stringify(normalized));
+    setNavigationSaving(true);
+    try {
+      const response = await fetch("/api/workspace/preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ navigationOrder: normalized }),
+      });
+      const body = (await response.json()) as WorkspacePreferencesApiResponse;
+      if (!body.ok && body.code !== "DEMO_READONLY") throw new Error(body.message);
+      setNavigationManagerOpen(false);
+    } catch (reason) {
+      window.alert(reason instanceof Error ? reason.message : "Không lưu được vị trí menu.");
+    } finally {
+      setNavigationSaving(false);
+    }
+  }
 
   const navContent = (
     <>
@@ -37,16 +89,12 @@ export function Sidebar({
       </div>
 
       <div className="scrollbar-thin flex-1 overflow-y-auto px-3 py-5">
-        <p
-          className={cn(
-            "mb-2 px-2 text-[9px] font-semibold uppercase tracking-[0.25em] text-slate-600",
-            collapsed && "text-center text-[0px]",
-          )}
-        >
-          Project Workspace
-        </p>
+        <div className={cn("mb-2 flex items-center justify-between px-2", collapsed && "justify-center px-0")}>
+          <p className={cn("text-[9px] font-semibold uppercase tracking-[0.25em] text-slate-600", collapsed && "hidden")}>Project Workspace</p>
+          <button type="button" onClick={() => setNavigationManagerOpen(true)} className="grid size-7 place-items-center rounded-lg border border-white/[0.06] text-slate-600 transition hover:border-cyan-300/15 hover:text-cyan-200" title="Sắp xếp vị trí module" aria-label="Sắp xếp vị trí module"><SlidersHorizontal className="size-3.5" /></button>
+        </div>
         <nav className="space-y-1">
-          {navigation.map((item) => {
+          {orderedNavigation.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = item.icon;
             return (
@@ -124,7 +172,7 @@ export function Sidebar({
             <div className={cn("min-w-0", collapsed && "hidden")}>
               <div className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-600">Project hiện tại</div>
               <div className="mt-1 truncate text-[11px] font-semibold text-slate-300">{selectedProject.code} • {selectedProject.organizationName || selectedProject.name}</div>
-              <div className="mt-1 text-[9px] uppercase tracking-[0.15em] text-slate-700">V1.4.0 • {isMaster ? "MASTER • ALL PROJECTS" : "PROJECT ACCESS"}</div>
+              <div className="mt-1 text-[9px] uppercase tracking-[0.15em] text-slate-700">V1.5.0 • {isMaster ? "MASTER • ALL PROJECTS" : "PROJECT ACCESS"}</div>
             </div>
           </div>
         </div>
@@ -164,6 +212,7 @@ export function Sidebar({
           </aside>
         </div>
       ) : null}
+      <NavigationOrderManager open={navigationManagerOpen} value={navigationOrder} labels={navigationLabels} saving={navigationSaving} onChange={setNavigationOrder} onSave={() => void saveNavigationOrder()} onClose={() => setNavigationManagerOpen(false)} />
     </>
   );
 }

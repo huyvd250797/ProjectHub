@@ -115,12 +115,24 @@ export type IssueColumnId =
   | "dueDate"
   | "jira";
 
+export type IssueTagGroup = "status" | "customerStatus" | "priority" | "assignee";
+
+export type IssueTagStyle = {
+  border: string;
+  background: string;
+  text: string;
+};
+
+export type IssueTagStyles = Partial<Record<IssueTagGroup, Record<string, IssueTagStyle>>>;
+
 export type IssueColumnPreferences = {
   visibleColumns: IssueColumnId[];
   columnOrder: IssueColumnId[];
   columnWidths: Partial<Record<IssueColumnId, number>>;
   pinnedColumns: IssueColumnId[];
   pageSize: number;
+  filtersVisible: boolean;
+  tagStyles: IssueTagStyles;
 };
 
 export type IssueViewsApiResponse =

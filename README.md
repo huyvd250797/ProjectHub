@@ -1,4 +1,14 @@
-# ASC WORKING — V1.4.0
+# ASC WORKING — V1.5.0
+
+## V1.5.0 có gì mới?
+
+- Tùy chỉnh riêng màu **viền, nền và chữ** cho tag Trạng thái, Trạng thái KH, Ưu tiên và Phụ trách trong ISSUE.
+- Kéo-thả trực tiếp tiêu đề cột ISSUE để thay đổi thứ tự hiển thị; vẫn hỗ trợ cấu hình cột chi tiết.
+- Ẩn/hiện thanh bộ lọc ISSUE; mặc định bộ lọc được hiển thị.
+- Sắp xếp vị trí các module ở navbar trái bằng kéo-thả hoặc nút mũi tên.
+- Cấu hình ISSUE lưu theo tài khoản + Project; thứ tự navbar lưu theo tài khoản trên toàn workspace.
+
+Chạy migration `supabase/migrations/202608270002_v150_issue_workspace_personalization.sql`, sau đó UAT theo `docs/UAT_V150_ISSUE_PERSONALIZATION_CHECKLIST.md`.
 
 ## V1.4.0 có gì mới?
 

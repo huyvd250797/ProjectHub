@@ -1,5 +1,14 @@
 # Changelog
 
+## V1.5.0 — ISSUE Visual Customization & Workspace Layout
+
+- Thêm trình cấu hình màu viền, background và chữ cho từng giá trị tag Trạng thái, Trạng thái KH, Ưu tiên và Phụ trách.
+- Tiêu đề cột ISSUE hỗ trợ HTML5 drag-and-drop để đổi vị trí hiển thị trực tiếp.
+- Thêm nút Ẩn lọc/Hiện lọc; trạng thái mặc định là hiện và được lưu trong ISSUE preference.
+- Thêm trình sắp xếp module navbar trái bằng kéo-thả hoặc mũi tên.
+- ISSUE preference lưu theo user + Project; workspace navigation preference lưu toàn cục theo user.
+- Migration mới: `202608270002_v150_issue_workspace_personalization.sql`.
+
 ## V1.4.0 — Attachment & Project Documents / Google Drive
 
 - Thêm workspace `Tài liệu` theo từng Project với thống kê, tìm kiếm và bộ lọc.

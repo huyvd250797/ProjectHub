@@ -3,6 +3,7 @@
 import { Check, ChevronDown, Search, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import type { SelectOption } from "@/lib/issues/types";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ export function FloatingSelect({
   ariaLabel,
   compact = false,
   tone,
+  tagStyle,
 }: {
   value: string | null;
   options: SelectOption[];
@@ -32,6 +34,7 @@ export function FloatingSelect({
   ariaLabel: string;
   compact?: boolean;
   tone?: string;
+  tagStyle?: CSSProperties;
 }) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -89,6 +92,7 @@ export function FloatingSelect({
         aria-haspopup="listbox"
         aria-expanded={open}
         disabled={disabled}
+        style={tagStyle}
         onClick={(event) => {
           event.stopPropagation();
           if (!disabled) {

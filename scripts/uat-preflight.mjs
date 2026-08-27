@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.4.0" ? pass("Package version", "1.4.0") : fail("Package version", `Expected 1.4.0, got ${pkg.version}`);
+pkg.version === "1.5.0" ? pass("Package version", "1.5.0") : fail("Package version", `Expected 1.5.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -115,6 +115,14 @@ for (const rel of [
   "docs/GOOGLE_DRIVE_V140_SETUP.md",
   "docs/UAT_V140_PROJECT_DOCUMENTS_CHECKLIST.md",
   "docs/V1.4.0-VALIDATION.md",
+  "components/issues/tag-style-manager.tsx",
+  "components/navigation-order-manager.tsx",
+  "app/api/workspace/preferences/route.ts",
+  "lib/workspace-preferences.ts",
+  "supabase/migrations/202608270002_v150_issue_workspace_personalization.sql",
+  "docs/V1.5.0-SCOPE.md",
+  "docs/UAT_V150_ISSUE_PERSONALIZATION_CHECKLIST.md",
+  "docs/V1.5.0-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -329,7 +337,27 @@ for (const token of ["MAX_DOCUMENT_SIZE", "BLOCKED_EXTENSIONS", "createUploadTok
   uploadRoute.includes(token) ? pass(`V1.4.0 Upload guard: ${token}`) : fail(`V1.4.0 Upload guard: ${token}`);
 }
 
-console.log("\nASC WORKING V1.4.0 - Attachment & Project Documents Preflight\n");
+const issuePersonalization = fs.readFileSync(path.join(root, "components/issues/issue-workspace.tsx"), "utf8");
+for (const token of ["TagStyleManager", "filtersVisible", "draggable", "dropColumn", "Màu tag", "Ẩn lọc", "Kéo để đổi vị trí cột"]) {
+  issuePersonalization.includes(token) ? pass(`V1.5.0 ISSUE personalization: ${token}`) : fail(`V1.5.0 ISSUE personalization: ${token}`);
+}
+
+const tagStyleManager = fs.readFileSync(path.join(root, "components/issues/tag-style-manager.tsx"), "utf8");
+for (const token of ["Trạng thái KH", "Phụ trách", "borderColor", "backgroundColor", "color: style.text", "Mặc định nhóm"]) {
+  tagStyleManager.includes(token) ? pass(`V1.5.0 Tag colors: ${token}`) : fail(`V1.5.0 Tag colors: ${token}`);
+}
+
+const sidebarV150 = fs.readFileSync(path.join(root, "components/sidebar.tsx"), "utf8");
+for (const token of ["NavigationOrderManager", "orderedNavigation", "asc-working-nav-order-v150", "/api/workspace/preferences", "Sắp xếp vị trí module"]) {
+  sidebarV150.includes(token) ? pass(`V1.5.0 Navbar order: ${token}`) : fail(`V1.5.0 Navbar order: ${token}`);
+}
+
+const personalizationMigration = fs.readFileSync(path.join(root, "supabase/migrations/202608270002_v150_issue_workspace_personalization.sql"), "utf8");
+for (const token of ["filters_visible", "tag_styles", "workspace_user_preferences", "navigation_order", "auth.uid()"] ) {
+  personalizationMigration.includes(token) ? pass(`V1.5.0 personalization migration: ${token}`) : fail(`V1.5.0 personalization migration: ${token}`);
+}
+
+console.log("\nASC WORKING V1.5.0 - ISSUE Visual Customization & Workspace Layout Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

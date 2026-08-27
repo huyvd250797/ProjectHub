@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "1.4.0",
+        version: "1.5.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "1.4.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "1.5.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -156,6 +156,19 @@ export async function GET(request: NextRequest) {
     productivityError ? "fail" : "pass",
     productivityError ? "Không đọc được Saved Views/User Preferences; kiểm tra migration V0.7.0." : "Saved Views/User Preferences sẵn sàng.",
     productivity.durationMs,
+  ));
+
+  const personalization = await timed(async () => Promise.all([
+    supabase.from("issue_user_preferences").select("filters_visible,tag_styles", { count: "exact", head: true }).eq("project_id", projectId).eq("user_id", user.id),
+    supabase.from("workspace_user_preferences").select("navigation_order", { count: "exact", head: true }).eq("user_id", user.id),
+  ]));
+  const personalizationError = personalization.error || personalization.value?.find((result) => result.error)?.error;
+  checks.push(check(
+    "workspace_personalization",
+    "ISSUE & Workspace personalization",
+    personalizationError ? "fail" : "pass",
+    personalizationError ? "Không đọc được cấu hình màu tag/bộ lọc/navbar; chạy migration V1.5.0." : "Màu tag, bộ lọc, thứ tự cột và navbar đã sẵn sàng.",
+    personalization.durationMs,
   ));
 
   const notificationsSchema = await timed(async () => Promise.all([
@@ -267,7 +280,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "1.4.0",
+      version: "1.5.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

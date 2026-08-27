@@ -10,14 +10,18 @@ import {
   Columns3,
   CopyPlus,
   Download,
+  Eye,
+  EyeOff,
   ExternalLink,
   FilterX,
+  GripVertical,
   Layers3,
   ListTodo,
   LoaderCircle,
   Maximize2,
   Minimize2,
   Plus,
+  Paintbrush,
   RefreshCw,
   Save,
   Search,
@@ -31,6 +35,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useProject } from "@/components/project-context";
 import { IssueDrawer } from "@/components/issues/issue-drawer";
+import { TagStyleManager } from "@/components/issues/tag-style-manager";
 import {
   ColumnManager,
   DEFAULT_ISSUE_PREFERENCES,
@@ -49,6 +54,7 @@ import type {
   IssuePreferencesApiResponse,
   IssueRow,
   IssueSavedView,
+  IssueTagGroup,
   IssuesApiResponse,
   IssuesData,
   IssueViewsApiResponse,
@@ -125,6 +131,9 @@ export function IssueWorkspace() {
   const [preferences, setPreferences] = useState<IssueColumnPreferences>(DEFAULT_ISSUE_PREFERENCES);
   const [preferencesReady, setPreferencesReady] = useState(false);
   const [columnManagerOpen, setColumnManagerOpen] = useState(false);
+  const [tagStyleManagerOpen, setTagStyleManagerOpen] = useState(false);
+  const [draggedColumn, setDraggedColumn] = useState<IssueColumnId | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<IssueColumnId | null>(null);
   const [savedViews, setSavedViews] = useState<IssueSavedView[]>([]);
   const [saveViewOpen, setSaveViewOpen] = useState(false);
   const [viewSaving, setViewSaving] = useState(false);
@@ -432,13 +441,33 @@ export function IssueWorkspace() {
   const currentData = data;
   const allCurrentSelected = currentData.rows.length > 0 && currentData.rows.every((row) => selectedIds.has(row.id));
 
+  function customizedTagStyle(group: IssueTagGroup, value: string | null) {
+    const style = preferences.tagStyles[group]?.[value ?? "__empty__"];
+    return style ? { borderColor: style.border, backgroundColor: style.background, color: style.text } : undefined;
+  }
+
+  function dropColumn(target: IssueColumnId) {
+    if (!draggedColumn || draggedColumn === target) return;
+    setPreferences((current) => {
+      const next = [...current.columnOrder];
+      const from = next.indexOf(draggedColumn);
+      const to = next.indexOf(target);
+      if (from < 0 || to < 0) return current;
+      next.splice(from, 1);
+      next.splice(to, 0, draggedColumn);
+      return { ...current, columnOrder: next };
+    });
+    setDraggedColumn(null);
+    setDragOverColumn(null);
+  }
+
   function renderCell(issue: IssueRow, id: IssueColumnId) {
     const editingDisabled = !currentData.canEdit || currentData.source === "demo" || savingId === issue.id;
     if (id === "issueNo") return <span className="font-mono text-[10px] text-cyan-300/65">#{issue.issueNo ?? "—"}</span>;
     if (id === "content") return <div><div className="line-clamp-2 font-medium leading-5 text-slate-300 group-hover:text-white">{issue.content}</div>{issue.requesterName ? <div className="mt-1 text-[9px] text-slate-700">YC: {issue.requesterName}</div> : null}</div>;
-    if (id === "status") return <FloatingSelect ariaLabel="Trạng thái" compact disabled={editingDisabled} value={issue.statusCode} options={currentData.lookups.statuses} onChange={(value) => inlineUpdate(issue, "statusCode", value)} tone={statusTone(issue.statusCode)} />;
-    if (id === "customerStatus") return <FloatingSelect ariaLabel="Trạng thái khách hàng" compact disabled={editingDisabled} value={issue.customerStatusCode} options={currentData.lookups.customerStatuses} onChange={(value) => inlineUpdate(issue, "customerStatusCode", value)} placeholder="Chưa bàn giao" />;
-    if (id === "priority") return <FloatingSelect ariaLabel="Ưu tiên" compact disabled={editingDisabled} value={issue.priorityCode} options={currentData.lookups.priorities} onChange={(value) => inlineUpdate(issue, "priorityCode", value)} tone={priorityTone(issue.priorityCode)} />;
+    if (id === "status") return <FloatingSelect ariaLabel="Trạng thái" compact disabled={editingDisabled} value={issue.statusCode} options={currentData.lookups.statuses} onChange={(value) => inlineUpdate(issue, "statusCode", value)} tone={statusTone(issue.statusCode)} tagStyle={customizedTagStyle("status", issue.statusCode)} />;
+    if (id === "customerStatus") return <FloatingSelect ariaLabel="Trạng thái khách hàng" compact disabled={editingDisabled} value={issue.customerStatusCode} options={currentData.lookups.customerStatuses} onChange={(value) => inlineUpdate(issue, "customerStatusCode", value)} placeholder="Chưa bàn giao" tagStyle={customizedTagStyle("customerStatus", issue.customerStatusCode)} />;
+    if (id === "priority") return <FloatingSelect ariaLabel="Ưu tiên" compact disabled={editingDisabled} value={issue.priorityCode} options={currentData.lookups.priorities} onChange={(value) => inlineUpdate(issue, "priorityCode", value)} tone={priorityTone(issue.priorityCode)} tagStyle={customizedTagStyle("priority", issue.priorityCode)} />;
     if (id === "module") return <FloatingSelect ariaLabel="Module" compact disabled={editingDisabled} value={issue.moduleId} options={currentData.lookups.modules} onChange={(value) => inlineUpdate(issue, "moduleId", value)} placeholder="Chưa Module" />;
     if (id === "department") return <FloatingSelect ariaLabel="Phòng ban" compact disabled={editingDisabled} value={issue.departmentId} options={currentData.lookups.departments} onChange={(value) => inlineUpdate(issue, "departmentId", value)} placeholder="Chưa phòng ban" />;
     if (id === "assignee") {
@@ -451,7 +480,7 @@ export function IssueWorkspace() {
             description: "Không còn là thành viên Project — chỉ giữ để hiển thị lịch sử",
             disabled: true,
           }, ...currentData.lookups.assignees];
-      return <FloatingSelect ariaLabel="Phụ trách" compact disabled={editingDisabled} value={issue.assigneeId} options={assigneeOptions} onChange={(value) => inlineUpdate(issue, "assigneeId", value)} placeholder="Chưa phụ trách" />;
+      return <FloatingSelect ariaLabel="Phụ trách" compact disabled={editingDisabled} value={issue.assigneeId} options={assigneeOptions} onChange={(value) => inlineUpdate(issue, "assigneeId", value)} placeholder="Chưa phụ trách" tagStyle={customizedTagStyle("assignee", issue.assigneeId)} />;
     }
     if (id === "dueDate") return <span className={cn("text-[10px]", isOverdue(issue.dueDate) ? "font-semibold text-rose-300/80" : "text-slate-600")}>{formatDate(issue.dueDate)}</span>;
     return issue.jiraUrl ? <a href={issue.jiraUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] px-2 py-1 text-[9px] text-cyan-300/60 hover:border-cyan-300/18 hover:text-cyan-200"><ExternalLink className="size-3" /> Jira</a> : <span className="text-slate-800">—</span>;
@@ -473,6 +502,8 @@ export function IssueWorkspace() {
             <SavedViewsMenu views={savedViews} onApply={applySavedView} onDelete={deleteSavedView} disabled={data.source === "demo"} />
             <button type="button" onClick={() => setSaveViewOpen(true)} disabled={data.source === "demo"} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-slate-200 disabled:opacity-40"><Save className="size-3.5" /> Lưu View</button>
             <button type="button" onClick={() => setColumnManagerOpen(true)} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-slate-200"><Columns3 className="size-3.5" /> Cột</button>
+            <button type="button" onClick={() => setTagStyleManagerOpen(true)} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-slate-200"><Paintbrush className="size-3.5" /> Màu tag</button>
+            <button type="button" onClick={() => setPreferences((current) => ({ ...current, filtersVisible: !current.filtersVisible }))} className={cn("flex h-10 items-center gap-2 rounded-xl border px-3 text-[10px] transition", preferences.filtersVisible ? "border-cyan-300/14 bg-cyan-300/[0.045] text-cyan-100/70" : "border-white/[0.07] bg-white/[0.025] text-slate-500 hover:text-slate-200")} title={preferences.filtersVisible ? "Ẩn bộ lọc ISSUE" : "Hiện bộ lọc ISSUE"}>{preferences.filtersVisible ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />} {preferences.filtersVisible ? "Ẩn lọc" : "Hiện lọc"}</button>
             <button type="button" onClick={() => setFullScreen((value) => !value)} className={cn("flex h-10 items-center gap-2 rounded-xl border px-3 text-[10px] transition", fullScreen ? "border-cyan-300/18 bg-cyan-300/[0.07] text-cyan-100" : "border-white/[0.07] bg-white/[0.025] text-slate-500 hover:text-slate-200")} title={fullScreen ? "Thoát Full Screen (Esc)" : "Xem ISSUE toàn màn hình"}>{fullScreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />} {fullScreen ? "Thu nhỏ" : "Full Screen"}</button>
             <button type="button" onClick={exportIssues} disabled={data.source === "demo"} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-slate-200 disabled:opacity-40"><Download className="size-3.5" /> Export</button>
             <button type="button" disabled={!data.canEdit || data.source === "demo"} onClick={() => setQuickOpen((value) => !value)} className={cn("flex h-10 items-center gap-2 rounded-xl border px-3 text-[10px]", quickOpen ? "border-violet-300/18 bg-violet-300/[0.07] text-violet-100" : "border-white/[0.07] bg-white/[0.025] text-slate-500")}><Zap className="size-3.5" /> Thêm nhanh</button>
@@ -482,7 +513,7 @@ export function IssueWorkspace() {
 
         {quickOpen ? <div className="flex flex-col gap-2 border-b border-violet-300/10 bg-violet-300/[0.025] px-4 py-3 md:flex-row md:items-center"><div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-200/70"><Sparkles className="size-3.5" /> Quick Add</div><input autoFocus value={quickContent} onChange={(e) => setQuickContent(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void quickAdd(); } }} placeholder="Nhập nội dung ISSUE và Enter..." className="h-9 min-w-0 flex-1 rounded-xl border border-white/[0.07] bg-black/10 px-3 text-xs text-slate-300 outline-none placeholder:text-slate-700 focus:border-violet-300/20" /><div className="w-[105px]"><ThemedSelect ariaLabel="Ưu tiên Quick Add" value={quickPriority} onChange={setQuickPriority} options={data.lookups.priorities} /></div><button disabled={!quickContent.trim() || quickSaving} onClick={() => void quickAdd()} className="flex h-9 items-center justify-center gap-2 rounded-xl bg-violet-300 px-3 text-[10px] font-semibold text-[#0a1020] disabled:opacity-40">{quickSaving ? <LoaderCircle className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />} Tạo</button></div> : null}
 
-        <div className="flex flex-wrap gap-2 border-b border-white/[0.05] px-4 py-3">
+        {preferences.filtersVisible ? <div className="flex flex-wrap gap-2 border-b border-white/[0.05] px-4 py-3">
           <div className="w-[155px]"><ThemedSelect ariaLabel="Lọc trạng thái" value={searchParams.get("status") ?? ""} onChange={(value) => setFilter("status", value || null)} options={data.lookups.statuses} placeholder="Trạng thái" /></div>
           <div className="w-[150px]"><ThemedSelect ariaLabel="Lọc ưu tiên" value={searchParams.get("priority") ?? ""} onChange={(value) => setFilter("priority", value || null)} options={data.lookups.priorities} placeholder="Ưu tiên" /></div>
           <div className="w-[180px]"><ThemedSelect ariaLabel="Lọc phòng ban" value={searchParams.get("departmentId") ?? ""} onChange={(value) => setFilter("departmentId", value || null)} options={data.lookups.departments} placeholder="Phòng ban" /></div>
@@ -493,7 +524,7 @@ export function IssueWorkspace() {
           {[['overdue','Quá hạn'], ['nearDue','Gần hạn 7 ngày'], ['missingModule','Thiếu Module'], ['missingDepartment','Thiếu Phòng ban'], ['missingAssignee','Thiếu phụ trách']].map(([key, title]) => { const active = key === 'nearDue' ? searchParams.has('nearDue') : searchParams.get(key) === '1'; return <button key={key} type="button" onClick={() => setFilter(key, active ? null : key === 'nearDue' ? '7' : '1')} className={cn("h-10 rounded-xl border px-3 text-[10px] transition", active ? "border-cyan-300/18 bg-cyan-300/[0.07] text-cyan-100" : "border-white/[0.07] bg-white/[0.02] text-slate-600 hover:text-slate-300")}>{title}</button>; })}
           {activeFilterCount || searchParams.get("search") ? <button type="button" onClick={() => clearFilters()} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-slate-200"><FilterX className="size-3.5" /> Xóa lọc {activeFilterCount ? `(${activeFilterCount})` : ""}</button> : null}
           <div className="ml-auto flex items-center gap-2 text-[9px] uppercase tracking-[0.12em] text-slate-700"><span className="size-1.5 rounded-full bg-emerald-300/70" /> {data.role}</div>
-        </div>
+        </div> : null}
 
         {selectedIds.size ? <div className={cn("sticky z-20 flex flex-col gap-2 border-b border-cyan-300/10 bg-[#0a1828]/95 px-4 py-3 shadow-lg backdrop-blur-xl lg:flex-row lg:items-center", fullScreen ? "top-0" : "top-[76px]")}><div className="flex items-center gap-2 text-xs font-medium text-cyan-100"><span className="grid size-6 place-items-center rounded-lg bg-cyan-300/[0.1] text-[10px]">{selectedIds.size}</span> ISSUE đã chọn</div><div className="w-[190px]"><ThemedSelect ariaLabel="Trường bulk update" value={bulkField} onChange={(value) => { setBulkField(value); setBulkValue(""); }} options={bulkFieldOptions} /></div>{bulkField === "dueDate" ? <div className="flex gap-1"><input type="date" value={bulkValue === "__clear__" ? "" : bulkValue} onChange={(e) => setBulkValue(e.target.value)} className="h-10 rounded-xl border border-white/[0.08] bg-black/10 px-3 text-xs text-slate-300 outline-none" /><button onClick={() => setBulkValue("__clear__")} className={cn("h-10 rounded-xl border px-3 text-[10px]", bulkValue === "__clear__" ? "border-rose-300/20 bg-rose-300/[0.06] text-rose-200" : "border-white/[0.07] text-slate-600")}>Xóa</button></div> : <div className="w-[240px]"><ThemedSelect ariaLabel="Giá trị bulk update" value={bulkValue} onChange={setBulkValue} options={bulkOptions()} placeholder="Chọn giá trị" menuClassName="min-w-[320px]" /></div>}<button disabled={!bulkValue || bulkSaving} onClick={() => void applyBulkUpdate()} className="flex h-10 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-[10px] font-semibold text-[#07111f] disabled:opacity-40">{bulkSaving ? <LoaderCircle className="size-3.5 animate-spin" /> : <Zap className="size-3.5" />} Cập nhật</button><button disabled={selectedIds.size !== 1 || bulkSaving} onClick={() => void duplicateSelected()} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-400 disabled:opacity-30"><CopyPlus className="size-3.5" /> Nhân bản</button>{data.canArchive ? <button disabled={bulkSaving} onClick={() => void deleteSelectedIssues()} className="flex h-10 items-center gap-2 rounded-xl border border-rose-300/15 bg-rose-300/[0.04] px-3 text-[10px] font-medium text-rose-200 hover:bg-rose-300/[0.08] disabled:opacity-40"><Trash2 className="size-3.5" /> Xóa</button> : null}<button onClick={() => setSelectedIds(new Set())} className="ml-auto flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-600"><X className="size-3.5" /> Bỏ chọn</button></div> : null}
 
@@ -502,7 +533,27 @@ export function IssueWorkspace() {
             <thead className="text-[9px] uppercase tracking-[0.13em] text-slate-600">
               <tr>
                 <th className="sticky left-0 top-0 z-50 w-[46px] border-b border-r border-white/[0.06] bg-[#0b1727]/[0.99] px-3 py-3 shadow-[0_1px_0_rgba(255,255,255,0.035)] backdrop-blur-xl"><input type="checkbox" aria-label="Chọn tất cả ISSUE trang này" checked={allCurrentSelected} onChange={(e) => setSelectedIds(e.target.checked ? new Set(data.rows.map((row) => row.id)) : new Set())} className="size-3.5 accent-cyan-300" /></th>
-                {orderedVisibleColumns.map((id) => { const spec = ISSUE_COLUMNS.find((item) => item.id === id)!; const width = preferences.columnWidths[id] ?? 160; const left = pinnedLeft(id); const pinned = left !== undefined; return <th key={id} className={cn("sticky top-0 z-30 border-b border-white/[0.06] bg-[#0b1727]/[0.99] px-3 py-3 font-semibold shadow-[0_1px_0_rgba(255,255,255,0.035)] backdrop-blur-xl", pinned && "z-40 border-r")} style={{ width, minWidth: width, maxWidth: width, left }}>{spec.label}</th>; })}
+                {orderedVisibleColumns.map((id) => {
+                  const spec = ISSUE_COLUMNS.find((item) => item.id === id)!;
+                  const width = preferences.columnWidths[id] ?? 160;
+                  const left = pinnedLeft(id);
+                  const pinned = left !== undefined;
+                  return (
+                    <th
+                      key={id}
+                      draggable
+                      onDragStart={(event) => { setDraggedColumn(id); event.dataTransfer.effectAllowed = "move"; }}
+                      onDragEnd={() => { setDraggedColumn(null); setDragOverColumn(null); }}
+                      onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDragOverColumn(id); }}
+                      onDrop={(event) => { event.preventDefault(); dropColumn(id); }}
+                      className={cn("sticky top-0 z-30 cursor-grab border-b border-white/[0.06] bg-[#0b1727]/[0.99] px-3 py-3 font-semibold shadow-[0_1px_0_rgba(255,255,255,0.035)] backdrop-blur-xl active:cursor-grabbing", pinned && "z-40 border-r", dragOverColumn === id && draggedColumn !== id && "bg-cyan-300/[0.09] text-cyan-100")}
+                      style={{ width, minWidth: width, maxWidth: width, left }}
+                      title="Kéo để đổi vị trí cột"
+                    >
+                      <span className="flex items-center gap-1.5"><GripVertical className="size-3 shrink-0 text-slate-700" />{spec.label}</span>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -533,6 +584,7 @@ export function IssueWorkspace() {
 
       {(createMode || selectedIssue) ? <IssueDrawer projectId={selectedProject.id} issue={selectedIssue} createMode={createMode} lookups={data.lookups} canEdit={data.canEdit} canArchive={data.canArchive} source={data.source} onClose={closeDrawer} onSaved={onSaved} onArchived={onArchived} /> : null}
       <ColumnManager open={columnManagerOpen} value={preferences} onChange={setPreferences} onClose={() => setColumnManagerOpen(false)} />
+      <TagStyleManager open={tagStyleManagerOpen} value={preferences.tagStyles} lookups={data.lookups} onChange={(tagStyles) => setPreferences((current) => ({ ...current, tagStyles }))} onClose={() => setTagStyleManagerOpen(false)} />
       <SaveViewModal open={saveViewOpen} onClose={() => setSaveViewOpen(false)} onSave={(name) => void saveCurrentView(name)} saving={viewSaving} />
     </div>
   );

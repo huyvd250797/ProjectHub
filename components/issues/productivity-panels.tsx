@@ -24,6 +24,8 @@ export const DEFAULT_ISSUE_PREFERENCES: IssueColumnPreferences = {
   columnWidths: Object.fromEntries(ISSUE_COLUMNS.map((item) => [item.id, item.id === "content" ? 420 : item.id === "issueNo" ? 82 : item.id === "jira" ? 84 : 160])),
   pinnedColumns: ["issueNo", "content"],
   pageSize: 50,
+  filtersVisible: true,
+  tagStyles: {},
 };
 
 export function ColumnManager({
