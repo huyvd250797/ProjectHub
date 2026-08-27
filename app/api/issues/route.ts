@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
   }
 
   const total = firstRowsResult.count ?? 0;
-  let rawRows = [...(firstRowsResult.data ?? [])] as Array<Record<string, unknown>>;
+  const rawRows = [...(firstRowsResult.data ?? [])] as Array<Record<string, unknown>>;
 
   // ALL is fetched in server-side chunks so it remains compatible with the default
   // Supabase/PostgREST max-row response while avoiding one unbounded database response.

@@ -1,4 +1,15 @@
-# ASC WORKING — V1.3.2
+# ASC WORKING — V1.4.0
+
+## V1.4.0 có gì mới?
+
+- **Project Documents** tại `/documents`, dùng riêng theo từng Project.
+- Upload trực tiếp từ trình duyệt lên **Google Drive** bằng resumable upload, có tiến độ và giới hạn 250 MB/file.
+- Metadata, phân loại, liên kết nghiệp vụ, quyền truy cập và audit lưu trong Supabase; nội dung file không đi qua database.
+- File Drive giữ private; xem trước/tải xuống qua API ứng dụng sau khi xác nhận Project role.
+- MASTER/Admin/PM quản lý metadata và lưu trữ; Member được upload/xem; Viewer chỉ xem.
+- Lưu trữ là soft archive metadata, không xóa file gốc khỏi Google Drive.
+
+Triển khai theo `docs/GOOGLE_DRIVE_V140_SETUP.md`, chạy migration `supabase/migrations/202608270001_v140_google_drive_documents.sql`, sau đó UAT theo `docs/UAT_V140_PROJECT_DOCUMENTS_CHECKLIST.md`.
 
 ## V1.3.2 có gì mới?
 
@@ -130,9 +141,13 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 APP_ENCRYPTION_KEY=
 APP_URL=
+GOOGLE_DRIVE_CLIENT_ID=
+GOOGLE_DRIVE_CLIENT_SECRET=
+GOOGLE_DRIVE_REFRESH_TOKEN=
+GOOGLE_DRIVE_ROOT_FOLDER_ID=
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` và `APP_ENCRYPTION_KEY` là **server-only**. Không dùng `NEXT_PUBLIC_` và không commit vào Git.
+`SUPABASE_SERVICE_ROLE_KEY`, `APP_ENCRYPTION_KEY` và toàn bộ Google Drive OAuth là **server-only**. Không dùng `NEXT_PUBLIC_` và không commit vào Git.
 
 ## Database migration V1.1.0
 

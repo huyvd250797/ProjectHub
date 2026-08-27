@@ -1,6 +1,6 @@
 {
   "name": "asc-working",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "private": true,
   "engines": {
     "node": ">=20.9.0"
@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "check": "npm run preflight && npm run typecheck && npm run lint && npm run build",
-    "preflight": "node scripts/uat-preflight.mjs"
+    "preflight": "node scripts/uat-preflight.mjs",
+    "drive:oauth": "node scripts/google-drive-oauth.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

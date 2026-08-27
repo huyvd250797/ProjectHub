@@ -23,15 +23,17 @@
 - ✅ V1.1.3 — ISSUE Delete / CRUD Completion
 - ✅ V1.2.0 — Advanced Analytics & Project Health
 - ✅ V1.3.0 — Executive Report & Project Summary + ISSUE Full Screen
+- ✅ V1.3.1 — Project Master Data & Wide Modal UX
+- ✅ V1.3.2 — Bulk Master Data Import / Direct Excel
+- ✅ V1.4.0 — Attachment & Project Documents / Google Drive
 
 ## Current
-- **V1.3.0 — Executive Report & Project Summary**
+- **V1.4.0 — Attachment & Project Documents / Google Drive**
 
 ## Deferred by product decision
 - Jira Integration / Sync
-- Attachments / Project Documents
 
 ## Candidate next
-- V1.4.0 — Project Templates & Faster Project Setup
-- V1.5.0 — Smart Reminders & Follow-up
-- V1.6.0 — Cross-Project Portfolio Dashboard
+- V1.5.0 — Project Templates & Faster Project Setup
+- V1.6.0 — Smart Reminders & Follow-up
+- V1.7.0 — Cross-Project Portfolio Dashboard

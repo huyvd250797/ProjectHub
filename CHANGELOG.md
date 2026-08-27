@@ -1,5 +1,16 @@
 # Changelog
 
+## V1.4.0 — Attachment & Project Documents / Google Drive
+
+- Thêm workspace `Tài liệu` theo từng Project với thống kê, tìm kiếm và bộ lọc.
+- Upload Google Drive kiểu resumable trực tiếp từ trình duyệt, hiển thị tiến độ, tối đa 250 MB/file.
+- Tạo tự động thư mục gốc `ASC-WORKING` và thư mục riêng cho từng Project; hỗ trợ thư mục gốc cấu hình sẵn.
+- Supabase lưu metadata, upload verification session và liên kết nghiệp vụ; Drive giữ binary private.
+- Xem trước/tải file qua proxy có kiểm tra đăng nhập và quyền Project.
+- Quyền: Member upload/xem; Viewer xem; MASTER/Admin/PM sửa metadata và soft archive.
+- Chặn file thực thi/script phổ biến; upload session có one-time token hash và thời hạn một giờ.
+- Migration mới: `202608270001_v140_google_drive_documents.sql`.
+
 ## V1.3.2 — Bulk Master Data Import / Direct Excel
 
 - Import trực tiếp Excel cho Phòng ban, PLHĐ và PLHĐ chi tiết theo từng Project.

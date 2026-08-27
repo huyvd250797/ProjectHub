@@ -5,6 +5,7 @@ import {
   CircleGauge,
   FileStack,
   FileText,
+  FolderOpen,
   ListTodo,
   RadioTower,
   Settings2,
@@ -17,6 +18,7 @@ export const navigation = [
   { label: "PLHĐ", href: "/contract", icon: FileStack },
   { label: "Phòng ban", href: "/departments", icon: Building2 },
   { label: "ISSUE", href: "/issues", icon: ListTodo },
+  { label: "Tài liệu", href: "/documents", icon: FolderOpen },
   { label: "Hoạt động", href: "/activity", icon: Activity },
   { label: "Remote Server", href: "/resources", icon: RadioTower },
 ];

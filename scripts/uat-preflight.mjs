@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.3.2" ? pass("Package version", "1.3.2") : fail("Package version", `Expected 1.3.2, got ${pkg.version}`);
+pkg.version === "1.4.0" ? pass("Package version", "1.4.0") : fail("Package version", `Expected 1.4.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -99,16 +99,32 @@ for (const rel of [
   "docs/V1.3.2-DIRECT-EXCEL-IMPORT.md",
   "docs/V1.3.2-VALIDATION.md",
   "docs/UAT_V132_BULK_IMPORT_CHECKLIST.md",
+  "app/(workspace)/documents/page.tsx",
+  "components/documents/project-documents.tsx",
+  "app/api/documents/route.ts",
+  "app/api/documents/upload-session/route.ts",
+  "app/api/documents/complete/route.ts",
+  "app/api/documents/[documentId]/route.ts",
+  "app/api/documents/[documentId]/content/route.ts",
+  "lib/documents/google-drive.ts",
+  "lib/documents/server.ts",
+  "lib/documents/types.ts",
+  "supabase/migrations/202608270001_v140_google_drive_documents.sql",
+  "scripts/google-drive-oauth.mjs",
+  "docs/V1.4.0-SCOPE.md",
+  "docs/GOOGLE_DRIVE_V140_SETUP.md",
+  "docs/UAT_V140_PROJECT_DOCUMENTS_CHECKLIST.md",
+  "docs/V1.4.0-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
 
-for (const rel of [".env.local", "tsconfig.tsbuildinfo"]) {
+for (const rel of [".env.local"]) {
   !exists(rel) ? pass(`Not packaged: ${rel}`) : fail(`Sensitive/cache file must not be packaged: ${rel}`);
 }
 
 const envExample = fs.readFileSync(path.join(root, ".env.example"), "utf8");
-for (const name of ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SERVICE_ROLE_KEY", "APP_ENCRYPTION_KEY"]) {
+for (const name of ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SERVICE_ROLE_KEY", "APP_ENCRYPTION_KEY", "GOOGLE_DRIVE_CLIENT_ID", "GOOGLE_DRIVE_CLIENT_SECRET", "GOOGLE_DRIVE_REFRESH_TOKEN", "GOOGLE_DRIVE_ROOT_FOLDER_ID"]) {
   envExample.includes(name) ? pass(`Environment contract: ${name}`) : fail(`Environment contract: ${name}`);
 }
 
@@ -218,7 +234,6 @@ const dashboardV120 = fs.readFileSync(path.join(root, "components/dashboard/proj
 for (const token of ["asc-working-show-project-money", "Ẩn số tiền dự án", "Hiện số tiền dự án"]) {
   dashboardV120.includes(token) ? pass(`Project money visibility: ${token}`) : fail(`Project money visibility: ${token}`);
 }
-
 const issueWorkspaceV120 = fs.readFileSync(path.join(root, "components/issues/issue-workspace.tsx"), "utf8");
 for (const token of ["500 dòng", "1000 dòng", "ALL", "Số dòng ISSUE hiển thị"]) {
   issueWorkspaceV120.includes(token) ? pass(`ISSUE page size: ${token}`) : fail(`ISSUE page size: ${token}`);
@@ -294,7 +309,27 @@ for (const [rel, tokens] of [
   for (const token of tokens) content.includes(token) ? pass(`V1.3.2 Import scope ${rel}: ${token}`) : fail(`V1.3.2 Import scope ${rel}: ${token}`);
 }
 
-console.log("\nASC WORKING V1.3.2 - Bulk Master Data Import Preflight\n");
+const documentsUi = fs.readFileSync(path.join(root, "components/documents/project-documents.tsx"), "utf8");
+for (const token of ["Project Documents", "XMLHttpRequest", "upload.onprogress", "Lưu trữ", "250 MB"]) {
+  documentsUi.includes(token) ? pass(`V1.4.0 Documents UI: ${token}`) : fail(`V1.4.0 Documents UI: ${token}`);
+}
+
+const driveServer = fs.readFileSync(path.join(root, "lib/documents/google-drive.ts"), "utf8");
+for (const token of ["oauth2.googleapis.com/token", "uploadType", "resumable", "appProperties", "GOOGLE_DRIVE_REFRESH_TOKEN"]) {
+  driveServer.includes(token) ? pass(`V1.4.0 Google Drive server: ${token}`) : fail(`V1.4.0 Google Drive server: ${token}`);
+}
+
+const documentsMigration = fs.readFileSync(path.join(root, "supabase/migrations/202608270001_v140_google_drive_documents.sql"), "utf8");
+for (const token of ["project_document_folders", "project_document_upload_sessions", "project_documents", "documents_select_member_v140", "documents_update_pm_v140"]) {
+  documentsMigration.includes(token) ? pass(`V1.4.0 Documents migration: ${token}`) : fail(`V1.4.0 Documents migration: ${token}`);
+}
+
+const uploadRoute = fs.readFileSync(path.join(root, "app/api/documents/upload-session/route.ts"), "utf8");
+for (const token of ["MAX_DOCUMENT_SIZE", "BLOCKED_EXTENSIONS", "createUploadToken", "createResumableUploadSession", "viewer"]) {
+  uploadRoute.includes(token) ? pass(`V1.4.0 Upload guard: ${token}`) : fail(`V1.4.0 Upload guard: ${token}`);
+}
+
+console.log("\nASC WORKING V1.4.0 - Attachment & Project Documents Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

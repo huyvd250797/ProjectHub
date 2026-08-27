@@ -8,6 +8,7 @@ import {
   Database,
   FileSpreadsheet,
   FileText,
+  FolderOpen,
   KeyRound,
   MonitorCog,
   Palette,
@@ -22,6 +23,7 @@ import { APP_NAME, APP_RELEASE, APP_VERSION_LABEL } from "@/lib/app-meta";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { googleDriveReady } from "@/lib/documents/google-drive";
 
 export const metadata = { title: "System Information" };
 
@@ -37,6 +39,7 @@ export default async function SystemInformationPage() {
   const master = Boolean(supabase && user && await isMasterUser(supabase, user.id));
   const serviceRoleReady = Boolean(createServiceClient());
   const encryptionReady = readyEncryption();
+  const driveReady = googleDriveReady();
 
   let databaseReady = false;
   let databaseDetail = configured ? "Chưa xác nhận query database." : "Supabase chưa được cấu hình.";
@@ -61,10 +64,11 @@ export default async function SystemInformationPage() {
   if (supabase && user) {
     const projectResult = await supabase.from("projects").select("id").limit(1).maybeSingle();
     if (projectResult.data?.id) {
+      const now = new Date();
       const result = await supabase.rpc("get_project_analytics_v120", {
         p_project_id: projectResult.data.id,
-        p_from: new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10),
-        p_to: new Date().toISOString().slice(0, 10),
+        p_from: new Date(now.getTime() - 29 * 86400000).toISOString().slice(0, 10),
+        p_to: now.toISOString().slice(0, 10),
       });
       analyticsReady = !result.error;
       analyticsDetail = result.error ? "Cần migration 202608260002_v120_analytics_health.sql." : "Project Health + trends + risk ranking đã sẵn sàng.";
@@ -110,6 +114,7 @@ export default async function SystemInformationPage() {
     { label: "Service Role", value: serviceRoleReady ? "Ready" : "Missing", detail: "SUPABASE_SERVICE_ROLE_KEY • server-only", ok: serviceRoleReady, icon: KeyRound },
     { label: "Encryption", value: encryptionReady ? "Ready" : "Missing", detail: "APP_ENCRYPTION_KEY • AES-256-GCM Resource Vault", ok: encryptionReady, icon: ServerCog },
     { label: "Excel Import", value: "Production", detail: "Template → Preview → Transaction Apply", ok: configured, icon: FileSpreadsheet },
+    { label: "Project Documents", value: driveReady ? "Google Drive Ready" : "OAuth required", detail: "Resumable upload • private app proxy • project-scoped access", ok: driveReady, icon: FolderOpen },
     { label: "Appearance", value: "Dark / Light", detail: "Preference lưu trên browser; mặc định theo system theme.", ok: true, icon: Palette },
     { label: "Analytics / Health", value: analyticsReady ? "Ready" : "Migration required", detail: analyticsDetail, ok: analyticsReady, icon: BarChart3 },
     { label: "Executive Reports", value: reportsReady ? "Ready" : "Migration required", detail: reportsDetail, ok: reportsReady, icon: FileText },
@@ -159,7 +164,7 @@ export default async function SystemInformationPage() {
           </div>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
             <div className="text-slate-600">Schema baseline</div>
-            <div className="mt-2 font-semibold text-slate-200">Through V1.3.0 migration</div>
+            <div className="mt-2 font-semibold text-slate-200">Through V1.4.0 migration</div>
           </div>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.018] p-4">
             <div className="text-slate-600">Deploy target</div>

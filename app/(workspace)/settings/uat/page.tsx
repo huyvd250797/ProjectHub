@@ -6,7 +6,7 @@ export const metadata = { title: "Hardening & UAT" };
 export default function UatPage() {
   return (
     <>
-      <PageHeader eyebrow="Production Readiness" title="Hardening & UAT" description="Production UAT Center cho ASC WORKING V1.3.2: kiểm tra độ ổn định, security environment, RLS, data quality và regression sau mỗi deployment." />
+      <PageHeader eyebrow="Production Readiness" title="Hardening & UAT" description="Production UAT Center cho ASC WORKING V1.4.0: kiểm tra độ ổn định, security environment, RLS, Google Drive và regression sau mỗi deployment." />
       <UatCenter />
     </>
   );

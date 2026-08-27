@@ -4,6 +4,7 @@ import { securityEnvironmentReady } from "@/lib/resources/server";
 import { getGlobalRole, getEffectiveProjectRole } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { googleDriveReady } from "@/lib/documents/google-drive";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "1.3.2",
+        version: "1.4.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "1.3.2", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "1.4.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -218,6 +219,23 @@ export async function GET(request: NextRequest) {
       : "Thiếu SUPABASE_SERVICE_ROLE_KEY hoặc APP_ENCRYPTION_KEY hợp lệ trên Vercel.",
   ));
 
+  const documentSchema = await timed(async () => supabase
+    .from("project_documents")
+    .select("id", { count: "exact", head: true })
+    .eq("project_id", projectId));
+  const documentSchemaError = documentSchema.error || documentSchema.value?.error;
+  checks.push(check(
+    "project_documents",
+    "Project Documents / Google Drive",
+    documentSchemaError ? "fail" : googleDriveReady() ? "pass" : "warn",
+    documentSchemaError
+      ? "Không đọc được project_documents; chạy migration V1.4.0."
+      : googleDriveReady()
+        ? "Schema tài liệu và Google Drive OAuth đã sẵn sàng."
+        : "Schema đã sẵn sàng nhưng còn thiếu Google Drive OAuth environment.",
+    documentSchema.durationMs,
+  ));
+
   const quality = await timed(async () => Promise.all([
     supabase.from("issues").select("id", { count: "exact", head: true }).eq("project_id", projectId).is("archived_at", null).is("assignee_person_id", null),
     supabase.from("issues").select("id", { count: "exact", head: true }).eq("project_id", projectId).is("archived_at", null).is("module_id", null),
@@ -249,7 +267,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "1.3.2",
+      version: "1.4.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,
