@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEffectiveProjectRole } from "@/lib/access";
-import { isPlanningMigrationMissing, nextPlanningSortOrder, planningOwnerExists, recalculateProjectPlan } from "@/lib/planning/server";
+import { isPlanningMigrationMissing, nextPlanningSortOrder, planningOwnerExists, recalculateProjectPlan, resolveStageDuration } from "@/lib/planning/server";
 import type { PlanningMutationResponse } from "@/lib/planning/types";
 import { parseStageInput } from "@/lib/planning/validation";
 import { createClient } from "@/lib/supabase/server";
@@ -25,6 +25,11 @@ export async function POST(request: NextRequest) {
   if (!await editableProject(supabase, input.projectId, user.id)) return NextResponse.json({ ok: false, code: "FORBIDDEN", message: "Chỉ MASTER, Admin hoặc PM được thêm Project Stage." } satisfies PlanningMutationResponse, { status: 403 });
   if (!await planningOwnerExists(supabase, input.projectId, input.ownerId)) return NextResponse.json({ ok: false, code: "OWNER_INVALID", message: "Người phụ trách không còn thuộc Project.", fieldErrors: { ownerId: "Vui lòng chọn lại thành viên Project." } } satisfies PlanningMutationResponse, { status: 400 });
 
+  let durationDays = input.durationDays;
+  try { durationDays = await resolveStageDuration(supabase, input); }
+  catch (error) { return NextResponse.json({ ok: false, code: "STAGE_SCHEDULE_FAILED", message: error instanceof Error ? error.message : "Không xác định được cách tính ngày của Master Plan." } satisfies PlanningMutationResponse, { status: 500 }); }
+  if (durationDays < 1 || durationDays > 3_650) return NextResponse.json({ ok: false, code: "STAGE_DATE_RANGE_INVALID", message: "Khoảng ngày stage không hợp lệ.", fieldErrors: { endDate: durationDays < 1 ? "Khoảng đã chọn không có ngày làm việc." : "Khoảng ngày tối đa 3.650 ngày theo lịch Master Plan." } } satisfies PlanningMutationResponse, { status: 400 });
+
   let sortOrder = input.sortOrder;
   try { if (sortOrder === null) sortOrder = await nextPlanningSortOrder(supabase, "project_stages", input.projectId); }
   catch (error) { return NextResponse.json({ ok: false, code: "STAGE_SORT_FAILED", message: error instanceof Error ? error.message : "Không xác định được thứ tự stage." } satisfies PlanningMutationResponse, { status: 500 }); }
@@ -34,7 +39,10 @@ export async function POST(request: NextRequest) {
     code: input.code,
     name: input.name,
     description: input.description,
-    duration_days: input.durationDays,
+    duration_days: durationDays,
+    date_mode: input.dateMode,
+    start_date: input.startDate,
+    end_date: input.endDate,
     status: input.status,
     progress: input.progress,
     color: input.color,
@@ -44,7 +52,7 @@ export async function POST(request: NextRequest) {
   if (error) {
     const missing = isPlanningMigrationMissing(error.message);
     const duplicate = error.code === "23505";
-    return NextResponse.json({ ok: false, code: missing ? "V160_MIGRATION_REQUIRED" : duplicate ? "STAGE_CODE_EXISTS" : "STAGE_CREATE_FAILED", message: missing ? "Hãy chạy migration V1.6.0 trước khi tạo stage." : duplicate ? `Mã stage ${input.code} đã tồn tại trong Project.` : `Không tạo được stage: ${error.message}`, fieldErrors: duplicate ? { code: "Mã stage đã tồn tại." } : undefined } satisfies PlanningMutationResponse, { status: missing ? 503 : duplicate ? 409 : 500 });
+    return NextResponse.json({ ok: false, code: missing ? "V161_MIGRATION_REQUIRED" : duplicate ? "STAGE_CODE_EXISTS" : "STAGE_CREATE_FAILED", message: missing ? "Hãy chạy migration V1.6.1 trước khi tạo stage." : duplicate ? `Mã stage ${input.code} đã tồn tại trong Project.` : `Không tạo được stage: ${error.message}`, fieldErrors: duplicate ? { code: "Mã stage đã tồn tại." } : undefined } satisfies PlanningMutationResponse, { status: missing ? 503 : duplicate ? 409 : 500 });
   }
   if (input.recalculate) {
     try { await recalculateProjectPlan(supabase, input.projectId); } catch {}

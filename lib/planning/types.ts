@@ -2,6 +2,7 @@ import type { ProjectRole } from "@/lib/issues/types";
 
 export type PlanSource = "database" | "demo";
 export type PlanScheduleMode = "calendar_days" | "business_days";
+export type ProjectStageDateMode = "auto" | "manual";
 export type MasterPlanStatus = "draft" | "active" | "on_hold" | "completed";
 export type ProjectStageStatus = "not_started" | "in_progress" | "blocked" | "completed";
 export type MilestoneStatus = "pending" | "at_risk" | "completed" | "missed";
@@ -32,6 +33,7 @@ export type ProjectPlanStage = {
   name: string;
   description: string | null;
   durationDays: number;
+  dateMode: ProjectStageDateMode;
   startDate: string | null;
   endDate: string | null;
   status: ProjectStageStatus;
@@ -114,6 +116,9 @@ export type StageInput = {
   name: string;
   description: string | null;
   durationDays: number;
+  dateMode: ProjectStageDateMode;
+  startDate: string | null;
+  endDate: string | null;
   status: ProjectStageStatus;
   progress: number;
   color: string;

@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "1.6.0",
+        version: "1.6.1",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "1.6.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "1.6.1", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
 
   const planningSchema = await timed(async () => Promise.all([
     supabase.from("project_master_plans").select("id,start_date,target_end_date,schedule_mode", { count: "exact", head: true }).eq("project_id", projectId),
-    supabase.from("project_stages").select("id,duration_days,progress,color,owner_person_id", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("project_stages").select("id,duration_days,date_mode,start_date,end_date,progress,color,owner_person_id", { count: "exact", head: true }).eq("project_id", projectId),
     supabase.from("project_milestones").select("id,due_date,status,stage_id", { count: "exact", head: true }).eq("project_id", projectId),
   ]));
   const planningSchemaError = planningSchema.error || planningSchema.value?.find((result) => result.error)?.error;
@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
     "master_plan",
     "Master Plan & Project Stages",
     planningSchemaError ? "fail" : "pass",
-    planningSchemaError ? "Không đọc được dữ liệu kế hoạch; chạy migration V1.6.0." : "Master Plan, stage duration/progress, timeline và milestone đã sẵn sàng.",
+    planningSchemaError ? "Không đọc được dữ liệu kế hoạch; chạy các migration đến V1.6.1." : "Master Plan, khoảng ngày stage thủ công/tự động, timeline và milestone đã sẵn sàng.",
     planningSchema.durationMs,
   ));
 
@@ -294,7 +294,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "1.6.0",
+      version: "1.6.1",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

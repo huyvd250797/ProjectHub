@@ -1,5 +1,25 @@
 # Changelog
 
+## V1.6.1 — Editable Stage Date Ranges
+
+### Added
+
+- Nhập/chỉnh trực tiếp Từ ngày và Đến ngày cho từng Project Stage.
+- Chế độ lịch `manual` và `auto` theo từng stage.
+- Tự tính số ngày inclusive theo calendar days hoặc business days của Master Plan.
+- Nhãn cách lập lịch trên danh sách, roadmap, Gantt và cột CSV export.
+
+### Scheduling safety
+
+- Stage thủ công giữ nguyên khoảng ngày khi đổi thứ tự, đổi cấu hình Master Plan hoặc tính lại timeline.
+- Stage tự động tiếp tục nối lịch sau stage thủ công mà không kéo con trỏ lịch lùi lại khi có overlap.
+- Validation đồng nhất ở UI, API và database: đủ hai ngày, Đến ngày không trước Từ ngày, tối đa 3.650 ngày.
+- RPC V1.6.0 được chuyển tiếp sang scheduler V1.6.1 để client cũ không ghi đè ngày thủ công.
+
+### Database
+
+- Migration mới: `202609030002_v161_stage_date_range.sql`.
+
 ## V1.6.0 — Master Plan & Project Stages
 
 ### Added

@@ -1,4 +1,14 @@
-# ASC WORKING — V1.6.0
+# ASC WORKING — V1.6.1
+
+## V1.6.1 có gì mới?
+
+- Form Project Stage cho phép chọn **Nhập Từ ngày – Đến ngày** hoặc **Tự động theo Master Plan**.
+- Khi nhập ngày thủ công, **Số ngày** được tự tính theo chế độ ngày lịch/ngày làm việc của Master Plan.
+- Khoảng ngày thủ công được khóa và không bị ghi đè khi đổi thứ tự stage, chỉnh Master Plan hoặc bấm **Tính lại lịch**.
+- Các stage tự động phía sau tiếp tục được xếp lịch từ stage thủ công; Timeline, Forecast, tiến độ có trọng số và CSV dùng ngay khoảng ngày mới.
+- Bảng Project Stages và Gantt hiển thị rõ stage **Nhập ngày** / **Tự động**.
+
+Chạy migration V1.6.0 trước, sau đó chạy `supabase/migrations/202609030002_v161_stage_date_range.sql` và UAT theo `docs/UAT_V161_STAGE_DATE_RANGE_CHECKLIST.md`.
 
 ## V1.6.0 có gì mới?
 

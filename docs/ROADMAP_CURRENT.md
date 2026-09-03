@@ -28,9 +28,10 @@
 - ✅ V1.4.0 — Attachment & Project Documents / Google Drive
 - ✅ V1.5.0 — ISSUE Visual Customization & Workspace Layout
 - ✅ V1.6.0 — Master Plan & Project Stages
+- ✅ V1.6.1 — Editable Stage Date Ranges
 
 ## Current
-- **V1.6.0 — Master Plan & Project Stages**
+- **V1.6.1 — Editable Stage Date Ranges**
 
 ## Deferred by product decision
 - Jira Integration / Sync

@@ -47,7 +47,7 @@ export function PlanTimeline({
         <div>
           <CalendarRange className="mx-auto size-8 text-slate-700" />
           <div className="mt-4 text-sm font-semibold text-slate-300">Timeline chưa sẵn sàng</div>
-          <div className="mx-auto mt-2 max-w-md text-xs leading-5 text-slate-600">Thiết lập ngày bắt đầu Master Plan, thêm thời lượng cho Project Stages rồi chọn “Tính lại lịch”.</div>
+          <div className="mx-auto mt-2 max-w-md text-xs leading-5 text-slate-600">Thiết lập ngày bắt đầu Master Plan, thêm thời lượng hoặc khoảng ngày cho Project Stages rồi chọn “Tính lại lịch”.</div>
         </div>
       </div>
     );
@@ -104,7 +104,7 @@ export function PlanTimeline({
                   <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: stage.color, boxShadow: `0 0 14px ${stage.color}55` }} />
                   <div className="min-w-0">
                     <div className="truncate text-xs font-medium text-slate-300">{stage.name}</div>
-                    <div className="mt-1 flex items-center gap-2 text-[9px] text-slate-600"><span>{stage.code}</span><span>•</span><span>{stage.durationDays} ngày</span></div>
+                    <div className="mt-1 flex items-center gap-2 text-[9px] text-slate-600"><span>{stage.code}</span><span>•</span><span>{stage.durationDays} ngày</span>{stage.dateMode === "manual" ? <><span>•</span><span className="text-violet-300/70">Nhập ngày</span></> : null}</div>
                   </div>
                 </div>
                 <div className="relative h-full" style={{ width: trackWidth }}>

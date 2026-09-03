@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { buildPlanSummary } from "@/lib/planning/schedule";
+import { buildPlanSummary, countScheduleDays } from "@/lib/planning/schedule";
 import type {
   MasterPlan,
   MasterPlanStatus,
@@ -9,6 +9,7 @@ import type {
   ProjectPlanData,
   ProjectPlanStage,
   ProjectStageStatus,
+  StageInput,
 } from "@/lib/planning/types";
 import type { ProjectRole } from "@/lib/issues/types";
 
@@ -39,6 +40,10 @@ function stageStatus(value: unknown): ProjectStageStatus {
   return value === "in_progress" || value === "blocked" || value === "completed" ? value : "not_started";
 }
 
+function stageDateMode(value: unknown): ProjectPlanStage["dateMode"] {
+  return value === "manual" ? "manual" : "auto";
+}
+
 function milestoneStatus(value: unknown): MilestoneStatus {
   return value === "at_risk" || value === "completed" || value === "missed" ? value : "pending";
 }
@@ -66,6 +71,7 @@ export function normalizePlanStage(raw: Record<string, unknown>): ProjectPlanSta
     name: String(raw.name ?? ""),
     description: nullableText(raw.description),
     durationDays: Math.max(1, numberValue(raw.duration_days, 1)),
+    dateMode: stageDateMode(raw.date_mode),
     startDate: nullableText(raw.start_date),
     endDate: nullableText(raw.end_date),
     status: stageStatus(raw.status),
@@ -100,7 +106,7 @@ export function normalizeMilestone(raw: Record<string, unknown>): ProjectMilesto
 }
 
 export function isPlanningMigrationMissing(message: string) {
-  return /project_master_plans|project_milestones|duration_days|owner_person_id|recalculate_project_plan_v160|schema cache|does not exist/i.test(message);
+  return /project_master_plans|project_milestones|duration_days|owner_person_id|date_mode|recalculate_project_plan_v16[01]|schema cache|does not exist/i.test(message);
 }
 
 export async function loadProjectPlan(
@@ -117,7 +123,7 @@ export async function loadProjectPlan(
       .maybeSingle(),
     supabase
       .from("project_stages")
-      .select("id,code,name,description,duration_days,start_date,end_date,status,progress,color,owner_person_id,sort_order,created_at,updated_at,owner:people!project_stages_owner_person_id_fkey(id,full_name)")
+      .select("id,code,name,description,duration_days,date_mode,start_date,end_date,status,progress,color,owner_person_id,sort_order,created_at,updated_at,owner:people!project_stages_owner_person_id_fkey(id,full_name)")
       .eq("project_id", projectId)
       .order("sort_order", { ascending: true })
       .order("code", { ascending: true }),
@@ -206,7 +212,23 @@ export async function planningStageExists(supabase: SupabaseClient, projectId: s
   return Boolean(data);
 }
 
+export async function planningScheduleMode(supabase: SupabaseClient, projectId: string): Promise<PlanScheduleMode> {
+  const { data, error } = await supabase
+    .from("project_master_plans")
+    .select("schedule_mode")
+    .eq("project_id", projectId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data?.schedule_mode === "business_days" ? "business_days" : "calendar_days";
+}
+
+export async function resolveStageDuration(supabase: SupabaseClient, input: StageInput) {
+  if (input.dateMode !== "manual" || !input.startDate || !input.endDate) return input.durationDays;
+  const mode = await planningScheduleMode(supabase, input.projectId);
+  return countScheduleDays(input.startDate, input.endDate, mode);
+}
+
 export async function recalculateProjectPlan(supabase: SupabaseClient, projectId: string) {
-  const { error } = await supabase.rpc("recalculate_project_plan_v160", { p_project_id: projectId });
+  const { error } = await supabase.rpc("recalculate_project_plan_v161", { p_project_id: projectId });
   if (error) throw new Error(error.message);
 }

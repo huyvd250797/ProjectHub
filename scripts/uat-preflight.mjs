@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.6.0" ? pass("Package version", "1.6.0") : fail("Package version", `Expected 1.6.0, got ${pkg.version}`);
+pkg.version === "1.6.1" ? pass("Package version", "1.6.1") : fail("Package version", `Expected 1.6.1, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -143,6 +143,11 @@ for (const rel of [
   "docs/MASTER_PLAN_V160_SETUP.md",
   "docs/UAT_V160_MASTER_PLAN_CHECKLIST.md",
   "docs/V1.6.0-VALIDATION.md",
+  "supabase/migrations/202609030002_v161_stage_date_range.sql",
+  "docs/V1.6.1-SCOPE.md",
+  "docs/STAGE_DATE_RANGE_V161_SETUP.md",
+  "docs/UAT_V161_STAGE_DATE_RANGE_CHECKLIST.md",
+  "docs/V1.6.1-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -388,7 +393,7 @@ for (const token of ["Gantt Timeline", "Milestone độc lập", "Hôm nay", "Ta
 }
 
 const planApi = fs.readFileSync(path.join(root, "app/api/plan/route.ts"), "utf8");
-for (const token of ["loadProjectPlan", "parseMasterPlanInput", "recalculateProjectPlan", "V160_MIGRATION_REQUIRED", "Admin hoặc PM"]) {
+for (const token of ["loadProjectPlan", "parseMasterPlanInput", "recalculateProjectPlan", "V161_MIGRATION_REQUIRED", "Admin hoặc PM"]) {
   planApi.includes(token) ? pass(`V1.6.0 Planning API: ${token}`) : fail(`V1.6.0 Planning API: ${token}`);
 }
 
@@ -400,7 +405,22 @@ for (const token of ["project_master_plans", "project_milestones", "duration_day
 const navigationV160 = fs.readFileSync(path.join(root, "lib/navigation.ts"), "utf8");
 navigationV160.includes('/plan') ? pass("V1.6.0 Planning navigation") : fail("V1.6.0 Planning navigation");
 
-console.log("\nASC WORKING V1.6.0 - Master Plan & Project Stages Preflight\n");
+const stageModalV161 = fs.readFileSync(path.join(root, "components/planning/plan-modals.tsx"), "utf8");
+for (const token of ["Từ ngày", "Đến ngày", "ProjectStageDateMode", "countScheduleDays", "Nhập Từ ngày – Đến ngày"]) {
+  stageModalV161.includes(token) ? pass(`V1.6.1 Stage date UI: ${token}`) : fail(`V1.6.1 Stage date UI: ${token}`);
+}
+
+const stageApiV161 = fs.readFileSync(path.join(root, "app/api/plan/stages/[stageId]/route.ts"), "utf8");
+for (const token of ["resolveStageDuration", "date_mode", "start_date", "end_date", "V161_MIGRATION_REQUIRED"]) {
+  stageApiV161.includes(token) ? pass(`V1.6.1 Stage date API: ${token}`) : fail(`V1.6.1 Stage date API: ${token}`);
+}
+
+const stageDateMigrationV161 = fs.readFileSync(path.join(root, "supabase/migrations/202609030002_v161_stage_date_range.sql"), "utf8");
+for (const token of ["date_mode", "plan_duration_between_v161", "validate_project_stage_dates_v161", "recalculate_project_plan_v161", "manualStageCount"]) {
+  stageDateMigrationV161.includes(token) ? pass(`V1.6.1 Stage date migration: ${token}`) : fail(`V1.6.1 Stage date migration: ${token}`);
+}
+
+console.log("\nASC WORKING V1.6.1 - Editable Stage Date Ranges Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

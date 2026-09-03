@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
     const missing = isPlanningMigrationMissing(message);
     return NextResponse.json({
       ok: false,
-      code: missing ? "V160_MIGRATION_REQUIRED" : "PLAN_LOAD_FAILED",
-      message: missing ? "Module Kế hoạch cần chạy migration 202609030001_v160_master_plan_project_stages.sql trên Supabase." : message,
+      code: missing ? "V161_MIGRATION_REQUIRED" : "PLAN_LOAD_FAILED",
+      message: missing ? "Module Kế hoạch cần chạy lần lượt migration V1.6.0 và 202609030002_v161_stage_date_range.sql trên Supabase." : message,
     } satisfies ProjectPlanApiResponse, { status: missing ? 503 : 500 });
   }
 }
@@ -67,7 +67,7 @@ export async function PUT(request: NextRequest) {
 
   if (error) {
     const missing = isPlanningMigrationMissing(error.message);
-    return NextResponse.json({ ok: false, code: missing ? "V160_MIGRATION_REQUIRED" : "MASTER_PLAN_SAVE_FAILED", message: missing ? "Hãy chạy migration V1.6.0 trước khi lưu Master Plan." : `Không lưu được Master Plan: ${error.message}` } satisfies PlanningMutationResponse, { status: missing ? 503 : 500 });
+    return NextResponse.json({ ok: false, code: missing ? "V161_MIGRATION_REQUIRED" : "MASTER_PLAN_SAVE_FAILED", message: missing ? "Hãy chạy các migration Kế hoạch đến V1.6.1 trước khi lưu Master Plan." : `Không lưu được Master Plan: ${error.message}` } satisfies PlanningMutationResponse, { status: missing ? 503 : 500 });
   }
 
   if (input.recalculate) {

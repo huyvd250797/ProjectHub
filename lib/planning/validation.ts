@@ -4,6 +4,7 @@ import type {
   MilestoneInput,
   MilestoneStatus,
   PlanScheduleMode,
+  ProjectStageDateMode,
   ProjectStageStatus,
   StageInput,
 } from "@/lib/planning/types";
@@ -79,6 +80,9 @@ export function parseStageInput(value: unknown): ParseResult<StageInput> {
   const name = requiredText(body.name);
   const description = nullableText(body.description);
   const durationDays = parseNumber(body.durationDays, 0);
+  const dateMode = requiredText(body.dateMode || "auto") as ProjectStageDateMode;
+  const startDate = nullableText(body.startDate);
+  const endDate = nullableText(body.endDate);
   const status = requiredText(body.status) as ProjectStageStatus;
   const progress = parseNumber(body.progress, status === "completed" ? 100 : 0);
   const color = requiredText(body.color).toUpperCase();
@@ -89,7 +93,15 @@ export function parseStageInput(value: unknown): ParseResult<StageInput> {
   if (!/^[A-Z0-9][A-Z0-9._-]{0,39}$/.test(code)) errors.code = "Mã stage gồm chữ, số, dấu chấm, gạch ngang hoặc gạch dưới; tối đa 40 ký tự.";
   if (name.length < 2 || name.length > 160) errors.name = "Tên stage cần từ 2 đến 160 ký tự.";
   if (description && description.length > 1_500) errors.description = "Mô tả tối đa 1.500 ký tự.";
-  if (durationDays < 1 || durationDays > 3_650) errors.durationDays = "Số ngày phải từ 1 đến 3.650.";
+  if (!( ["auto", "manual"] as string[]).includes(dateMode)) errors.dateMode = "Cách lập lịch stage không hợp lệ.";
+  if (dateMode === "auto" && (durationDays < 1 || durationDays > 3_650)) errors.durationDays = "Số ngày phải từ 1 đến 3.650.";
+  if (dateMode === "manual" && (!startDate || !validDate(startDate))) errors.startDate = "Từ ngày không hợp lệ.";
+  if (dateMode === "manual" && (!endDate || !validDate(endDate))) errors.endDate = "Đến ngày không hợp lệ.";
+  if (dateMode === "manual" && startDate && endDate && validDate(startDate) && validDate(endDate) && endDate < startDate) errors.endDate = "Đến ngày phải bằng hoặc sau Từ ngày.";
+  if (dateMode === "manual" && startDate && endDate && validDate(startDate) && validDate(endDate) && endDate >= startDate) {
+    const calendarSpan = Math.round((new Date(`${endDate}T00:00:00.000Z`).getTime() - new Date(`${startDate}T00:00:00.000Z`).getTime()) / 86_400_000) + 1;
+    if (calendarSpan > 5_200) errors.endDate = "Khoảng ngày quá dài; stage hỗ trợ tối đa 3.650 ngày theo lịch Master Plan.";
+  }
   if (!(["not_started", "in_progress", "blocked", "completed"] as string[]).includes(status)) errors.status = "Trạng thái stage không hợp lệ.";
   if (progress < 0 || progress > 100) errors.progress = "Tiến độ phải từ 0 đến 100%.";
   if (!/^#[0-9A-F]{6}$/.test(color)) errors.color = "Màu stage phải ở định dạng #RRGGBB.";
@@ -98,7 +110,7 @@ export function parseStageInput(value: unknown): ParseResult<StageInput> {
 
   return Object.keys(errors).length
     ? { ok: false, errors }
-    : { ok: true, input: { projectId, code, name, description, durationDays, status, progress: status === "completed" ? 100 : progress, color, ownerId, sortOrder, recalculate: body.recalculate !== false } };
+    : { ok: true, input: { projectId, code, name, description, durationDays: dateMode === "manual" ? Math.max(1, durationDays) : durationDays, dateMode, startDate: dateMode === "manual" ? startDate : null, endDate: dateMode === "manual" ? endDate : null, status, progress: status === "completed" ? 100 : progress, color, ownerId, sortOrder, recalculate: body.recalculate !== false } };
 }
 
 export function parseMilestoneInput(value: unknown): ParseResult<MilestoneInput> {

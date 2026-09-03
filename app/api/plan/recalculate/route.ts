@@ -19,10 +19,10 @@ export async function POST(request: NextRequest) {
   if (role !== "admin" && role !== "pm") return NextResponse.json({ ok: false, code: "FORBIDDEN", message: "Chỉ MASTER, Admin hoặc PM được tính lại timeline." } satisfies PlanningMutationResponse, { status: 403 });
   try {
     await recalculateProjectPlan(supabase, projectId);
-    return NextResponse.json({ ok: true, message: "Đã tính lại ngày bắt đầu và kết thúc của toàn bộ stage." } satisfies PlanningMutationResponse);
+    return NextResponse.json({ ok: true, message: "Đã tính lại các stage tự động và giữ nguyên khoảng ngày nhập thủ công." } satisfies PlanningMutationResponse);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Không tính lại được timeline.";
     const missing = isPlanningMigrationMissing(message);
-    return NextResponse.json({ ok: false, code: missing ? "V160_MIGRATION_REQUIRED" : "PLAN_RECALCULATE_FAILED", message: missing ? "Hãy chạy migration V1.6.0 trước khi tính timeline." : message } satisfies PlanningMutationResponse, { status: missing ? 503 : 500 });
+    return NextResponse.json({ ok: false, code: missing ? "V161_MIGRATION_REQUIRED" : "PLAN_RECALCULATE_FAILED", message: missing ? "Hãy chạy migration V1.6.1 trước khi tính timeline." : message } satisfies PlanningMutationResponse, { status: missing ? 503 : 500 });
   }
 }

@@ -1,8 +1,9 @@
 "use client";
 
-import { CalendarClock, Check, Flag, Layers3, LoaderCircle, Save, Target, X } from "lucide-react";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { CalendarClock, CalendarRange, Check, Flag, Layers3, LoaderCircle, Save, Target, X } from "lucide-react";
+import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { ThemedSelect } from "@/components/ui/themed-select";
+import { addScheduleDuration, countScheduleDays } from "@/lib/planning/schedule";
 import type {
   MasterPlan,
   MasterPlanStatus,
@@ -12,6 +13,7 @@ import type {
   PlanningMutationResponse,
   ProjectMilestone,
   ProjectPlanStage,
+  ProjectStageDateMode,
   ProjectStageStatus,
 } from "@/lib/planning/types";
 
@@ -32,6 +34,11 @@ const stageStatusOptions = [
   { value: "in_progress", label: "Đang thực hiện" },
   { value: "blocked", label: "Bị chặn" },
   { value: "completed", label: "Hoàn tất" },
+];
+
+const stageDateModeOptions = [
+  { value: "manual", label: "Nhập Từ ngày – Đến ngày", description: "Giữ cố định khoảng ngày bạn nhập" },
+  { value: "auto", label: "Tự động theo Master Plan", description: "Xếp nối tiếp theo thứ tự và số ngày" },
 ];
 
 const milestoneStatusOptions = [
@@ -155,7 +162,7 @@ export function MasterPlanModal({
         <div><FieldLabel required>Trạng thái kế hoạch</FieldLabel><ThemedSelect value={status} onChange={(value) => setStatus(value as MasterPlanStatus)} options={masterStatusOptions} ariaLabel="Trạng thái Master Plan" /><FieldError message={fieldErrors.status} /></div>
         <div className="md:col-span-2"><FieldLabel>Ghi chú điều hành</FieldLabel><textarea className="field min-h-28 resize-y py-3" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Giả định, ràng buộc, nguyên tắc điều phối..." /><FieldError message={fieldErrors.notes} /></div>
       </div>
-      <div className="mt-5 flex items-start gap-3 rounded-xl border border-cyan-300/10 bg-cyan-300/[0.035] p-4 text-[10px] leading-5 text-slate-500"><Check className="mt-0.5 size-4 shrink-0 text-cyan-300/70" /><span>Khi lưu, hệ thống tự tính lại ngày bắt đầu/kết thúc của các stage theo thứ tự và số ngày đã nhập. Ngày Master Plan cũng đồng bộ sang hồ sơ Project để Dashboard và Analytics sử dụng.</span></div>
+      <div className="mt-5 flex items-start gap-3 rounded-xl border border-cyan-300/10 bg-cyan-300/[0.035] p-4 text-[10px] leading-5 text-slate-500"><Check className="mt-0.5 size-4 shrink-0 text-cyan-300/70" /><span>Khi lưu, hệ thống tính lại các stage ở chế độ tự động nhưng giữ nguyên Từ ngày – Đến ngày đã nhập thủ công. Ngày Master Plan cũng đồng bộ sang hồ sơ Project để Dashboard và Analytics sử dụng.</span></div>
     </ModalShell>
   );
 }
@@ -164,6 +171,8 @@ export function StageModal({
   projectId,
   stage,
   suggestedCode,
+  suggestedStartDate,
+  scheduleMode,
   people,
   onClose,
   onSaved,
@@ -171,6 +180,8 @@ export function StageModal({
   projectId: string;
   stage: ProjectPlanStage | null;
   suggestedCode: string;
+  suggestedStartDate: string;
+  scheduleMode: PlanScheduleMode;
   people: PlanPerson[];
   onClose: () => void;
   onSaved: (message: string) => void;
@@ -178,6 +189,9 @@ export function StageModal({
   const [code, setCode] = useState(stage?.code ?? suggestedCode);
   const [name, setName] = useState(stage?.name ?? "");
   const [description, setDescription] = useState(stage?.description ?? "");
+  const [dateMode, setDateMode] = useState<ProjectStageDateMode>(stage?.dateMode ?? "manual");
+  const [startDate, setStartDate] = useState(stage?.startDate ?? suggestedStartDate);
+  const [endDate, setEndDate] = useState(stage?.endDate ?? (suggestedStartDate ? addScheduleDuration(suggestedStartDate, 5, scheduleMode) : ""));
   const [durationDays, setDurationDays] = useState(String(stage?.durationDays ?? 5));
   const [status, setStatus] = useState<ProjectStageStatus>(stage?.status ?? "not_started");
   const [progress, setProgress] = useState(stage?.progress ?? 0);
@@ -186,15 +200,24 @@ export function StageModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const manualDuration = useMemo(
+    () => dateMode === "manual" ? countScheduleDays(startDate, endDate, scheduleMode) : 0,
+    [dateMode, endDate, scheduleMode, startDate],
+  );
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (dateMode === "manual" && (manualDuration < 1 || manualDuration > 3_650)) {
+      setError("Vui lòng kiểm tra lại khoảng ngày stage.");
+      setFieldErrors({ endDate: manualDuration < 1 ? "Khoảng đã chọn không có ngày làm việc." : "Khoảng ngày tối đa 3.650 ngày theo lịch Master Plan." });
+      return;
+    }
     setSaving(true); setError(""); setFieldErrors({});
     try {
       const result = await readMutation(await fetch(stage ? `/api/plan/stages/${stage.id}` : "/api/plan/stages", {
         method: stage ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, code, name, description, durationDays, status, progress, color, ownerId, sortOrder: stage?.sortOrder ?? null, recalculate: true }),
+        body: JSON.stringify({ projectId, code, name, description, durationDays: dateMode === "manual" ? Math.max(1, manualDuration) : durationDays, dateMode, startDate, endDate, status, progress, color, ownerId, sortOrder: stage?.sortOrder ?? null, recalculate: true }),
       }));
       onSaved(result.message);
     } catch (reason) {
@@ -203,18 +226,24 @@ export function StageModal({
   }
 
   return (
-    <ModalShell eyebrow="Project Stages" title={stage ? `Cập nhật ${stage.code}` : "Thêm Project Stage"} description="Thời lượng được tính từ ngày bắt đầu Master Plan và nối tiếp stage đứng trước." icon={<Layers3 className="size-5" />} saving={saving} onClose={onClose} onSubmit={submit}>
+    <ModalShell eyebrow="Project Stages" title={stage ? `Cập nhật ${stage.code}` : "Thêm Project Stage"} description="Nhập trực tiếp Từ ngày – Đến ngày, hoặc để hệ thống xếp lịch tự động theo Master Plan." icon={<Layers3 className="size-5" />} saving={saving} onClose={onClose} onSubmit={submit}>
       {error ? <div className="mb-5 rounded-xl border border-rose-300/15 bg-rose-300/[0.05] px-4 py-3 text-xs text-rose-200">{error}</div> : null}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <div><FieldLabel required>Mã stage</FieldLabel><input className="field uppercase disabled:cursor-not-allowed disabled:opacity-55" disabled={Boolean(stage)} value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="STAGE-01" /><FieldError message={fieldErrors.code} />{stage ? <div className="mt-1.5 text-[9px] text-slate-600">Mã được khóa để giữ liên kết ISSUE hiện có.</div> : null}</div>
         <div><FieldLabel required>Tên stage</FieldLabel><input className="field" value={name} onChange={(event) => setName(event.target.value)} placeholder="Khảo sát & Phân tích" /><FieldError message={fieldErrors.name} /></div>
         <div className="md:col-span-2"><FieldLabel>Mô tả / đầu ra chính</FieldLabel><textarea className="field min-h-24 resize-y py-3" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Các hoạt động và kết quả cần bàn giao trong stage..." /><FieldError message={fieldErrors.description} /></div>
-        <div><FieldLabel required>Số ngày</FieldLabel><input type="number" min="1" max="3650" className="field" value={durationDays} onChange={(event) => setDurationDays(event.target.value)} /><FieldError message={fieldErrors.durationDays} /><div className="mt-1.5 text-[9px] text-slate-600">Theo cách tính ngày của Master Plan.</div></div>
+        <div className="md:col-span-2"><FieldLabel required>Cách lập lịch stage</FieldLabel><ThemedSelect value={dateMode} onChange={(value) => setDateMode(value as ProjectStageDateMode)} options={stageDateModeOptions} ariaLabel="Cách lập lịch stage" leading={<CalendarRange className="size-3.5" />} /><FieldError message={fieldErrors.dateMode} /></div>
+        <div className="md:col-span-2 grid grid-cols-1 gap-5 md:grid-cols-3">
+          <div><FieldLabel required={dateMode === "manual"}>Từ ngày</FieldLabel><input type="date" required={dateMode === "manual"} disabled={dateMode === "auto"} className="field disabled:cursor-not-allowed disabled:opacity-55" value={startDate} onChange={(event) => { const value = event.target.value; setStartDate(value); if (endDate && value && endDate < value) setEndDate(value); }} /><FieldError message={fieldErrors.startDate} /></div>
+          <div><FieldLabel required={dateMode === "manual"}>Đến ngày</FieldLabel><input type="date" required={dateMode === "manual"} min={startDate || undefined} disabled={dateMode === "auto"} className="field disabled:cursor-not-allowed disabled:opacity-55" value={endDate} onChange={(event) => setEndDate(event.target.value)} /><FieldError message={fieldErrors.endDate} /></div>
+          <div><FieldLabel required>Số ngày</FieldLabel><input type="number" min="1" max="3650" readOnly={dateMode === "manual"} className="field read-only:cursor-default read-only:bg-white/[0.02]" value={dateMode === "manual" ? manualDuration || "" : durationDays} onChange={(event) => setDurationDays(event.target.value)} /><FieldError message={fieldErrors.durationDays} /><div className="mt-1.5 text-[9px] text-slate-600">{dateMode === "manual" ? `Tự tính theo ${scheduleMode === "business_days" ? "ngày làm việc" : "ngày lịch"}.` : "Dùng để xếp lịch tự động."}</div></div>
+        </div>
         <div><FieldLabel>Người phụ trách</FieldLabel><ThemedSelect value={ownerId} onChange={setOwnerId} options={[{ value: "", label: "Chưa phân công" }, ...people]} ariaLabel="Người phụ trách stage" placeholder="Chưa phân công" /><FieldError message={fieldErrors.ownerId} /></div>
         <div><FieldLabel required>Trạng thái</FieldLabel><ThemedSelect value={status} onChange={(value) => { const next = value as ProjectStageStatus; setStatus(next); if (next === "completed") setProgress(100); }} options={stageStatusOptions} ariaLabel="Trạng thái stage" /><FieldError message={fieldErrors.status} /></div>
         <div><FieldLabel required>Tiến độ: {progress}%</FieldLabel><div className="flex h-10 items-center gap-3 rounded-xl border border-white/[0.08] bg-black/10 px-3"><input type="range" min="0" max="100" step="5" value={progress} onChange={(event) => { const value = Number(event.target.value); setProgress(value); if (value === 100) setStatus("completed"); else if (value > 0 && status === "not_started") setStatus("in_progress"); }} className="w-full accent-cyan-300" /><span className="w-9 text-right text-[10px] font-semibold text-slate-300">{progress}%</span></div><FieldError message={fieldErrors.progress} /></div>
         <div className="md:col-span-2"><FieldLabel>Màu Timeline</FieldLabel><div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/[0.07] bg-black/10 p-3">{stageColors.map((item) => <button key={item} type="button" onClick={() => setColor(item)} className="relative size-8 rounded-lg border transition" style={{ backgroundColor: `${item}22`, borderColor: color === item ? item : `${item}55` }} aria-label={`Chọn màu ${item}`}>{color === item ? <Check className="absolute inset-0 m-auto size-4" style={{ color: item }} /> : <span className="absolute inset-2 rounded-full" style={{ backgroundColor: item }} />}</button>)}<input type="color" value={color} onChange={(event) => setColor(event.target.value.toUpperCase())} className="ml-1 size-8 cursor-pointer rounded-lg border-0 bg-transparent p-0" aria-label="Chọn màu tùy chỉnh" /><span className="ml-1 text-[10px] font-medium text-slate-500">{color}</span></div><FieldError message={fieldErrors.color} /></div>
       </div>
+      <div className="mt-5 flex items-start gap-3 rounded-xl border border-cyan-300/10 bg-cyan-300/[0.035] p-4 text-[10px] leading-5 text-slate-500"><CalendarRange className="mt-0.5 size-4 shrink-0 text-cyan-300/70" /><span>{dateMode === "manual" ? "Khoảng ngày thủ công được giữ nguyên khi đổi thứ tự hoặc chọn “Tính lại lịch”. Các stage tự động phía sau sẽ tiếp tục từ ngày kết thúc này." : "Ngày của stage sẽ được tính lại từ Master Plan theo thứ tự stage; bạn chỉ cần nhập số ngày."}</span></div>
     </ModalShell>
   );
 }

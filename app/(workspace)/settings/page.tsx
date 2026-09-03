@@ -47,7 +47,7 @@ export default async function SettingsPage() {
     { label: "Hardening + UAT", text: "Readiness checks + Regression checklist + Security headers", ok: true, icon: ClipboardCheck },
     { label: "Notifications & Activity", text: "Bell inbox + Activity Feed + Due Reminder + Preferences", ok: true, icon: Activity },
     { label: "Project Documents", text: driveReady ? "Google Drive OAuth + private proxy" : "Cần cấu hình Google Drive OAuth", ok: driveReady, icon: FolderOpen },
-    { label: "Master Plan", text: "Project Stages + Timeline + Milestones", ok: true, icon: Map },
+    { label: "Master Plan", text: "Stage Từ ngày–Đến ngày + Timeline + Milestones", ok: true, icon: Map },
   ];
 
   return (
@@ -55,7 +55,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="System Foundation"
         title="Thiết lập Project Workspace"
-        description="ASC WORKING V1.6.0 bổ sung Master Plan, Project Stages theo số ngày, Gantt Timeline, Milestones và tự động tính lịch theo Project."
+        description="ASC WORKING V1.6.1 cho phép nhập/chỉnh Từ ngày – Đến ngày của stage, tự tính số ngày và giữ lịch thủ công khi timeline được tính lại."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -111,7 +111,7 @@ export default async function SettingsPage() {
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/60">Production Tool</div>
           <div className="mt-1 text-sm font-semibold text-slate-200">Hardening & UAT Center</div>
-          <div className="mt-1 text-xs leading-5 text-slate-600">Chạy automated readiness, kiểm tra RLS/schema/security environment và đánh dấu regression testcase cho V1.6.0.</div>
+          <div className="mt-1 text-xs leading-5 text-slate-600">Chạy automated readiness, kiểm tra RLS/schema/security environment và đánh dấu regression testcase cho V1.6.1.</div>
         </div>
         <div className="flex items-center gap-2 text-xs font-medium text-cyan-200/80 md:ml-auto">
           Mở UAT Center <ArrowRight className="size-4" />
@@ -173,8 +173,8 @@ export default async function SettingsPage() {
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Release</div>
         <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-lg font-semibold text-white">ASC WORKING V1.6.0</div>
-            <div className="mt-1 text-xs text-slate-500">Master Plan & Project Stages</div>
+            <div className="text-lg font-semibold text-white">ASC WORKING V1.6.1</div>
+            <div className="mt-1 text-xs text-slate-500">Editable Stage Date Ranges</div>
           </div>
           <span className="w-fit rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200">
             Production Ready

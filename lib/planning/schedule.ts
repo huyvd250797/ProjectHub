@@ -53,6 +53,24 @@ export function nextScheduleDate(endDate: string, mode: PlanScheduleMode) {
   return formatDateOnly(mode === "business_days" ? nextBusinessDate(cursor) : cursor);
 }
 
+export function countScheduleDays(startDate: string, endDate: string, mode: PlanScheduleMode) {
+  if (!startDate || !endDate || endDate < startDate) return 0;
+  const start = parseDateOnly(startDate);
+  const end = parseDateOnly(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
+
+  const totalDays = Math.floor((end.getTime() - start.getTime()) / DAY_MS) + 1;
+  if (mode !== "business_days") return totalDays;
+
+  let counted = Math.floor(totalDays / 7) * 5;
+  const remainder = totalDays % 7;
+  for (let offset = 0; offset < remainder; offset += 1) {
+    const weekday = (start.getUTCDay() + offset) % 7;
+    if (weekday !== 0 && weekday !== 6) counted += 1;
+  }
+  return counted;
+}
+
 export function calculateSequentialSchedule(
   startDate: string,
   mode: PlanScheduleMode,
@@ -62,6 +80,11 @@ export function calculateSequentialSchedule(
   return [...stages]
     .sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code, "vi"))
     .map((stage) => {
+      if (stage.dateMode === "manual" && stage.startDate && stage.endDate) {
+        const durationDays = countScheduleDays(stage.startDate, stage.endDate, mode);
+        if (stage.endDate >= cursor) cursor = nextScheduleDate(stage.endDate, mode);
+        return { ...stage, durationDays: Math.max(1, durationDays) };
+      }
       const endDate = addScheduleDuration(cursor, stage.durationDays, mode);
       const scheduled = { ...stage, startDate: cursor, endDate };
       cursor = nextScheduleDate(endDate, mode);
