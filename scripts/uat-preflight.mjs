@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.6.1" ? pass("Package version", "1.6.1") : fail("Package version", `Expected 1.6.1, got ${pkg.version}`);
+pkg.version === "1.7.0" ? pass("Package version", "1.7.0") : fail("Package version", `Expected 1.7.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -148,6 +148,15 @@ for (const rel of [
   "docs/STAGE_DATE_RANGE_V161_SETUP.md",
   "docs/UAT_V161_STAGE_DATE_RANGE_CHECKLIST.md",
   "docs/V1.6.1-VALIDATION.md",
+  "app/api/plan/tasks/route.ts",
+  "app/api/plan/tasks/[taskId]/route.ts",
+  "app/api/plan/checklist/route.ts",
+  "app/api/plan/checklist/[itemId]/route.ts",
+  "supabase/migrations/202609030003_v170_plan_execution_tracking.sql",
+  "docs/V1.7.0-SCOPE.md",
+  "docs/PLAN_EXECUTION_TRACKING_V170_SETUP.md",
+  "docs/UAT_V170_PLAN_EXECUTION_TRACKING_CHECKLIST.md",
+  "docs/V1.7.0-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -420,7 +429,36 @@ for (const token of ["date_mode", "plan_duration_between_v161", "validate_projec
   stageDateMigrationV161.includes(token) ? pass(`V1.6.1 Stage date migration: ${token}`) : fail(`V1.6.1 Stage date migration: ${token}`);
 }
 
-console.log("\nASC WORKING V1.6.1 - Editable Stage Date Ranges Preflight\n");
+for (const token of ["Execution Tasks", "MilestoneChecklistBlock", "PlanTaskModal", "executionProgress", "Task Rủi ro"]) {
+  planWorkspace.includes(token) ? pass(`V1.7.0 Execution UI: ${token}`) : fail(`V1.7.0 Execution UI: ${token}`);
+}
+
+const planTypesV170 = fs.readFileSync(path.join(root, "lib/planning/types.ts"), "utf8");
+for (const token of ["ProjectPlanTask", "MilestoneChecklistItem", "PlanTaskStatus", "PlanTaskPriority", "executionProgress"]) {
+  planTypesV170.includes(token) ? pass(`V1.7.0 Execution types: ${token}`) : fail(`V1.7.0 Execution types: ${token}`);
+}
+
+const planServerV170 = fs.readFileSync(path.join(root, "lib/planning/server.ts"), "utf8");
+for (const token of ["normalizePlanTask", "normalizeChecklistItem", "project_plan_tasks", "project_milestone_checklist_items", "nextPlanTaskSortOrder"]) {
+  planServerV170.includes(token) ? pass(`V1.7.0 Execution server: ${token}`) : fail(`V1.7.0 Execution server: ${token}`);
+}
+
+const taskApiV170 = fs.readFileSync(path.join(root, "app/api/plan/tasks/route.ts"), "utf8");
+for (const token of ["parsePlanTaskInput", "project_plan_tasks", "completed_at", "V170_MIGRATION_REQUIRED"]) {
+  taskApiV170.includes(token) ? pass(`V1.7.0 Task API: ${token}`) : fail(`V1.7.0 Task API: ${token}`);
+}
+
+const checklistApiV170 = fs.readFileSync(path.join(root, "app/api/plan/checklist/route.ts"), "utf8");
+for (const token of ["parseMilestoneChecklistInput", "project_milestone_checklist_items", "completed_at", "V170_MIGRATION_REQUIRED"]) {
+  checklistApiV170.includes(token) ? pass(`V1.7.0 Checklist API: ${token}`) : fail(`V1.7.0 Checklist API: ${token}`);
+}
+
+const executionMigrationV170 = fs.readFileSync(path.join(root, "supabase/migrations/202609030003_v170_plan_execution_tracking.sql"), "utf8");
+for (const token of ["project_plan_tasks", "project_milestone_checklist_items", "validate_project_plan_task_v170", "validate_milestone_checklist_v170", "capture_plan_execution_activity_v170"]) {
+  executionMigrationV170.includes(token) ? pass(`V1.7.0 Execution migration: ${token}`) : fail(`V1.7.0 Execution migration: ${token}`);
+}
+
+console.log("\nASC WORKING V1.7.0 - Plan Execution & Tracking Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

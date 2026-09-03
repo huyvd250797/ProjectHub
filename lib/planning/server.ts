@@ -3,10 +3,14 @@ import { buildPlanSummary, countScheduleDays } from "@/lib/planning/schedule";
 import type {
   MasterPlan,
   MasterPlanStatus,
+  MilestoneChecklistItem,
   MilestoneStatus,
+  PlanTaskPriority,
+  PlanTaskStatus,
   PlanScheduleMode,
   ProjectMilestone,
   ProjectPlanData,
+  ProjectPlanTask,
   ProjectPlanStage,
   ProjectStageStatus,
   StageInput,
@@ -46,6 +50,14 @@ function stageDateMode(value: unknown): ProjectPlanStage["dateMode"] {
 
 function milestoneStatus(value: unknown): MilestoneStatus {
   return value === "at_risk" || value === "completed" || value === "missed" ? value : "pending";
+}
+
+function taskStatus(value: unknown): PlanTaskStatus {
+  return value === "doing" || value === "blocked" || value === "done" ? value : "todo";
+}
+
+function taskPriority(value: unknown): PlanTaskPriority {
+  return value === "low" || value === "high" || value === "critical" ? value : "medium";
 }
 
 export function normalizeMasterPlan(raw: Record<string, unknown>): MasterPlan {
@@ -105,8 +117,44 @@ export function normalizeMilestone(raw: Record<string, unknown>): ProjectMilesto
   };
 }
 
+export function normalizePlanTask(raw: Record<string, unknown>): ProjectPlanTask {
+  const stage = relation(raw.stage);
+  const owner = relation(raw.owner);
+  return {
+    id: String(raw.id ?? ""),
+    title: String(raw.title ?? ""),
+    description: nullableText(raw.description),
+    stageId: nullableText(raw.stage_id),
+    stageName: nullableText(stage?.name),
+    status: taskStatus(raw.status),
+    priority: taskPriority(raw.priority),
+    dueDate: nullableText(raw.due_date),
+    completedAt: nullableText(raw.completed_at),
+    ownerId: nullableText(raw.owner_person_id),
+    ownerName: nullableText(owner?.full_name),
+    sortOrder: numberValue(raw.sort_order),
+    createdAt: String(raw.created_at ?? ""),
+    updatedAt: String(raw.updated_at ?? ""),
+  };
+}
+
+export function normalizeChecklistItem(raw: Record<string, unknown>): MilestoneChecklistItem {
+  const milestone = relation(raw.milestone);
+  return {
+    id: String(raw.id ?? ""),
+    milestoneId: String(raw.milestone_id ?? ""),
+    milestoneTitle: nullableText(milestone?.title),
+    title: String(raw.title ?? ""),
+    isDone: Boolean(raw.is_done),
+    sortOrder: numberValue(raw.sort_order),
+    completedAt: nullableText(raw.completed_at),
+    createdAt: String(raw.created_at ?? ""),
+    updatedAt: String(raw.updated_at ?? ""),
+  };
+}
+
 export function isPlanningMigrationMissing(message: string) {
-  return /project_master_plans|project_milestones|duration_days|owner_person_id|date_mode|recalculate_project_plan_v16[01]|schema cache|does not exist/i.test(message);
+  return /project_master_plans|project_milestones|project_plan_tasks|project_milestone_checklist_items|duration_days|owner_person_id|date_mode|recalculate_project_plan_v16[01]|schema cache|does not exist/i.test(message);
 }
 
 export async function loadProjectPlan(
@@ -114,7 +162,7 @@ export async function loadProjectPlan(
   projectId: string,
   role: ProjectRole,
 ): Promise<ProjectPlanData> {
-  const [projectResult, masterResult, stageResult, milestoneResult, peopleResult] = await Promise.all([
+  const [projectResult, masterResult, stageResult, milestoneResult, taskResult, checklistResult, peopleResult] = await Promise.all([
     supabase.from("projects").select("code").eq("id", projectId).maybeSingle(),
     supabase
       .from("project_master_plans")
@@ -134,6 +182,18 @@ export async function loadProjectPlan(
       .order("due_date", { ascending: true })
       .order("sort_order", { ascending: true }),
     supabase
+      .from("project_plan_tasks")
+      .select("id,title,description,stage_id,status,priority,due_date,completed_at,owner_person_id,sort_order,created_at,updated_at,stage:project_stages!project_plan_tasks_stage_id_fkey(id,name),owner:people!project_plan_tasks_owner_person_id_fkey(id,full_name)")
+      .eq("project_id", projectId)
+      .order("due_date", { ascending: true, nullsFirst: false })
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("project_milestone_checklist_items")
+      .select("id,milestone_id,title,is_done,sort_order,completed_at,created_at,updated_at,milestone:project_milestones!project_milestone_checklist_items_milestone_id_fkey(id,title)")
+      .eq("project_id", projectId)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+    supabase
       .from("people")
       .select("id,full_name,title,project_role,email")
       .eq("project_id", projectId)
@@ -149,6 +209,8 @@ export async function loadProjectPlan(
   const masterPlan = masterResult.data ? normalizeMasterPlan(masterResult.data as unknown as Record<string, unknown>) : null;
   const stages = ((stageResult.data ?? []) as unknown as Array<Record<string, unknown>>).map(normalizePlanStage);
   const milestones = ((milestoneResult.data ?? []) as unknown as Array<Record<string, unknown>>).map(normalizeMilestone);
+  const tasks = ((taskResult.data ?? []) as unknown as Array<Record<string, unknown>>).map(normalizePlanTask);
+  const checklistItems = ((checklistResult.data ?? []) as unknown as Array<Record<string, unknown>>).map(normalizeChecklistItem);
 
   return {
     source: "database",
@@ -159,6 +221,8 @@ export async function loadProjectPlan(
     masterPlan,
     stages,
     milestones,
+    tasks,
+    checklistItems,
     people: ((peopleResult.data ?? []) as unknown as Array<Record<string, unknown>>).map((person) => ({
       value: String(person.id),
       label: String(person.full_name ?? "Thành viên"),
@@ -167,7 +231,7 @@ export async function loadProjectPlan(
         .map(String)
         .join(" • ") || null,
     })),
-    summary: buildPlanSummary(masterPlan, stages, milestones),
+    summary: buildPlanSummary(masterPlan, stages, milestones, tasks, checklistItems),
     generatedAt: new Date().toISOString(),
   };
 }
@@ -181,6 +245,32 @@ export async function nextPlanningSortOrder(
     .from(table)
     .select("sort_order")
     .eq("project_id", projectId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return numberValue(data?.sort_order) + 10;
+}
+
+export async function nextPlanTaskSortOrder(supabase: SupabaseClient, projectId: string, stageId: string | null) {
+  let query = supabase
+    .from("project_plan_tasks")
+    .select("sort_order")
+    .eq("project_id", projectId)
+    .order("sort_order", { ascending: false })
+    .limit(1);
+  query = stageId ? query.eq("stage_id", stageId) : query.is("stage_id", null);
+  const { data, error } = await query.maybeSingle();
+  if (error) throw new Error(error.message);
+  return numberValue(data?.sort_order) + 10;
+}
+
+export async function nextChecklistSortOrder(supabase: SupabaseClient, projectId: string, milestoneId: string) {
+  const { data, error } = await supabase
+    .from("project_milestone_checklist_items")
+    .select("sort_order")
+    .eq("project_id", projectId)
+    .eq("milestone_id", milestoneId)
     .order("sort_order", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -207,6 +297,17 @@ export async function planningStageExists(supabase: SupabaseClient, projectId: s
     .from("project_stages")
     .select("id")
     .eq("id", stageId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+  return Boolean(data);
+}
+
+export async function planningMilestoneExists(supabase: SupabaseClient, projectId: string, milestoneId: string | null) {
+  if (!milestoneId) return false;
+  const { data } = await supabase
+    .from("project_milestones")
+    .select("id")
+    .eq("id", milestoneId)
     .eq("project_id", projectId)
     .maybeSingle();
   return Boolean(data);

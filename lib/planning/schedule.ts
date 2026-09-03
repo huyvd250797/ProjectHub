@@ -2,7 +2,9 @@ import type {
   MasterPlan,
   PlanScheduleMode,
   PlanSummary,
+  MilestoneChecklistItem,
   ProjectMilestone,
+  ProjectPlanTask,
   ProjectPlanStage,
 } from "@/lib/planning/types";
 
@@ -96,6 +98,8 @@ export function buildPlanSummary(
   masterPlan: MasterPlan | null,
   stages: ProjectPlanStage[],
   milestones: ProjectMilestone[],
+  tasks: ProjectPlanTask[] = [],
+  checklistItems: MilestoneChecklistItem[] = [],
   today = new Date().toISOString().slice(0, 10),
 ): PlanSummary {
   const totalDurationDays = stages.reduce((total, stage) => total + Math.max(1, stage.durationDays), 0);
@@ -112,13 +116,30 @@ export function buildPlanSummary(
     .filter((milestone) => milestone.status !== "completed")
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.sortOrder - b.sortOrder);
   const overdueMilestones = openMilestones.filter((milestone) => milestone.dueDate < today).length;
+  const openTasks = tasks
+    .filter((task) => task.status !== "done")
+    .sort((a, b) => (a.dueDate ?? "9999-12-31").localeCompare(b.dueDate ?? "9999-12-31") || a.sortOrder - b.sortOrder);
+  const todayDate = parseDateOnly(today);
+  const dueSoonLimit = new Date(todayDate);
+  dueSoonLimit.setUTCDate(todayDate.getUTCDate() + 7);
+  const dueSoonDate = formatDateOnly(dueSoonLimit);
+  const overdueTasks = openTasks.filter((task) => task.dueDate && task.dueDate < today).length;
+  const dueSoonTasks = openTasks.filter((task) => task.dueDate && task.dueDate >= today && task.dueDate <= dueSoonDate).length;
+  const completedTasks = tasks.filter((task) => task.status === "done").length;
+  const blockedTasks = tasks.filter((task) => task.status === "blocked").length;
+  const completedChecklistItems = checklistItems.filter((item) => item.isDone).length;
+  const taskProgress = tasks.length ? Math.round((completedTasks / tasks.length) * 100) : overallProgress;
+  const checklistProgress = checklistItems.length ? Math.round((completedChecklistItems / checklistItems.length) * 100) : taskProgress;
+  const executionProgress = tasks.length || checklistItems.length
+    ? Math.round((taskProgress + checklistProgress + overallProgress) / 3)
+    : overallProgress;
   const blocked = stages.some((stage) => stage.status === "blocked");
 
   let health: PlanSummary["health"] = "no_plan";
   if (masterPlan?.status === "completed") health = "completed";
   else if (masterPlan) {
     if ((varianceDays !== null && varianceDays > 0) || (masterPlan.targetEndDate && masterPlan.targetEndDate < today && overallProgress < 100)) health = "late";
-    else if (blocked || overdueMilestones > 0 || milestones.some((milestone) => milestone.status === "at_risk")) health = "at_risk";
+    else if (blocked || blockedTasks > 0 || overdueTasks > 0 || overdueMilestones > 0 || milestones.some((milestone) => milestone.status === "at_risk")) health = "at_risk";
     else health = "on_track";
   }
 
@@ -133,6 +154,15 @@ export function buildPlanSummary(
     milestoneCount: milestones.length,
     overdueMilestones,
     nextMilestone: openMilestones[0] ?? null,
+    taskCount: tasks.length,
+    completedTasks,
+    blockedTasks,
+    overdueTasks,
+    dueSoonTasks,
+    nextTask: openTasks[0] ?? null,
+    checklistCount: checklistItems.length,
+    completedChecklistItems,
+    executionProgress,
     health,
   };
 }

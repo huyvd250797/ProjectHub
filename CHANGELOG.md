@@ -1,5 +1,23 @@
 # Changelog
 
+## V1.7.0 — Plan Execution & Tracking
+
+### Added
+
+- Execution Tasks cho module Plan, gắn vào Project Stage hoặc để độc lập.
+- Trạng thái task: `todo`, `doing`, `blocked`, `done`; ưu tiên: `low`, `medium`, `high`, `critical`.
+- Milestone Checklist để chia nhỏ điều kiện nghiệm thu theo từng milestone.
+- Execution Dashboard: tiến độ thực thi, task done, task sắp hạn, task quá hạn/bị chặn và checklist completion.
+- API CRUD mới cho `/api/plan/tasks` và `/api/plan/checklist`.
+- Export CSV bổ sung phần Execution Tasks và Milestone Checklist.
+
+### Database
+
+- Migration mới: `202609030003_v170_plan_execution_tracking.sql`.
+- Bảng mới: `project_plan_tasks`, `project_milestone_checklist_items`.
+- RLS theo Project member, ghi dữ liệu chỉ dành cho MASTER/Admin/PM.
+- Trigger validate stage/milestone/owner cùng Project, tự quản lý `completed_at` và Activity Center.
+
 ## V1.6.1 — Editable Stage Date Ranges
 
 ### Added

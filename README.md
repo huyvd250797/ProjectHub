@@ -1,4 +1,16 @@
-# ASC WORKING — V1.6.1
+# ASC WORKING — V1.7.0
+
+## V1.7.0 có gì mới?
+
+- Module Plan chuyển từ lập lịch sang **theo dõi thực thi** với Execution Tasks theo từng stage.
+- Task có deadline, trạng thái, ưu tiên, người phụ trách, mô tả và thao tác Done nhanh.
+- Dashboard Plan có thêm Execution Progress, task sắp hạn, task quá hạn, task bị chặn và checklist nghiệm thu.
+- Milestone có **checklist điều kiện hoàn thành**, tick/sửa/xóa từng dòng ngay trong màn Milestones.
+- Health của kế hoạch tính thêm task bị chặn/quá hạn bên cạnh stage/milestone.
+- Export CSV bổ sung Execution Tasks và Milestone Checklist.
+- Demo Mode có dữ liệu task/checklist mẫu để kiểm UI ngay cả khi chưa kết nối Supabase.
+
+Chạy migration V1.6.0, V1.6.1 trước, sau đó chạy `supabase/migrations/202609030003_v170_plan_execution_tracking.sql` và UAT theo `docs/UAT_V170_PLAN_EXECUTION_TRACKING_CHECKLIST.md`.
 
 ## V1.6.1 có gì mới?
 

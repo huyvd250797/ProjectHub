@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
     const missing = isPlanningMigrationMissing(message);
     return NextResponse.json({
       ok: false,
-      code: missing ? "V161_MIGRATION_REQUIRED" : "PLAN_LOAD_FAILED",
-      message: missing ? "Module Kế hoạch cần chạy lần lượt migration V1.6.0 và 202609030002_v161_stage_date_range.sql trên Supabase." : message,
+      code: missing ? "V170_MIGRATION_REQUIRED" : "PLAN_LOAD_FAILED",
+      message: missing ? "Module Kế hoạch cần chạy lần lượt migration V1.6.0, V1.6.1 và 202609030003_v170_plan_execution_tracking.sql trên Supabase." : message,
     } satisfies ProjectPlanApiResponse, { status: missing ? 503 : 500 });
   }
 }

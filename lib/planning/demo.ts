@@ -1,5 +1,5 @@
 import { buildPlanSummary, calculateSequentialSchedule, formatDateOnly } from "@/lib/planning/schedule";
-import type { MasterPlan, ProjectMilestone, ProjectPlanData, ProjectPlanStage } from "@/lib/planning/types";
+import type { MasterPlan, MilestoneChecklistItem, ProjectMilestone, ProjectPlanData, ProjectPlanStage, ProjectPlanTask } from "@/lib/planning/types";
 
 function offsetDate(days: number) {
   const date = new Date();
@@ -40,6 +40,20 @@ export function createDemoPlan(projectId: string, projectCode = "DEMO"): Project
     { id: "demo-milestone-5", title: "Nghiệm thu tổng thể", description: "Hoàn tất toàn bộ hồ sơ nghiệm thu dự án.", dueDate: stages[4].endDate as string, status: "pending", stageId: stages[4].id, stageName: stages[4].name, ownerId: "demo-person-1", ownerName: "Võ Đức Huy", sortOrder: 50, completedAt: null, createdAt: now, updatedAt: now },
   ];
 
+  const tasks: ProjectPlanTask[] = [
+    { id: "demo-task-1", title: "Chốt biên bản kick-off", description: "Gửi lại biên bản họp và xác nhận đầu mối hai bên.", stageId: stages[0].id, stageName: stages[0].name, status: "done", priority: "medium", dueDate: stages[0].endDate, completedAt: stages[0].endDate, ownerId: "demo-person-1", ownerName: "Võ Đức Huy", sortOrder: 10, createdAt: now, updatedAt: now },
+    { id: "demo-task-2", title: "Tổng hợp gap nghiệp vụ", description: "Nhóm yêu cầu theo module và mức ảnh hưởng để chuyển sang development.", stageId: stages[1].id, stageName: stages[1].name, status: "done", priority: "high", dueDate: stages[1].endDate, completedAt: stages[1].endDate, ownerId: "demo-person-2", ownerName: "Nguyễn Đức Huy", sortOrder: 20, createdAt: now, updatedAt: now },
+    { id: "demo-task-3", title: "Hoàn tất build UAT", description: "Đóng gói các chỉnh sửa chính và chuẩn bị dữ liệu kiểm thử.", stageId: stages[2].id, stageName: stages[2].name, status: "doing", priority: "critical", dueDate: offsetDate(5), completedAt: null, ownerId: "demo-person-1", ownerName: "Võ Đức Huy", sortOrder: 30, createdAt: now, updatedAt: now },
+    { id: "demo-task-4", title: "Xử lý blocker tích hợp", description: "Làm rõ lỗi đồng bộ dữ liệu trước khi mở UAT chính thức.", stageId: stages[2].id, stageName: stages[2].name, status: "blocked", priority: "critical", dueDate: offsetDate(-1), completedAt: null, ownerId: "demo-person-1", ownerName: "Võ Đức Huy", sortOrder: 40, createdAt: now, updatedAt: now },
+    { id: "demo-task-5", title: "Soạn checklist UAT", description: "Chuẩn bị testcase trọng yếu theo từng phân hệ.", stageId: stages[3].id, stageName: stages[3].name, status: "todo", priority: "high", dueDate: stages[3].startDate, completedAt: null, ownerId: "demo-person-3", ownerName: "Lê Minh Anh", sortOrder: 50, createdAt: now, updatedAt: now },
+  ];
+
+  const checklistItems: MilestoneChecklistItem[] = [
+    { id: "demo-checklist-1", milestoneId: milestones[2].id, milestoneTitle: milestones[2].title, title: "Build UAT đã deploy", isDone: true, sortOrder: 10, completedAt: now, createdAt: now, updatedAt: now },
+    { id: "demo-checklist-2", milestoneId: milestones[2].id, milestoneTitle: milestones[2].title, title: "Data test đã được xác nhận", isDone: false, sortOrder: 20, completedAt: null, createdAt: now, updatedAt: now },
+    { id: "demo-checklist-3", milestoneId: milestones[3].id, milestoneTitle: milestones[3].title, title: "Biên bản Go-live được duyệt", isDone: false, sortOrder: 10, completedAt: null, createdAt: now, updatedAt: now },
+  ];
+
   return {
     source: "demo",
     projectId,
@@ -49,12 +63,14 @@ export function createDemoPlan(projectId: string, projectCode = "DEMO"): Project
     masterPlan,
     stages,
     milestones,
+    tasks,
+    checklistItems,
     people: [
       { value: "demo-person-1", label: "Võ Đức Huy", description: "PM • ASC" },
       { value: "demo-person-2", label: "Nguyễn Đức Huy", description: "Business Analyst • ASC" },
       { value: "demo-person-3", label: "Lê Minh Anh", description: "Consultant • ASC" },
     ],
-    summary: buildPlanSummary(masterPlan, stages, milestones),
+    summary: buildPlanSummary(masterPlan, stages, milestones, tasks, checklistItems),
     generatedAt: now,
   };
 }

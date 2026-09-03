@@ -7,8 +7,10 @@ import {
   CalendarCheck,
   CalendarClock,
   CalendarDays,
+  CheckSquare2,
   CheckCircle2,
   CircleDot,
+  ClipboardList,
   Clock3,
   Download,
   Edit3,
@@ -29,7 +31,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { useProject } from "@/components/project-context";
-import { MasterPlanModal, MilestoneModal, StageModal } from "@/components/planning/plan-modals";
+import { MasterPlanModal, MilestoneChecklistModal, MilestoneModal, PlanTaskModal, StageModal } from "@/components/planning/plan-modals";
 import { PlanTimeline } from "@/components/planning/plan-timeline";
 import { nextScheduleDate, normalizeScheduleStart, parseDateOnly } from "@/lib/planning/schedule";
 import type {
@@ -38,10 +40,12 @@ import type {
   ProjectPlanApiResponse,
   ProjectPlanData,
   ProjectPlanStage,
+  ProjectPlanTask,
+  MilestoneChecklistItem,
 } from "@/lib/planning/types";
 import { cn } from "@/lib/utils";
 
-type ViewMode = "overview" | "timeline" | "stages" | "milestones";
+type ViewMode = "overview" | "timeline" | "stages" | "tasks" | "milestones";
 
 const planStatusMeta = {
   draft: { label: "Bản nháp", tone: "border-slate-300/15 bg-slate-300/[0.05] text-slate-300" },
@@ -62,6 +66,20 @@ const milestoneStatusMeta = {
   at_risk: { label: "Có rủi ro", tone: "border-amber-300/18 bg-amber-300/[0.06] text-amber-200", icon: AlertTriangle },
   completed: { label: "Hoàn tất", tone: "border-emerald-300/18 bg-emerald-300/[0.06] text-emerald-200", icon: CheckCircle2 },
   missed: { label: "Không đạt", tone: "border-rose-300/18 bg-rose-300/[0.06] text-rose-200", icon: AlertTriangle },
+} as const;
+
+const taskStatusMeta = {
+  todo: { label: "Chưa làm", tone: "border-white/[0.08] bg-white/[0.025] text-slate-400", dot: "bg-slate-500" },
+  doing: { label: "Đang làm", tone: "border-cyan-300/16 bg-cyan-300/[0.06] text-cyan-200", dot: "bg-cyan-300" },
+  blocked: { label: "Bị chặn", tone: "border-rose-300/16 bg-rose-300/[0.06] text-rose-200", dot: "bg-rose-400" },
+  done: { label: "Hoàn tất", tone: "border-emerald-300/16 bg-emerald-300/[0.06] text-emerald-200", dot: "bg-emerald-400" },
+} as const;
+
+const taskPriorityMeta = {
+  low: { label: "Thấp", tone: "border-slate-300/12 bg-slate-300/[0.04] text-slate-400" },
+  medium: { label: "Trung bình", tone: "border-cyan-300/12 bg-cyan-300/[0.04] text-cyan-200" },
+  high: { label: "Cao", tone: "border-amber-300/14 bg-amber-300/[0.05] text-amber-200" },
+  critical: { label: "Khẩn cấp", tone: "border-rose-300/16 bg-rose-300/[0.06] text-rose-200" },
 } as const;
 
 const healthMeta = {
@@ -102,6 +120,14 @@ function exportPlan(data: ProjectPlanData) {
     ["MILESTONES"],
     ["Tên milestone", "Ngày", "Trạng thái", "Stage", "Phụ trách", "Mô tả"],
     ...data.milestones.map((milestone) => [milestone.title, milestone.dueDate, milestoneStatusMeta[milestone.status].label, milestone.stageName ?? "", milestone.ownerName ?? "", milestone.description ?? ""]),
+    [],
+    ["EXECUTION TASKS"],
+    ["Tên task", "Stage", "Deadline", "Trạng thái", "Ưu tiên", "Phụ trách", "Mô tả"],
+    ...data.tasks.map((task) => [task.title, task.stageName ?? "", task.dueDate ?? "", taskStatusMeta[task.status].label, taskPriorityMeta[task.priority].label, task.ownerName ?? "", task.description ?? ""]),
+    [],
+    ["MILESTONE CHECKLIST"],
+    ["Milestone", "Checklist", "Hoàn tất"],
+    ...data.checklistItems.map((item) => [item.milestoneTitle ?? "", item.title, item.isDone ? "Done" : "Open"]),
   ];
   const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
@@ -130,6 +156,83 @@ function StageRoadmap({ stages }: { stages: ProjectPlanStage[] }) {
   );
 }
 
+function TaskRow({
+  task,
+  canEdit,
+  action,
+  onEdit,
+  onDelete,
+  onDone,
+}: {
+  task: ProjectPlanTask;
+  canEdit: boolean;
+  action: string;
+  onEdit: (task: ProjectPlanTask) => void;
+  onDelete: (task: ProjectPlanTask) => void;
+  onDone: (task: ProjectPlanTask) => void;
+}) {
+  const status = taskStatusMeta[task.status];
+  const priority = taskPriorityMeta[task.priority];
+  const overdue = task.status !== "done" && task.dueDate && task.dueDate < new Date().toISOString().slice(0, 10);
+  return (
+    <div className="flex flex-col gap-3 border-b border-white/[0.045] px-4 py-4 hover:bg-white/[0.018] md:flex-row md:items-center">
+      <div className={cn("mt-1 size-2.5 shrink-0 rounded-full", status.dot)} />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-slate-300">{task.title}</span>
+          <span className={cn("rounded-md border px-2 py-1 text-[8px]", status.tone)}>{status.label}</span>
+          <span className={cn("rounded-md border px-2 py-1 text-[8px]", priority.tone)}>{priority.label}</span>
+          {overdue ? <span className="rounded-md border border-rose-300/15 bg-rose-300/[0.05] px-2 py-1 text-[8px] font-semibold uppercase text-rose-200">Quá hạn</span> : null}
+        </div>
+        {task.description ? <div className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-600">{task.description}</div> : null}
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[9px] text-slate-600">
+          <span className="flex items-center gap-1.5"><Layers3 className="size-3" /> {task.stageName || "Task độc lập"}</span>
+          <span className="flex items-center gap-1.5"><CalendarDays className="size-3" /> {displayDate(task.dueDate)}</span>
+          <span className="flex items-center gap-1.5"><UserRound className="size-3" /> {task.ownerName || "Chưa phân công"}</span>
+        </div>
+      </div>
+      {canEdit ? <div className="flex shrink-0 gap-2">{task.status !== "done" ? <button type="button" disabled={action === `done-task-${task.id}`} onClick={() => onDone(task)} className="flex h-8 items-center gap-1.5 rounded-lg border border-emerald-300/12 bg-emerald-300/[0.04] px-2.5 text-[9px] text-emerald-200 hover:bg-emerald-300/[0.08]">{action === `done-task-${task.id}` ? <LoaderCircle className="size-3 animate-spin" /> : <CheckCircle2 className="size-3" />} Done</button> : null}<button type="button" onClick={() => onEdit(task)} className="grid size-8 place-items-center rounded-lg border border-white/[0.07] text-slate-500 hover:text-cyan-200"><Edit3 className="size-3.5" /></button><button type="button" disabled={action === `delete-task-${task.id}`} onClick={() => onDelete(task)} className="grid size-8 place-items-center rounded-lg border border-rose-300/10 text-slate-600 hover:text-rose-200">{action === `delete-task-${task.id}` ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}</button></div> : null}
+    </div>
+  );
+}
+
+function MilestoneChecklistBlock({
+  milestone,
+  items,
+  canEdit,
+  action,
+  onAdd,
+  onEdit,
+  onToggle,
+  onDelete,
+}: {
+  milestone: ProjectMilestone;
+  items: MilestoneChecklistItem[];
+  canEdit: boolean;
+  action: string;
+  onAdd: (milestoneId: string) => void;
+  onEdit: (item: MilestoneChecklistItem) => void;
+  onToggle: (item: MilestoneChecklistItem) => void;
+  onDelete: (item: MilestoneChecklistItem) => void;
+}) {
+  return (
+    <div className="mt-3 rounded-xl border border-white/[0.055] bg-black/10 p-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-600">Checklist nghiệm thu</div>
+        {canEdit ? <button type="button" onClick={() => onAdd(milestone.id)} className="text-[9px] text-amber-300/75 hover:text-amber-200">Thêm checklist</button> : null}
+      </div>
+      <div className="space-y-1.5">
+        {items.map((item) => <div key={item.id} className="flex items-center gap-2 rounded-lg border border-white/[0.04] bg-white/[0.014] px-2.5 py-2">
+          <button type="button" disabled={!canEdit || action === `toggle-checklist-${item.id}`} onClick={() => onToggle(item)} className={cn("grid size-5 shrink-0 place-items-center rounded-md border", item.isDone ? "border-emerald-300/20 bg-emerald-300/[0.08] text-emerald-200" : "border-white/[0.08] text-slate-700", !canEdit && "cursor-default")} aria-label={item.isDone ? "Bỏ hoàn tất" : "Đánh dấu hoàn tất"}>{action === `toggle-checklist-${item.id}` ? <LoaderCircle className="size-3 animate-spin" /> : item.isDone ? <CheckCircle2 className="size-3" /> : null}</button>
+          <span className={cn("min-w-0 flex-1 text-[10px]", item.isDone ? "text-slate-600 line-through" : "text-slate-400")}>{item.title}</span>
+          {canEdit ? <><button type="button" onClick={() => onEdit(item)} className="grid size-6 place-items-center rounded-md text-slate-600 hover:text-cyan-200"><Edit3 className="size-3" /></button><button type="button" disabled={action === `delete-checklist-${item.id}`} onClick={() => onDelete(item)} className="grid size-6 place-items-center rounded-md text-slate-700 hover:text-rose-200">{action === `delete-checklist-${item.id}` ? <LoaderCircle className="size-3 animate-spin" /> : <Trash2 className="size-3" />}</button></> : null}
+        </div>)}
+        {!items.length ? <div className="rounded-lg border border-dashed border-white/[0.06] px-3 py-4 text-center text-[10px] text-slate-600">Chưa có checklist cho milestone này.</div> : null}
+      </div>
+    </div>
+  );
+}
+
 export function PlanWorkspace() {
   const { selectedProject } = useProject();
   const [view, setView] = useState<ViewMode>("overview");
@@ -141,6 +244,8 @@ export function PlanWorkspace() {
   const [masterOpen, setMasterOpen] = useState(false);
   const [stageEditor, setStageEditor] = useState<ProjectPlanStage | null | undefined>(undefined);
   const [milestoneEditor, setMilestoneEditor] = useState<ProjectMilestone | null | undefined>(undefined);
+  const [taskEditor, setTaskEditor] = useState<ProjectPlanTask | null | undefined>(undefined);
+  const [checklistEditor, setChecklistEditor] = useState<{ item: MilestoneChecklistItem | null; milestoneId: string } | null>(null);
 
   const loadPlan = useCallback(async () => {
     setLoading(true); setError("");
@@ -158,6 +263,7 @@ export function PlanWorkspace() {
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       setView("overview"); setNotice(""); setMasterOpen(false); setStageEditor(undefined); setMilestoneEditor(undefined);
+      setTaskEditor(undefined); setChecklistEditor(null);
       void loadPlan();
     });
     return () => window.cancelAnimationFrame(frame);
@@ -180,6 +286,14 @@ export function PlanWorkspace() {
 
   const currentStage = data?.stages.find((stage) => stage.status === "blocked") ?? data?.stages.find((stage) => stage.status === "in_progress") ?? data?.stages.find((stage) => stage.status === "not_started") ?? null;
   const health = data ? healthMeta[data.summary.health] : healthMeta.no_plan;
+  const defaultTaskStage = currentStage ?? data?.stages[0] ?? null;
+  const upcomingTasks = useMemo(
+    () => [...(data?.tasks ?? [])]
+      .filter((task) => task.status !== "done")
+      .sort((a, b) => (a.dueDate ?? "9999-12-31").localeCompare(b.dueDate ?? "9999-12-31") || a.sortOrder - b.sortOrder)
+      .slice(0, 6),
+    [data?.tasks],
+  );
 
   async function mutation(url: string, options: RequestInit, key: string) {
     setAction(key); setError(""); setNotice("");
@@ -195,7 +309,7 @@ export function PlanWorkspace() {
   }
 
   function saved(message: string) {
-    setMasterOpen(false); setStageEditor(undefined); setMilestoneEditor(undefined); setNotice(message); void loadPlan();
+    setMasterOpen(false); setStageEditor(undefined); setMilestoneEditor(undefined); setTaskEditor(undefined); setChecklistEditor(null); setNotice(message); void loadPlan();
   }
 
   async function recalculate() {
@@ -229,6 +343,32 @@ export function PlanWorkspace() {
     }, `complete-milestone-${milestone.id}`);
   }
 
+  async function completeTask(task: ProjectPlanTask) {
+    await mutation(`/api/plan/tasks/${task.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId: selectedProject.id, title: task.title, description: task.description, stageId: task.stageId, status: "done", priority: task.priority, dueDate: task.dueDate, ownerId: task.ownerId, sortOrder: task.sortOrder }),
+    }, `done-task-${task.id}`);
+  }
+
+  async function deleteTask(task: ProjectPlanTask) {
+    if (!window.confirm(`Xóa task “${task.title}”?`)) return;
+    await mutation(`/api/plan/tasks/${task.id}?projectId=${encodeURIComponent(selectedProject.id)}`, { method: "DELETE" }, `delete-task-${task.id}`);
+  }
+
+  async function toggleChecklist(item: MilestoneChecklistItem) {
+    await mutation(`/api/plan/checklist/${item.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId: selectedProject.id, milestoneId: item.milestoneId, title: item.title, isDone: !item.isDone, sortOrder: item.sortOrder }),
+    }, `toggle-checklist-${item.id}`);
+  }
+
+  async function deleteChecklist(item: MilestoneChecklistItem) {
+    if (!window.confirm(`Xóa checklist “${item.title}”?`)) return;
+    await mutation(`/api/plan/checklist/${item.id}?projectId=${encodeURIComponent(selectedProject.id)}`, { method: "DELETE" }, `delete-checklist-${item.id}`);
+  }
+
   return (
     <>
       <PageHeader
@@ -245,7 +385,7 @@ export function PlanWorkspace() {
 
       {error ? <div className="mb-4 rounded-xl border border-rose-300/15 bg-rose-300/[0.05] px-4 py-3 text-xs text-rose-200">{error}</div> : null}
       {notice ? <div className="mb-4 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.05] px-4 py-3 text-xs text-emerald-200">{notice}</div> : null}
-      {data?.source === "demo" ? <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-300/15 bg-amber-300/[0.045] px-4 py-3 text-xs leading-5 text-amber-100/80"><Sparkles className="mt-0.5 size-4 shrink-0" /><span>Demo Mode đang hiển thị một kế hoạch mẫu hoàn chỉnh. Kết nối Supabase và chạy các migration Kế hoạch đến V1.6.1 để tạo dữ liệu thật.</span></div> : null}
+      {data?.source === "demo" ? <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-300/15 bg-amber-300/[0.045] px-4 py-3 text-xs leading-5 text-amber-100/80"><Sparkles className="mt-0.5 size-4 shrink-0" /><span>Demo Mode đang hiển thị một kế hoạch mẫu hoàn chỉnh. Kết nối Supabase và chạy các migration Kế hoạch đến V1.7.0 để tạo dữ liệu thật.</span></div> : null}
 
       {loading ? <div className="grid min-h-[460px] place-items-center"><div className="text-center"><LoaderCircle className="mx-auto size-7 animate-spin text-cyan-300" /><div className="mt-3 text-xs text-slate-600">Đang tải Master Plan...</div></div></div> : null}
 
@@ -257,6 +397,7 @@ export function PlanWorkspace() {
                 ["overview", "Tổng quan", Map, null],
                 ["timeline", "Timeline", CalendarDays, null],
                 ["stages", "Project Stages", Layers3, data.stages.length],
+                ["tasks", "Execution Tasks", ClipboardList, data.tasks.length],
                 ["milestones", "Milestones", Flag, data.milestones.length],
               ] as const).map(([value, label, Icon, count]) => <button key={value} type="button" onClick={() => setView(value)} className={cn("flex h-9 shrink-0 items-center gap-2 rounded-xl border px-3 text-[10px] transition", view === value ? "border-cyan-300/16 bg-cyan-300/[0.075] text-cyan-100" : "border-transparent text-slate-500 hover:bg-white/[0.03] hover:text-slate-300")}><Icon className="size-3.5" /> {label}{count !== null ? <span className="rounded-md bg-white/[0.05] px-1.5 py-0.5 text-[8px]">{count}</span> : null}</button>)}
             </div>
@@ -276,6 +417,13 @@ export function PlanWorkspace() {
                     <MetricCard label="Milestone" value={`${data.summary.completedMilestones}/${data.summary.milestoneCount}`} note={data.summary.overdueMilestones ? `${data.summary.overdueMilestones} milestone quá hạn` : "Không có milestone quá hạn"} icon={Flag} tone={data.summary.overdueMilestones ? "rose" : "amber"} />
                   </section>
 
+                  <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                    <MetricCard label="Execution" value={`${data.summary.executionProgress}%`} note="Tổng hợp stage, task và checklist" icon={ClipboardList} tone="cyan" />
+                    <MetricCard label="Task Done" value={`${data.summary.completedTasks}/${data.summary.taskCount}`} note={data.summary.dueSoonTasks ? `${data.summary.dueSoonTasks} task đến hạn trong 7 ngày` : "Không có task sắp hạn"} icon={CheckSquare2} tone="emerald" />
+                    <MetricCard label="Task Rủi ro" value={`${data.summary.overdueTasks + data.summary.blockedTasks}`} note={`${data.summary.overdueTasks} quá hạn • ${data.summary.blockedTasks} bị chặn`} icon={AlertTriangle} tone={data.summary.overdueTasks || data.summary.blockedTasks ? "rose" : "emerald"} />
+                    <MetricCard label="Checklist" value={`${data.summary.completedChecklistItems}/${data.summary.checklistCount}`} note="Điều kiện nghiệm thu milestone" icon={CheckCircle2} tone="amber" />
+                  </section>
+
                   <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.25fr_.75fr]">
                     <div className="tech-panel rounded-2xl p-5 md:p-6">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/65">Master Plan</div><h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-white">{data.masterPlan.title}</h2><p className="mt-2 max-w-2xl text-xs leading-5 text-slate-500">{data.masterPlan.objective || "Chưa khai báo mục tiêu tổng thể."}</p></div><span className={cn("shrink-0 rounded-xl border px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.12em]", planStatusMeta[data.masterPlan.status].tone)}>{planStatusMeta[data.masterPlan.status].label}</span></div>
@@ -293,12 +441,18 @@ export function PlanWorkspace() {
                       <div className="tech-panel rounded-2xl p-5"><div className="flex items-start justify-between"><div><div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Schedule Health</div><div className="mt-2 text-lg font-semibold text-white">{health.label}</div><div className="mt-1 text-[10px] text-slate-500">{health.note}</div></div><div className={cn("grid size-11 place-items-center rounded-xl border", health.tone)}>{data.summary.health === "on_track" || data.summary.health === "completed" ? <CheckCircle2 className="size-5" /> : <AlertTriangle className="size-5" />}</div></div></div>
                       <div className="tech-panel rounded-2xl p-5"><div className="flex items-center justify-between"><div><div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Stage hiện tại</div><div className="mt-2 text-sm font-semibold text-white">{currentStage?.name ?? "Không có stage đang mở"}</div></div><CircleDot className="size-5 text-cyan-300/65" /></div>{currentStage ? <><div className="mt-3 flex flex-wrap gap-2 text-[9px] text-slate-600"><span>{currentStage.code}</span><span>•</span><span>{currentStage.ownerName || "Chưa phân công"}</span><span>•</span><span>{currentStage.progress}%</span></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.055]"><div className="h-full rounded-full" style={{ width: `${currentStage.progress}%`, backgroundColor: currentStage.color }} /></div></> : null}</div>
                       <div className="tech-panel rounded-2xl p-5"><div className="flex items-center justify-between"><div><div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Milestone tiếp theo</div><div className="mt-2 text-sm font-semibold text-white">{data.summary.nextMilestone?.title ?? "Chưa có milestone mở"}</div></div><Flag className="size-5 text-amber-300/65" /></div>{data.summary.nextMilestone ? <div className="mt-3 text-[10px] text-slate-500">{displayDate(data.summary.nextMilestone.dueDate)} • {data.summary.nextMilestone.ownerName || "Chưa phân công"}</div> : null}</div>
+                      <div className="tech-panel rounded-2xl p-5"><div className="flex items-center justify-between"><div><div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Task tiếp theo</div><div className="mt-2 text-sm font-semibold text-white">{data.summary.nextTask?.title ?? "Chưa có task đang mở"}</div></div><ClipboardList className="size-5 text-cyan-300/65" /></div>{data.summary.nextTask ? <div className="mt-3 text-[10px] text-slate-500">{displayDate(data.summary.nextTask.dueDate)} • {data.summary.nextTask.ownerName || "Chưa phân công"}</div> : null}</div>
                     </div>
                   </section>
 
                   <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.15fr_.85fr]">
                     <div className="tech-panel rounded-2xl p-5 md:p-6"><div className="mb-5 flex items-center justify-between"><div><div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Delivery Roadmap</div><h3 className="mt-1.5 text-sm font-semibold text-white">Luồng Project Stages</h3></div><button type="button" onClick={() => setView("stages")} className="text-[10px] text-cyan-300/70 hover:text-cyan-200">Quản lý stage →</button></div><StageRoadmap stages={data.stages} /></div>
                     <div className="tech-panel rounded-2xl p-5 md:p-6"><div className="mb-5 flex items-center justify-between"><div><div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Upcoming Milestones</div><h3 className="mt-1.5 text-sm font-semibold text-white">Mốc sắp tới</h3></div><button type="button" onClick={() => setView("milestones")} className="text-[10px] text-amber-300/70 hover:text-amber-200">Xem tất cả →</button></div><div className="space-y-2.5">{data.milestones.filter((item) => item.status !== "completed").slice(0, 6).map((milestone) => { const meta = milestoneStatusMeta[milestone.status]; const Icon = meta.icon; return <div key={milestone.id} className="flex items-start gap-3 rounded-xl border border-white/[0.055] bg-white/[0.018] p-3"><div className={cn("grid size-8 shrink-0 place-items-center rounded-lg border", meta.tone)}><Icon className="size-3.5" /></div><div className="min-w-0 flex-1"><div className="truncate text-xs font-medium text-slate-300">{milestone.title}</div><div className="mt-1 text-[9px] text-slate-600">{displayDate(milestone.dueDate)} • {milestone.stageName || "Milestone độc lập"}</div></div></div>; })}{!data.milestones.some((item) => item.status !== "completed") ? <div className="rounded-xl border border-dashed border-white/[0.08] p-8 text-center text-xs text-slate-600">Chưa có milestone đang mở.</div> : null}</div></div>
+                  </section>
+
+                  <section className="tech-panel rounded-2xl p-5 md:p-6">
+                    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Execution Queue</div><h3 className="mt-1.5 text-sm font-semibold text-white">Task cần theo dõi gần nhất</h3></div>{data.canEdit ? <button type="button" onClick={() => setTaskEditor(null)} className="flex h-9 items-center gap-2 rounded-xl border border-cyan-300/18 bg-cyan-300/[0.075] px-3 text-[10px] text-cyan-100"><Plus className="size-3.5" /> Thêm task</button> : null}</div>
+                    <div className="-mx-4 -mb-4">{upcomingTasks.map((task) => <TaskRow key={task.id} task={task} canEdit={data.canEdit} action={action} onEdit={setTaskEditor} onDelete={(item) => void deleteTask(item)} onDone={(item) => void completeTask(item)} />)}{!upcomingTasks.length ? <div className="rounded-xl border border-dashed border-white/[0.08] p-8 text-center text-xs text-slate-600">Chưa có task đang mở.</div> : null}</div>
                   </section>
                 </>
               )}
@@ -314,10 +468,17 @@ export function PlanWorkspace() {
             </div>
           ) : null}
 
+          {view === "tasks" ? (
+            <div className="tech-panel overflow-hidden rounded-2xl">
+              <div className="flex flex-col gap-3 border-b border-white/[0.07] p-4 md:flex-row md:items-center md:justify-between"><div><div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Execution Tasks</div><h2 className="mt-1.5 text-sm font-semibold text-white">Task thực thi theo stage</h2><p className="mt-1 text-[10px] text-slate-600">Theo dõi deadline, ưu tiên, người phụ trách và trạng thái từng đầu việc trong kế hoạch.</p></div>{data.canEdit ? <button type="button" onClick={() => setTaskEditor(null)} className="flex h-9 items-center gap-2 rounded-xl border border-cyan-300/18 bg-cyan-300/[0.075] px-3 text-[10px] text-cyan-100"><Plus className="size-3.5" /> Thêm task</button> : null}</div>
+              {data.tasks.length ? <div>{data.tasks.map((task) => <TaskRow key={task.id} task={task} canEdit={data.canEdit} action={action} onEdit={setTaskEditor} onDelete={(item) => void deleteTask(item)} onDone={(item) => void completeTask(item)} />)}</div> : <div className="grid min-h-72 place-items-center px-6 text-center"><div><ClipboardList className="mx-auto size-7 text-slate-700" /><div className="mt-3 text-sm font-medium text-slate-300">Chưa có Execution Task</div><div className="mt-1 text-xs text-slate-600">Thêm task nhỏ để bám tiến độ từng stage.</div>{data.canEdit ? <button type="button" onClick={() => setTaskEditor(null)} className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl border border-cyan-300/18 bg-cyan-300/[0.07] px-3 text-[10px] text-cyan-100"><Plus className="size-3.5" /> Thêm task đầu tiên</button> : null}</div></div>}
+            </div>
+          ) : null}
+
           {view === "milestones" ? (
             <div className="tech-panel overflow-hidden rounded-2xl">
               <div className="flex flex-col gap-3 border-b border-white/[0.07] p-4 md:flex-row md:items-center md:justify-between"><div><div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Milestones</div><h2 className="mt-1.5 text-sm font-semibold text-white">Mốc bàn giao & phê duyệt</h2><p className="mt-1 text-[10px] text-slate-600">Theo dõi các quyết định và đầu ra quan trọng của dự án.</p></div>{data.canEdit ? <button type="button" onClick={() => setMilestoneEditor(null)} className="flex h-9 items-center gap-2 rounded-xl border border-amber-300/18 bg-amber-300/[0.06] px-3 text-[10px] text-amber-100"><Plus className="size-3.5" /> Thêm milestone</button> : null}</div>
-              {data.milestones.length ? <div>{data.milestones.map((milestone) => { const meta = milestoneStatusMeta[milestone.status]; const Icon = meta.icon; const overdue = milestone.status !== "completed" && milestone.dueDate < new Date().toISOString().slice(0, 10); return <div key={milestone.id} className="flex flex-col gap-4 border-b border-white/[0.045] px-4 py-4 hover:bg-white/[0.018] md:flex-row md:items-center"><div className={cn("grid size-10 shrink-0 place-items-center rounded-xl border", overdue ? "border-rose-300/18 bg-rose-300/[0.06] text-rose-200" : meta.tone)}><Icon className="size-4" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-medium text-slate-300">{milestone.title}</span>{overdue ? <span className="rounded-md border border-rose-300/15 bg-rose-300/[0.05] px-2 py-1 text-[8px] font-semibold uppercase text-rose-200">Quá hạn</span> : <span className={cn("rounded-md border px-2 py-1 text-[8px]", meta.tone)}>{meta.label}</span>}</div>{milestone.description ? <div className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-600">{milestone.description}</div> : null}<div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[9px] text-slate-600"><span className="flex items-center gap-1.5"><CalendarDays className="size-3" /> {displayDate(milestone.dueDate)}</span><span className="flex items-center gap-1.5"><Layers3 className="size-3" /> {milestone.stageName || "Milestone độc lập"}</span><span className="flex items-center gap-1.5"><UserRound className="size-3" /> {milestone.ownerName || "Chưa phân công"}</span></div></div>{data.canEdit ? <div className="flex shrink-0 gap-2">{milestone.status !== "completed" ? <button type="button" disabled={action === `complete-milestone-${milestone.id}`} onClick={() => void completeMilestone(milestone)} className="flex h-8 items-center gap-1.5 rounded-lg border border-emerald-300/12 bg-emerald-300/[0.04] px-2.5 text-[9px] text-emerald-200 hover:bg-emerald-300/[0.08]">{action === `complete-milestone-${milestone.id}` ? <LoaderCircle className="size-3 animate-spin" /> : <CheckCircle2 className="size-3" />} Hoàn tất</button> : null}<button type="button" onClick={() => setMilestoneEditor(milestone)} className="grid size-8 place-items-center rounded-lg border border-white/[0.07] text-slate-500 hover:text-cyan-200"><Edit3 className="size-3.5" /></button><button type="button" disabled={action === `delete-milestone-${milestone.id}`} onClick={() => void deleteMilestone(milestone)} className="grid size-8 place-items-center rounded-lg border border-rose-300/10 text-slate-600 hover:text-rose-200">{action === `delete-milestone-${milestone.id}` ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}</button></div> : null}</div>; })}</div> : <div className="grid min-h-72 place-items-center px-6 text-center"><div><Flag className="mx-auto size-7 text-slate-700" /><div className="mt-3 text-sm font-medium text-slate-300">Chưa có Milestone</div><div className="mt-1 text-xs text-slate-600">Thêm các mốc bàn giao, phê duyệt hoặc Go-live quan trọng.</div>{data.canEdit ? <button type="button" onClick={() => setMilestoneEditor(null)} className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl border border-amber-300/18 bg-amber-300/[0.06] px-3 text-[10px] text-amber-100"><Plus className="size-3.5" /> Thêm milestone đầu tiên</button> : null}</div></div>}
+              {data.milestones.length ? <div>{data.milestones.map((milestone) => { const meta = milestoneStatusMeta[milestone.status]; const Icon = meta.icon; const overdue = milestone.status !== "completed" && milestone.dueDate < new Date().toISOString().slice(0, 10); const checklistItems = data.checklistItems.filter((item) => item.milestoneId === milestone.id); return <div key={milestone.id} className="flex flex-col gap-4 border-b border-white/[0.045] px-4 py-4 hover:bg-white/[0.018] md:flex-row md:items-start"><div className={cn("grid size-10 shrink-0 place-items-center rounded-xl border", overdue ? "border-rose-300/18 bg-rose-300/[0.06] text-rose-200" : meta.tone)}><Icon className="size-4" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-medium text-slate-300">{milestone.title}</span>{overdue ? <span className="rounded-md border border-rose-300/15 bg-rose-300/[0.05] px-2 py-1 text-[8px] font-semibold uppercase text-rose-200">Quá hạn</span> : <span className={cn("rounded-md border px-2 py-1 text-[8px]", meta.tone)}>{meta.label}</span>}</div>{milestone.description ? <div className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-600">{milestone.description}</div> : null}<div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[9px] text-slate-600"><span className="flex items-center gap-1.5"><CalendarDays className="size-3" /> {displayDate(milestone.dueDate)}</span><span className="flex items-center gap-1.5"><Layers3 className="size-3" /> {milestone.stageName || "Milestone độc lập"}</span><span className="flex items-center gap-1.5"><UserRound className="size-3" /> {milestone.ownerName || "Chưa phân công"}</span></div><MilestoneChecklistBlock milestone={milestone} items={checklistItems} canEdit={data.canEdit} action={action} onAdd={(id) => setChecklistEditor({ item: null, milestoneId: id })} onEdit={(item) => setChecklistEditor({ item, milestoneId: item.milestoneId })} onToggle={(item) => void toggleChecklist(item)} onDelete={(item) => void deleteChecklist(item)} /></div>{data.canEdit ? <div className="flex shrink-0 gap-2">{milestone.status !== "completed" ? <button type="button" disabled={action === `complete-milestone-${milestone.id}`} onClick={() => void completeMilestone(milestone)} className="flex h-8 items-center gap-1.5 rounded-lg border border-emerald-300/12 bg-emerald-300/[0.04] px-2.5 text-[9px] text-emerald-200 hover:bg-emerald-300/[0.08]">{action === `complete-milestone-${milestone.id}` ? <LoaderCircle className="size-3 animate-spin" /> : <CheckCircle2 className="size-3" />} Hoàn tất</button> : null}<button type="button" onClick={() => setMilestoneEditor(milestone)} className="grid size-8 place-items-center rounded-lg border border-white/[0.07] text-slate-500 hover:text-cyan-200"><Edit3 className="size-3.5" /></button><button type="button" disabled={action === `delete-milestone-${milestone.id}`} onClick={() => void deleteMilestone(milestone)} className="grid size-8 place-items-center rounded-lg border border-rose-300/10 text-slate-600 hover:text-rose-200">{action === `delete-milestone-${milestone.id}` ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}</button></div> : null}</div>; })}</div> : <div className="grid min-h-72 place-items-center px-6 text-center"><div><Flag className="mx-auto size-7 text-slate-700" /><div className="mt-3 text-sm font-medium text-slate-300">Chưa có Milestone</div><div className="mt-1 text-xs text-slate-600">Thêm các mốc bàn giao, phê duyệt hoặc Go-live quan trọng.</div>{data.canEdit ? <button type="button" onClick={() => setMilestoneEditor(null)} className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl border border-amber-300/18 bg-amber-300/[0.06] px-3 text-[10px] text-amber-100"><Plus className="size-3.5" /> Thêm milestone đầu tiên</button> : null}</div></div>}
             </div>
           ) : null}
         </div>
@@ -326,6 +487,8 @@ export function PlanWorkspace() {
       {masterOpen && data ? <MasterPlanModal projectId={selectedProject.id} projectName={selectedProject.code} plan={data.masterPlan} onClose={() => setMasterOpen(false)} onSaved={saved} /> : null}
       {stageEditor !== undefined && data ? <StageModal projectId={selectedProject.id} stage={stageEditor} suggestedCode={suggestedStageCode} suggestedStartDate={suggestedStageStart} scheduleMode={data.masterPlan?.scheduleMode ?? "calendar_days"} people={data.people} onClose={() => setStageEditor(undefined)} onSaved={saved} /> : null}
       {milestoneEditor !== undefined && data ? <MilestoneModal projectId={selectedProject.id} milestone={milestoneEditor} defaultDate={data.masterPlan?.targetEndDate ?? data.summary.forecastEndDate ?? new Date().toISOString().slice(0, 10)} stages={data.stages} people={data.people} onClose={() => setMilestoneEditor(undefined)} onSaved={saved} /> : null}
+      {taskEditor !== undefined && data ? <PlanTaskModal projectId={selectedProject.id} task={taskEditor} defaultStageId={defaultTaskStage?.id ?? ""} defaultDueDate={defaultTaskStage?.endDate ?? data.summary.forecastEndDate ?? ""} stages={data.stages} people={data.people} onClose={() => setTaskEditor(undefined)} onSaved={saved} /> : null}
+      {checklistEditor && data ? <MilestoneChecklistModal projectId={selectedProject.id} item={checklistEditor.item} milestoneId={checklistEditor.milestoneId} milestones={data.milestones} onClose={() => setChecklistEditor(null)} onSaved={saved} /> : null}
     </>
   );
 }

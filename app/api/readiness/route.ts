@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "1.6.1",
+        version: "1.7.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "1.6.1", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "1.7.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -175,13 +175,17 @@ export async function GET(request: NextRequest) {
     supabase.from("project_master_plans").select("id,start_date,target_end_date,schedule_mode", { count: "exact", head: true }).eq("project_id", projectId),
     supabase.from("project_stages").select("id,duration_days,date_mode,start_date,end_date,progress,color,owner_person_id", { count: "exact", head: true }).eq("project_id", projectId),
     supabase.from("project_milestones").select("id,due_date,status,stage_id", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("project_plan_tasks").select("id,status,priority,due_date,stage_id,owner_person_id", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("project_milestone_checklist_items").select("id,milestone_id,is_done", { count: "exact", head: true }).eq("project_id", projectId),
   ]));
   const planningSchemaError = planningSchema.error || planningSchema.value?.find((result) => result.error)?.error;
+  const planTasks = !planningSchemaError && planningSchema.value?.[3] ? countValue(planningSchema.value[3].count) : 0;
+  const checklistItems = !planningSchemaError && planningSchema.value?.[4] ? countValue(planningSchema.value[4].count) : 0;
   checks.push(check(
     "master_plan",
-    "Master Plan & Project Stages",
+    "Plan Execution & Tracking",
     planningSchemaError ? "fail" : "pass",
-    planningSchemaError ? "Không đọc được dữ liệu kế hoạch; chạy các migration đến V1.6.1." : "Master Plan, khoảng ngày stage thủ công/tự động, timeline và milestone đã sẵn sàng.",
+    planningSchemaError ? "Không đọc được dữ liệu kế hoạch; chạy các migration đến V1.7.0." : `Master Plan, stage, milestone, ${planTasks} task và ${checklistItems} checklist đã sẵn sàng.`,
     planningSchema.durationMs,
   ));
 
@@ -294,12 +298,12 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "1.6.1",
+      version: "1.7.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,
       checks,
-      metrics: { issues, modules, departments, resources, missingAssignee, missingModule, missingDepartment, overdue },
+      metrics: { issues, modules, departments, resources, missingAssignee, missingModule, missingDepartment, overdue, planTasks, checklistItems },
     },
   };
 

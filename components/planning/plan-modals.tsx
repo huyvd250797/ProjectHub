@@ -1,17 +1,21 @@
 "use client";
 
-import { CalendarClock, CalendarRange, Check, Flag, Layers3, LoaderCircle, Save, Target, X } from "lucide-react";
+import { CalendarClock, CalendarRange, Check, CheckSquare2, ClipboardList, Flag, Layers3, LoaderCircle, Save, Target, X } from "lucide-react";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { addScheduleDuration, countScheduleDays } from "@/lib/planning/schedule";
 import type {
   MasterPlan,
   MasterPlanStatus,
+  MilestoneChecklistItem,
   MilestoneStatus,
+  PlanTaskPriority,
+  PlanTaskStatus,
   PlanPerson,
   PlanScheduleMode,
   PlanningMutationResponse,
   ProjectMilestone,
+  ProjectPlanTask,
   ProjectPlanStage,
   ProjectStageDateMode,
   ProjectStageStatus,
@@ -46,6 +50,20 @@ const milestoneStatusOptions = [
   { value: "at_risk", label: "Có rủi ro" },
   { value: "completed", label: "Hoàn tất" },
   { value: "missed", label: "Không đạt" },
+];
+
+const taskStatusOptions = [
+  { value: "todo", label: "Chưa làm" },
+  { value: "doing", label: "Đang làm" },
+  { value: "blocked", label: "Bị chặn" },
+  { value: "done", label: "Hoàn tất" },
+];
+
+const taskPriorityOptions = [
+  { value: "low", label: "Thấp" },
+  { value: "medium", label: "Trung bình" },
+  { value: "high", label: "Cao" },
+  { value: "critical", label: "Khẩn cấp" },
 ];
 
 const stageColors = ["#22D3EE", "#8B5CF6", "#F59E0B", "#10B981", "#F43F5E", "#3B82F6", "#EC4899", "#84CC16"];
@@ -302,6 +320,118 @@ export function MilestoneModal({
         <div><FieldLabel>Người phụ trách</FieldLabel><ThemedSelect value={ownerId} onChange={setOwnerId} options={[{ value: "", label: "Chưa phân công" }, ...people]} ariaLabel="Người phụ trách milestone" /><FieldError message={fieldErrors.ownerId} /></div>
       </div>
       <div className="mt-5 flex items-start gap-3 rounded-xl border border-amber-300/10 bg-amber-300/[0.035] p-4 text-[10px] leading-5 text-slate-500"><Flag className="mt-0.5 size-4 shrink-0 text-amber-300/70" /><span>Milestone có ngày cố định và không tự dịch chuyển khi thời lượng stage thay đổi. Điều này giúp bạn nhìn thấy ngay mốc nào cần cập nhật sau khi timeline được tính lại.</span></div>
+    </ModalShell>
+  );
+}
+
+export function PlanTaskModal({
+  projectId,
+  task,
+  defaultStageId,
+  defaultDueDate,
+  stages,
+  people,
+  onClose,
+  onSaved,
+}: {
+  projectId: string;
+  task: ProjectPlanTask | null;
+  defaultStageId: string;
+  defaultDueDate: string;
+  stages: ProjectPlanStage[];
+  people: PlanPerson[];
+  onClose: () => void;
+  onSaved: (message: string) => void;
+}) {
+  const [title, setTitle] = useState(task?.title ?? "");
+  const [description, setDescription] = useState(task?.description ?? "");
+  const [stageId, setStageId] = useState(task?.stageId ?? defaultStageId);
+  const [status, setStatus] = useState<PlanTaskStatus>(task?.status ?? "todo");
+  const [priority, setPriority] = useState<PlanTaskPriority>(task?.priority ?? "medium");
+  const [dueDate, setDueDate] = useState(task?.dueDate ?? defaultDueDate);
+  const [ownerId, setOwnerId] = useState(task?.ownerId ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true); setError(""); setFieldErrors({});
+    try {
+      const result = await readMutation(await fetch(task ? `/api/plan/tasks/${task.id}` : "/api/plan/tasks", {
+        method: task ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId, title, description, stageId, status, priority, dueDate, ownerId, sortOrder: task?.sortOrder ?? null }),
+      }));
+      onSaved(result.message);
+    } catch (reason) {
+      const parsed = mutationError(reason); setError(parsed.message); setFieldErrors(parsed.fieldErrors);
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <ModalShell eyebrow="Execution Task" title={task ? "Cập nhật task" : "Thêm task thực thi"} description="Chia nhỏ stage thành đầu việc có deadline, mức ưu tiên và trạng thái để theo dõi khi triển khai." icon={<ClipboardList className="size-5" />} saving={saving} onClose={onClose} onSubmit={submit}>
+      {error ? <div className="mb-5 rounded-xl border border-rose-300/15 bg-rose-300/[0.05] px-4 py-3 text-xs text-rose-200">{error}</div> : null}
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div className="md:col-span-2"><FieldLabel required>Tên task</FieldLabel><input className="field" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Ví dụ: Hoàn tất cấu hình phân hệ nhân sự" /><FieldError message={fieldErrors.title} /></div>
+        <div className="md:col-span-2"><FieldLabel>Mô tả / kết quả mong đợi</FieldLabel><textarea className="field min-h-24 resize-y py-3" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Ghi rõ đầu ra hoặc tiêu chí hoàn thành..." /><FieldError message={fieldErrors.description} /></div>
+        <div><FieldLabel>Thuộc stage</FieldLabel><ThemedSelect value={stageId} onChange={(value) => { setStageId(value); const stage = stages.find((item) => item.id === value); if (!task && stage?.endDate) setDueDate(stage.endDate); }} options={[{ value: "", label: "Task độc lập" }, ...stages.map((stage) => ({ value: stage.id, label: stage.name, description: `${stage.code} • ${stage.startDate ?? "?"} → ${stage.endDate ?? "?"}` }))]} ariaLabel="Stage của task" /><FieldError message={fieldErrors.stageId} /></div>
+        <div><FieldLabel>Deadline</FieldLabel><input type="date" className="field" value={dueDate} onChange={(event) => setDueDate(event.target.value)} /><FieldError message={fieldErrors.dueDate} /></div>
+        <div><FieldLabel required>Trạng thái task</FieldLabel><ThemedSelect value={status} onChange={(value) => setStatus(value as PlanTaskStatus)} options={taskStatusOptions} ariaLabel="Trạng thái task" /><FieldError message={fieldErrors.status} /></div>
+        <div><FieldLabel required>Ưu tiên</FieldLabel><ThemedSelect value={priority} onChange={(value) => setPriority(value as PlanTaskPriority)} options={taskPriorityOptions} ariaLabel="Mức ưu tiên task" /><FieldError message={fieldErrors.priority} /></div>
+        <div className="md:col-span-2"><FieldLabel>Người phụ trách</FieldLabel><ThemedSelect value={ownerId} onChange={setOwnerId} options={[{ value: "", label: "Chưa phân công" }, ...people]} ariaLabel="Người phụ trách task" placeholder="Chưa phân công" /><FieldError message={fieldErrors.ownerId} /></div>
+      </div>
+      <div className="mt-5 flex items-start gap-3 rounded-xl border border-cyan-300/10 bg-cyan-300/[0.035] p-4 text-[10px] leading-5 text-slate-500"><ClipboardList className="mt-0.5 size-4 shrink-0 text-cyan-300/70" /><span>Task quá deadline khi chưa hoàn tất sẽ được đưa vào cảnh báo Execution Dashboard. Task bị chặn cũng tự đẩy Health sang trạng thái cần chú ý.</span></div>
+    </ModalShell>
+  );
+}
+
+export function MilestoneChecklistModal({
+  projectId,
+  item,
+  milestoneId,
+  milestones,
+  onClose,
+  onSaved,
+}: {
+  projectId: string;
+  item: MilestoneChecklistItem | null;
+  milestoneId: string;
+  milestones: ProjectMilestone[];
+  onClose: () => void;
+  onSaved: (message: string) => void;
+}) {
+  const [title, setTitle] = useState(item?.title ?? "");
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState(item?.milestoneId ?? milestoneId);
+  const [isDone, setIsDone] = useState(item?.isDone ?? false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true); setError(""); setFieldErrors({});
+    try {
+      const result = await readMutation(await fetch(item ? `/api/plan/checklist/${item.id}` : "/api/plan/checklist", {
+        method: item ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId, milestoneId: selectedMilestoneId, title, isDone, sortOrder: item?.sortOrder ?? null }),
+      }));
+      onSaved(result.message);
+    } catch (reason) {
+      const parsed = mutationError(reason); setError(parsed.message); setFieldErrors(parsed.fieldErrors);
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <ModalShell eyebrow="Milestone Checklist" title={item ? "Cập nhật checklist" : "Thêm checklist milestone"} description="Chia milestone thành các điều kiện hoàn thành cụ thể để dễ nghiệm thu và kiểm tra." icon={<CheckSquare2 className="size-5" />} saving={saving} onClose={onClose} onSubmit={submit}>
+      {error ? <div className="mb-5 rounded-xl border border-rose-300/15 bg-rose-300/[0.05] px-4 py-3 text-xs text-rose-200">{error}</div> : null}
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div className="md:col-span-2"><FieldLabel required>Nội dung checklist</FieldLabel><input className="field" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Ví dụ: Có biên bản xác nhận UAT" /><FieldError message={fieldErrors.title} /></div>
+        <div><FieldLabel required>Milestone</FieldLabel><ThemedSelect value={selectedMilestoneId} onChange={setSelectedMilestoneId} options={milestones.map((milestone) => ({ value: milestone.id, label: milestone.title, description: milestone.dueDate }))} ariaLabel="Milestone của checklist" /><FieldError message={fieldErrors.milestoneId} /></div>
+        <div><FieldLabel>Trạng thái</FieldLabel><button type="button" onClick={() => setIsDone((value) => !value)} className="flex h-10 w-full items-center justify-between rounded-xl border border-white/[0.08] bg-black/10 px-3 text-left text-xs text-slate-300"><span>{isDone ? "Đã hoàn tất" : "Chưa hoàn tất"}</span><Check className={isDone ? "size-4 text-emerald-300" : "size-4 text-slate-700"} /></button></div>
+      </div>
+      <div className="mt-5 flex items-start gap-3 rounded-xl border border-amber-300/10 bg-amber-300/[0.035] p-4 text-[10px] leading-5 text-slate-500"><CheckSquare2 className="mt-0.5 size-4 shrink-0 text-amber-300/70" /><span>Khi toàn bộ checklist xong, milestone có đủ căn cứ để chuyển sang Hoàn tất. Bản V1.7.0 chưa tự ép trạng thái milestone để bạn vẫn kiểm soát mốc nghiệm thu.</span></div>
     </ModalShell>
   );
 }

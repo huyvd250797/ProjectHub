@@ -1,8 +1,12 @@
 import type {
   MasterPlanInput,
   MasterPlanStatus,
+  MilestoneChecklistInput,
   MilestoneInput,
   MilestoneStatus,
+  PlanTaskInput,
+  PlanTaskPriority,
+  PlanTaskStatus,
   PlanScheduleMode,
   ProjectStageDateMode,
   ProjectStageStatus,
@@ -137,4 +141,51 @@ export function parseMilestoneInput(value: unknown): ParseResult<MilestoneInput>
   return Object.keys(errors).length
     ? { ok: false, errors }
     : { ok: true, input: { projectId, title, description, dueDate, status, stageId, ownerId, sortOrder } };
+}
+
+export function parsePlanTaskInput(value: unknown): ParseResult<PlanTaskInput> {
+  const body = record(value);
+  const errors: Record<string, string> = {};
+  const projectId = requiredText(body.projectId);
+  const title = requiredText(body.title);
+  const description = nullableText(body.description);
+  const stageId = optionalUuid(body.stageId);
+  const status = requiredText(body.status || "todo") as PlanTaskStatus;
+  const priority = requiredText(body.priority || "medium") as PlanTaskPriority;
+  const dueDate = nullableText(body.dueDate);
+  const ownerId = optionalUuid(body.ownerId);
+  const sortOrder = body.sortOrder === null || body.sortOrder === undefined || body.sortOrder === "" ? null : parseNumber(body.sortOrder, -1);
+
+  if (!UUID_PATTERN.test(projectId)) errors.projectId = "Project không hợp lệ.";
+  if (title.length < 2 || title.length > 180) errors.title = "Tên task cần từ 2 đến 180 ký tự.";
+  if (description && description.length > 1_500) errors.description = "Mô tả tối đa 1.500 ký tự.";
+  if (stageId && !UUID_PATTERN.test(stageId)) errors.stageId = "Stage liên kết không hợp lệ.";
+  if (!(["todo", "doing", "blocked", "done"] as string[]).includes(status)) errors.status = "Trạng thái task không hợp lệ.";
+  if (!(["low", "medium", "high", "critical"] as string[]).includes(priority)) errors.priority = "Mức ưu tiên task không hợp lệ.";
+  if (dueDate && !validDate(dueDate)) errors.dueDate = "Deadline task không hợp lệ.";
+  if (ownerId && !UUID_PATTERN.test(ownerId)) errors.ownerId = "Người phụ trách không hợp lệ.";
+  if (sortOrder !== null && (sortOrder < 0 || sortOrder > 100_000)) errors.sortOrder = "Thứ tự task không hợp lệ.";
+
+  return Object.keys(errors).length
+    ? { ok: false, errors }
+    : { ok: true, input: { projectId, title, description, stageId, status, priority, dueDate, ownerId, sortOrder } };
+}
+
+export function parseMilestoneChecklistInput(value: unknown): ParseResult<MilestoneChecklistInput> {
+  const body = record(value);
+  const errors: Record<string, string> = {};
+  const projectId = requiredText(body.projectId);
+  const milestoneId = requiredText(body.milestoneId);
+  const title = requiredText(body.title);
+  const isDone = Boolean(body.isDone);
+  const sortOrder = body.sortOrder === null || body.sortOrder === undefined || body.sortOrder === "" ? null : parseNumber(body.sortOrder, -1);
+
+  if (!UUID_PATTERN.test(projectId)) errors.projectId = "Project không hợp lệ.";
+  if (!UUID_PATTERN.test(milestoneId)) errors.milestoneId = "Milestone không hợp lệ.";
+  if (title.length < 2 || title.length > 180) errors.title = "Checklist item cần từ 2 đến 180 ký tự.";
+  if (sortOrder !== null && (sortOrder < 0 || sortOrder > 100_000)) errors.sortOrder = "Thứ tự checklist không hợp lệ.";
+
+  return Object.keys(errors).length
+    ? { ok: false, errors }
+    : { ok: true, input: { projectId, milestoneId, title, isDone, sortOrder } };
 }
