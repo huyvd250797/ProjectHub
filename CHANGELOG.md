@@ -1,5 +1,23 @@
 # Changelog
 
+## V1.6.0 — Master Plan & Project Stages
+
+### Added
+
+- Module Kế hoạch tại `/plan` với Tổng quan, Gantt Timeline, Project Stages và Milestones.
+- Master Plan theo Project: mục tiêu, start/target date, calendar/business days, trạng thái và ghi chú.
+- CRUD Project Stages: thời lượng, tiến độ, owner, màu, thứ tự và tự động tính lịch tuần tự.
+- CRUD Milestones: due date, status, stage, owner, quick complete và cảnh báo quá hạn.
+- Forecast end, variance so với target, weighted progress, Schedule Health và export CSV.
+- Activity events cho thay đổi Master Plan, Stage và Milestone.
+
+### Compatibility & Security
+
+- Mở rộng bảng `project_stages` hiện hữu để giữ nguyên liên kết ISSUE/Dashboard/Import.
+- MASTER/Admin/PM được chỉnh sửa; Member/Viewer chỉ xem; mọi truy vấn tuân thủ Project RLS.
+- Master Plan dates đồng bộ sang `projects.start_date/due_date` cho Dashboard và Analytics.
+- Migration mới: `202609030001_v160_master_plan_project_stages.sql`.
+
 ## V1.5.0 — ISSUE Visual Customization & Workspace Layout
 
 - Thêm trình cấu hình màu viền, background và chữ cho từng giá trị tag Trạng thái, Trạng thái KH, Ưu tiên và Phụ trách.

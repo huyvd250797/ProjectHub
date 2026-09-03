@@ -115,6 +115,7 @@ export async function getProjectActivity(
   else if (eventGroup === "resource") query = query.eq("entity_type", "resource");
   else if (eventGroup === "project") query = query.in("entity_type", ["project_member", "project"]);
   else if (eventGroup === "import") query = query.eq("entity_type", "import");
+  else if (eventGroup === "plan") query = query.in("entity_type", ["plan", "stage", "milestone"]);
 
   const from = (page - 1) * pageSize;
   const { data, error, count } = await query

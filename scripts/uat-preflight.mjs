@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.5.0" ? pass("Package version", "1.5.0") : fail("Package version", `Expected 1.5.0, got ${pkg.version}`);
+pkg.version === "1.6.0" ? pass("Package version", "1.6.0") : fail("Package version", `Expected 1.6.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -123,6 +123,26 @@ for (const rel of [
   "docs/V1.5.0-SCOPE.md",
   "docs/UAT_V150_ISSUE_PERSONALIZATION_CHECKLIST.md",
   "docs/V1.5.0-VALIDATION.md",
+  "app/(workspace)/plan/page.tsx",
+  "components/planning/plan-workspace.tsx",
+  "components/planning/plan-timeline.tsx",
+  "components/planning/plan-modals.tsx",
+  "app/api/plan/route.ts",
+  "app/api/plan/recalculate/route.ts",
+  "app/api/plan/stages/route.ts",
+  "app/api/plan/stages/[stageId]/route.ts",
+  "app/api/plan/milestones/route.ts",
+  "app/api/plan/milestones/[milestoneId]/route.ts",
+  "lib/planning/types.ts",
+  "lib/planning/server.ts",
+  "lib/planning/schedule.ts",
+  "lib/planning/validation.ts",
+  "lib/planning/demo.ts",
+  "supabase/migrations/202609030001_v160_master_plan_project_stages.sql",
+  "docs/V1.6.0-SCOPE.md",
+  "docs/MASTER_PLAN_V160_SETUP.md",
+  "docs/UAT_V160_MASTER_PLAN_CHECKLIST.md",
+  "docs/V1.6.0-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -357,7 +377,30 @@ for (const token of ["filters_visible", "tag_styles", "workspace_user_preference
   personalizationMigration.includes(token) ? pass(`V1.5.0 personalization migration: ${token}`) : fail(`V1.5.0 personalization migration: ${token}`);
 }
 
-console.log("\nASC WORKING V1.5.0 - ISSUE Visual Customization & Workspace Layout Preflight\n");
+const planWorkspace = fs.readFileSync(path.join(root, "components/planning/plan-workspace.tsx"), "utf8");
+for (const token of ["Master Plan", "Project Stages", "Timeline", "Milestones", "Tính lại lịch", "Export"]) {
+  planWorkspace.includes(token) ? pass(`V1.6.0 Planning workspace: ${token}`) : fail(`V1.6.0 Planning workspace: ${token}`);
+}
+
+const planTimeline = fs.readFileSync(path.join(root, "components/planning/plan-timeline.tsx"), "utf8");
+for (const token of ["Gantt Timeline", "Milestone độc lập", "Hôm nay", "Target", "stage.progress"]) {
+  planTimeline.includes(token) ? pass(`V1.6.0 Gantt timeline: ${token}`) : fail(`V1.6.0 Gantt timeline: ${token}`);
+}
+
+const planApi = fs.readFileSync(path.join(root, "app/api/plan/route.ts"), "utf8");
+for (const token of ["loadProjectPlan", "parseMasterPlanInput", "recalculateProjectPlan", "V160_MIGRATION_REQUIRED", "Admin hoặc PM"]) {
+  planApi.includes(token) ? pass(`V1.6.0 Planning API: ${token}`) : fail(`V1.6.0 Planning API: ${token}`);
+}
+
+const planMigration = fs.readFileSync(path.join(root, "supabase/migrations/202609030001_v160_master_plan_project_stages.sql"), "utf8");
+for (const token of ["project_master_plans", "project_milestones", "duration_days", "progress", "recalculate_project_plan_v160", "project_master_plans_select_member_v160", "capture_planning_activity_v160"]) {
+  planMigration.includes(token) ? pass(`V1.6.0 Planning migration: ${token}`) : fail(`V1.6.0 Planning migration: ${token}`);
+}
+
+const navigationV160 = fs.readFileSync(path.join(root, "lib/navigation.ts"), "utf8");
+navigationV160.includes('/plan') ? pass("V1.6.0 Planning navigation") : fail("V1.6.0 Planning navigation");
+
+console.log("\nASC WORKING V1.6.0 - Master Plan & Project Stages Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

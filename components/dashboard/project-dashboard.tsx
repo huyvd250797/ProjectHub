@@ -45,6 +45,13 @@ const projectStatusLabel = {
   archived: "Lưu trữ",
 } as const;
 
+const stageStatusLabel: Record<string, string> = {
+  not_started: "Chưa bắt đầu",
+  in_progress: "Đang thực hiện",
+  blocked: "Bị chặn",
+  completed: "Hoàn tất",
+};
+
 const healthMeta = {
   on_track: { label: "ON TRACK", className: "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-200" },
   near_deadline: { label: "NEAR DEADLINE", className: "border-amber-300/15 bg-amber-300/[0.06] text-amber-200" },
@@ -359,7 +366,7 @@ export function ProjectDashboard() {
                       <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.05]"><div className="h-full rounded-full bg-gradient-to-r from-cyan-300/70 to-violet-400/70" style={{ width: `${Math.min(100, stage.progress)}%` }} /></div>
                     </div>
                     <div className="hidden min-w-[110px] text-right sm:block">
-                      <div className="text-[9px] text-slate-500">{stage.status || "—"}</div>
+                      <div className="text-[9px] text-slate-500">{stage.status ? stageStatusLabel[stage.status] ?? stage.status : "—"}</div>
                       <div className="mt-0.5 text-[8px] text-slate-700">{formatDate(stage.startDate)} → {formatDate(stage.endDate)}</div>
                     </div>
                   </div>

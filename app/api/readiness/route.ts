@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "1.5.0",
+        version: "1.6.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "1.5.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "1.6.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -169,6 +169,20 @@ export async function GET(request: NextRequest) {
     personalizationError ? "fail" : "pass",
     personalizationError ? "Không đọc được cấu hình màu tag/bộ lọc/navbar; chạy migration V1.5.0." : "Màu tag, bộ lọc, thứ tự cột và navbar đã sẵn sàng.",
     personalization.durationMs,
+  ));
+
+  const planningSchema = await timed(async () => Promise.all([
+    supabase.from("project_master_plans").select("id,start_date,target_end_date,schedule_mode", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("project_stages").select("id,duration_days,progress,color,owner_person_id", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("project_milestones").select("id,due_date,status,stage_id", { count: "exact", head: true }).eq("project_id", projectId),
+  ]));
+  const planningSchemaError = planningSchema.error || planningSchema.value?.find((result) => result.error)?.error;
+  checks.push(check(
+    "master_plan",
+    "Master Plan & Project Stages",
+    planningSchemaError ? "fail" : "pass",
+    planningSchemaError ? "Không đọc được dữ liệu kế hoạch; chạy migration V1.6.0." : "Master Plan, stage duration/progress, timeline và milestone đã sẵn sàng.",
+    planningSchema.durationMs,
   ));
 
   const notificationsSchema = await timed(async () => Promise.all([
@@ -280,7 +294,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "1.5.0",
+      version: "1.6.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

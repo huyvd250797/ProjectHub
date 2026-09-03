@@ -11,6 +11,7 @@ import {
   FileSpreadsheet,
   ListTodo,
   LoaderCircle,
+  Map,
   RadioTower,
   RefreshCw,
   Settings2,
@@ -42,6 +43,7 @@ function eventMeta(item: ActivityEvent) {
   if (item.entityType === "resource") return { Icon: RadioTower, tone: "border-rose-300/15 bg-rose-300/[0.055] text-rose-200", label: "RESOURCE" };
   if (item.entityType === "import") return { Icon: FileSpreadsheet, tone: "border-emerald-300/15 bg-emerald-300/[0.055] text-emerald-200", label: "IMPORT" };
   if (item.entityType === "project_member") return { Icon: UserRoundPlus, tone: "border-violet-300/15 bg-violet-300/[0.055] text-violet-200", label: "PROJECT" };
+  if (item.entityType === "plan" || item.entityType === "stage" || item.entityType === "milestone") return { Icon: Map, tone: "border-amber-300/15 bg-amber-300/[0.055] text-amber-200", label: "PLAN" };
   return { Icon: Activity, tone: "border-white/[0.08] bg-white/[0.03] text-slate-300", label: "ACTIVITY" };
 }
 
@@ -51,6 +53,7 @@ const filters = [
   { value: "project", label: "Project" },
   { value: "import", label: "Import" },
   { value: "resource", label: "Resource" },
+  { value: "plan", label: "Kế hoạch" },
 ];
 
 const preferenceRows: Array<{ key: keyof NotificationPreferences; title: string; description: string; icon: typeof Bell }> = [
@@ -122,6 +125,7 @@ export function ActivityCenter() {
       project: items.filter((item) => item.entityType === "project_member" || item.entityType === "project").length,
       resource: items.filter((item) => item.entityType === "resource").length,
       import: items.filter((item) => item.entityType === "import").length,
+      plan: items.filter((item) => item.entityType === "plan" || item.entityType === "stage" || item.entityType === "milestone").length,
     };
   }, [data?.items]);
 
@@ -167,12 +171,13 @@ export function ActivityCenter() {
 
       {mode === "activity" ? (
         <>
-          <section className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <section className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
             {[
               ["ISSUE", summary.issue, ListTodo, "text-cyan-200"],
               ["Project", summary.project, UserRoundPlus, "text-violet-200"],
               ["Import", summary.import, FileSpreadsheet, "text-emerald-200"],
               ["Resource", summary.resource, RadioTower, "text-rose-200"],
+              ["Kế hoạch", summary.plan, Map, "text-amber-200"],
             ].map(([label, value, Icon, tone]) => {
               const C = Icon as typeof Activity;
               return <div key={String(label)} className="tech-panel rounded-2xl p-4"><div className="flex items-center justify-between"><div><div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-600">{String(label)}</div><div className="mt-2 text-2xl font-semibold text-white">{String(value)}</div><div className="mt-1 text-[9px] text-slate-600">trong trang hiện tại</div></div><C className={cn("size-5", String(tone))} /></div></div>;

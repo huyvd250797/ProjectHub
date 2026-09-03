@@ -170,9 +170,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(body, { status: 404 });
   }
 
-  const body: DashboardApiResponse = {
-    ok: true,
-    data: normalizeDashboard(data as Record<string, unknown>),
-  };
+  const dashboard = normalizeDashboard(data as Record<string, unknown>);
+
+  // V1.6.0 enriches the legacy Dashboard RPC with the manually managed stage
+  // progress. The query is backward compatible: it is simply ignored before
+  // the planning migration has been applied.
+  const planningStages = await supabase
+    .from("project_stages")
+    .select("id,code,name,start_date,end_date,status,progress")
+    .eq("project_id", projectId)
+    .order("sort_order", { ascending: true });
+  if (!planningStages.error && planningStages.data) {
+    dashboard.stages = planningStages.data.map((stage) => ({
+      id: String(stage.id),
+      code: String(stage.code),
+      name: String(stage.name),
+      startDate: stage.start_date ? String(stage.start_date) : null,
+      endDate: stage.end_date ? String(stage.end_date) : null,
+      status: stage.status ? String(stage.status) : null,
+      progress: numberValue(stage.progress),
+    }));
+  }
+
+  const body: DashboardApiResponse = { ok: true, data: dashboard };
   return NextResponse.json(body);
 }

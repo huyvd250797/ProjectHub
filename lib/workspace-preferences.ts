@@ -1,5 +1,6 @@
 export const DEFAULT_NAV_ORDER = [
   "/dashboard",
+  "/plan",
   "/analytics",
   "/reports",
   "/contract",
@@ -26,6 +27,12 @@ export function normalizeNavigationOrder(value: unknown): NavigationHref[] {
     ? value.filter((item): item is NavigationHref => typeof item === "string" && allowed.has(item))
     : [];
   const unique = [...new Set(submitted)];
-  for (const href of DEFAULT_NAV_ORDER) if (!unique.includes(href)) unique.push(href);
+  for (const href of DEFAULT_NAV_ORDER) {
+    if (unique.includes(href)) continue;
+    const defaultIndex = DEFAULT_NAV_ORDER.indexOf(href);
+    const previous = [...DEFAULT_NAV_ORDER.slice(0, defaultIndex)].reverse().find((candidate) => unique.includes(candidate));
+    if (!previous) unique.unshift(href);
+    else unique.splice(unique.indexOf(previous) + 1, 0, href);
+  }
   return unique;
 }

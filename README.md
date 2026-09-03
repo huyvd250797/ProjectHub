@@ -1,4 +1,18 @@
-# ASC WORKING — V1.5.0
+# ASC WORKING — V1.6.0
+
+## V1.6.0 có gì mới?
+
+- Module **Kế hoạch** mới tại `/plan`, tách dữ liệu theo Project và tuân thủ MASTER/Admin/PM/Member/Viewer.
+- **Master Plan** gồm mục tiêu, ngày bắt đầu, target end date, cách tính ngày lịch/ngày làm việc, trạng thái và ghi chú điều hành.
+- Danh mục **Project Stages** hoàn chỉnh: mã, tên, mô tả/đầu ra, số ngày, tiến độ, trạng thái, người phụ trách, màu và thứ tự.
+- Tự động tính ngày bắt đầu/kết thúc tuần tự của các stage dựa trên ngày Master Plan, số ngày và thứ tự stage.
+- **Gantt Timeline** có thanh tiến độ, vạch hôm nay, target date và milestone gắn với từng stage.
+- **Milestones** theo dõi mốc phê duyệt/bàn giao, ngày hạn, trạng thái, stage và owner; có cảnh báo quá hạn.
+- Schedule Health, forecast end date, lệch target, tiến độ có trọng số, current stage, next milestone và export CSV.
+- Project Stage tiếp tục dùng chung với ISSUE, Dashboard và Excel Import; không tạo danh mục trùng lặp.
+- Thay đổi Master Plan/Stage/Milestone được ghi vào Activity Center.
+
+Chạy migration `supabase/migrations/202609030001_v160_master_plan_project_stages.sql`, sau đó UAT theo `docs/UAT_V160_MASTER_PLAN_CHECKLIST.md`.
 
 ## V1.5.0 có gì mới?
 
@@ -129,6 +143,7 @@ supabase/migrations/202608260001_v1111_team_validation_performance.sql
 ## Production scope hiện tại
 
 - Multi-project + Project Switcher.
+- Master Plan + Project Stages + Gantt Timeline + Milestones.
 - MASTER toàn hệ thống; Admin / PM / Member / Viewer theo Project.
 - Project Profile + Project Team / ISSUE Assignee Sync.
 - Dashboard dữ liệu thật theo Project.

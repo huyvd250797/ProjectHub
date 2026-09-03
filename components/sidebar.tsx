@@ -12,7 +12,8 @@ import { DEFAULT_NAV_ORDER, normalizeNavigationOrder } from "@/lib/workspace-pre
 import type { NavigationHref, WorkspacePreferencesApiResponse } from "@/lib/workspace-preferences";
 import { cn } from "@/lib/utils";
 
-const NAV_ORDER_STORAGE_KEY = "asc-working-nav-order-v150";
+const NAV_ORDER_STORAGE_KEY = "asc-working-nav-order-v160";
+const LEGACY_NAV_ORDER_STORAGE_KEY = "asc-working-nav-order-v150";
 
 export function Sidebar({
   collapsed,
@@ -38,9 +39,13 @@ export function Sidebar({
   useEffect(() => {
     let cancelled = false;
     let localOrder: NavigationHref[] | null = null;
-    const saved = window.localStorage.getItem(NAV_ORDER_STORAGE_KEY);
+    const saved = window.localStorage.getItem(NAV_ORDER_STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_NAV_ORDER_STORAGE_KEY);
     if (saved) {
-      try { localOrder = normalizeNavigationOrder(JSON.parse(saved)); } catch {}
+      try {
+        localOrder = normalizeNavigationOrder(JSON.parse(saved));
+        window.localStorage.setItem(NAV_ORDER_STORAGE_KEY, JSON.stringify(localOrder));
+        window.localStorage.removeItem(LEGACY_NAV_ORDER_STORAGE_KEY);
+      } catch {}
     }
     fetch("/api/workspace/preferences", { cache: "no-store" })
       .then(async (response) => (await response.json()) as WorkspacePreferencesApiResponse)
@@ -172,7 +177,7 @@ export function Sidebar({
             <div className={cn("min-w-0", collapsed && "hidden")}>
               <div className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-600">Project hiện tại</div>
               <div className="mt-1 truncate text-[11px] font-semibold text-slate-300">{selectedProject.code} • {selectedProject.organizationName || selectedProject.name}</div>
-              <div className="mt-1 text-[9px] uppercase tracking-[0.15em] text-slate-700">V1.5.0 • {isMaster ? "MASTER • ALL PROJECTS" : "PROJECT ACCESS"}</div>
+              <div className="mt-1 text-[9px] uppercase tracking-[0.15em] text-slate-700">V1.6.0 • {isMaster ? "MASTER • ALL PROJECTS" : "PROJECT ACCESS"}</div>
             </div>
           </div>
         </div>

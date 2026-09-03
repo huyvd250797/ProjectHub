@@ -7,12 +7,14 @@ import {
   FileText,
   FolderOpen,
   ListTodo,
+  Map,
   RadioTower,
   Settings2,
 } from "lucide-react";
 
 export const navigation = [
   { label: "Dashboard", href: "/dashboard", icon: CircleGauge },
+  { label: "Kế hoạch", href: "/plan", icon: Map },
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
   { label: "Báo cáo", href: "/reports", icon: FileText },
   { label: "PLHĐ", href: "/contract", icon: FileStack },

@@ -27,14 +27,15 @@
 - ✅ V1.3.2 — Bulk Master Data Import / Direct Excel
 - ✅ V1.4.0 — Attachment & Project Documents / Google Drive
 - ✅ V1.5.0 — ISSUE Visual Customization & Workspace Layout
+- ✅ V1.6.0 — Master Plan & Project Stages
 
 ## Current
-- **V1.5.0 — ISSUE Visual Customization & Workspace Layout**
+- **V1.6.0 — Master Plan & Project Stages**
 
 ## Deferred by product decision
 - Jira Integration / Sync
 
 ## Candidate next
-- V1.6.0 — Project Templates & Faster Project Setup
-- V1.7.0 — Smart Reminders & Follow-up
-- V1.8.0 — Cross-Project Portfolio Dashboard
+- V1.7.0 — Project Templates & Faster Project Setup
+- V1.8.0 — Smart Reminders & Follow-up
+- V1.9.0 — Cross-Project Portfolio Dashboard
