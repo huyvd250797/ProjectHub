@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "1.9.2",
+        version: "2.0.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "1.9.2", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "2.0.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -185,10 +185,19 @@ export async function GET(request: NextRequest) {
   const planReminders = !planningSchemaError && planningSchema.value?.[5] ? countValue(planningSchema.value[5].count) : 0;
   checks.push(check(
     "master_plan",
-    "Catalog Source of Truth",
+    "Project Command Center",
     planningSchemaError ? "fail" : "pass",
     planningSchemaError ? "Không đọc được dữ liệu kế hoạch; chạy các migration kế hoạch đến V1.8.0." : `Master Plan, stage, milestone, ${planTasks} task, ${checklistItems} checklist và ${planReminders} reminder đã sẵn sàng.`,
     planningSchema.durationMs,
+  ));
+  checks.push(check(
+    "project_command_center",
+    "Project Command Center",
+    planningSchemaError || projectProfileError ? "fail" : "pass",
+    planningSchemaError || projectProfileError
+      ? "Command Center cần schema Project Profile, Plan, Execution và Reminder đã sẵn sàng."
+      : "Command Center có đủ nguồn dữ liệu để tổng hợp health score, action board, risk radar và timeline.",
+    Math.max(planningSchema.durationMs, projectProfile.durationMs),
   ));
 
   const notificationsSchema = await timed(async () => Promise.all([
@@ -300,7 +309,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "1.9.2",
+      version: "2.0.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

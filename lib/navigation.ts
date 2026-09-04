@@ -3,6 +3,7 @@ import {
   BarChart3,
   Building2,
   CircleGauge,
+  Command,
   BriefcaseBusiness,
   FileStack,
   FileText,
@@ -12,8 +13,17 @@ import {
   RadioTower,
   Settings2,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import type { NavigationHref } from "@/lib/workspace-preferences";
 
-export const navigation = [
+type NavigationItem = {
+  label: string;
+  href: NavigationHref;
+  icon: LucideIcon;
+};
+
+export const navigation: NavigationItem[] = [
+  { label: "Command Center", href: "/command-center", icon: Command },
   { label: "Dashboard", href: "/dashboard", icon: CircleGauge },
   { label: "Portfolio", href: "/portfolio", icon: BriefcaseBusiness },
   { label: "Kế hoạch", href: "/plan", icon: Map },

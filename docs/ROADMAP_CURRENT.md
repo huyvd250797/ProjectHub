@@ -32,13 +32,17 @@
 - ✅ V1.7.0 — Plan Execution & Tracking
 - ✅ V1.8.0 — Smart Reminders & Alerts
 - ✅ V1.9.0 — Cross-Project Portfolio Dashboard
+- ✅ V1.9.2 — Catalog Source of Truth
+- ✅ V2.0.0 — Project Command Center
 
 ## Current
-- **V1.9.0 — Cross-Project Portfolio Dashboard**
+- **V2.0.0 — Project Command Center**
 
 ## Deferred by product decision
 - Jira Integration / Sync
 
 ## Candidate next
-- V2.0.0 — Project Templates & Faster Project Setup
-- V2.1.0 — PM Workload & Capacity Planning
+- V2.1.0 — Project Templates & Faster Project Setup
+- V2.2.0 — PM Workload & Capacity Planning
+- V2.3.0 — Collaboration Workspace & Approval Flow
+- V2.4.0 — Forecasting, Budget & Resource Planning

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { ProjectProvider } from "@/components/project-context";
@@ -20,8 +21,18 @@ export function AppShell({
   projects: WorkspaceProject[];
   isMaster?: boolean;
 }) {
+  const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [navbarReloadKey, setNavbarReloadKey] = useState(0);
+
+  useEffect(() => {
+    function reloadWorkspaceModule() {
+      setNavbarReloadKey((value) => value + 1);
+    }
+    window.addEventListener("asc-working:navbar-reload", reloadWorkspaceModule);
+    return () => window.removeEventListener("asc-working:navbar-reload", reloadWorkspaceModule);
+  }, []);
 
   return (
     <ProjectProvider projects={projects} isMaster={isMaster}>
@@ -44,12 +55,12 @@ export function AppShell({
             isMaster={isMaster}
             onOpenMobile={() => setMobileOpen(true)}
           />
-          <main className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-6 md:py-7">
+          <main key={`${pathname}-${navbarReloadKey}`} className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-6 md:py-7">
             {children}
           </main>
           <footer className="mx-auto flex w-full max-w-[1600px] flex-col gap-1 border-t border-white/[0.05] px-4 py-5 text-[10px] uppercase tracking-[0.14em] text-slate-700 md:flex-row md:items-center md:justify-between md:px-6">
             <span>© 2026 HuyVo. All rights reserved.</span>
-            <span>ASC WORKING • V1.9.2 • Catalog Source of Truth</span>
+            <span>ASC WORKING • V2.0.0 • Project Command Center</span>
           </footer>
         </div>
       </div>

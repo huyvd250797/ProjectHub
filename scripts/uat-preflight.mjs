@@ -8,9 +8,14 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.9.2" ? pass("Package version", "1.9.2") : fail("Package version", `Expected 1.9.2, got ${pkg.version}`);
+pkg.version === "2.0.0" ? pass("Package version", "2.0.0") : fail("Package version", `Expected 2.0.0, got ${pkg.version}`);
 
 for (const rel of [
+  "app/(workspace)/command-center/page.tsx",
+  "app/api/command-center/route.ts",
+  "components/command-center/project-command-center.tsx",
+  "lib/command-center/types.ts",
+  "lib/command-center/demo.ts",
   "app/api/readiness/route.ts",
   "app/(workspace)/settings/uat/page.tsx",
   "app/(workspace)/settings/projects/page.tsx",
@@ -172,6 +177,8 @@ for (const rel of [
   "supabase/migrations/202609040002_v192_catalog_source_of_truth.sql",
   "docs/V1.9.2-SCOPE.md",
   "docs/V1.9.2-VALIDATION.md",
+  "docs/V2.0.0-SCOPE.md",
+  "docs/V2.0.0-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -549,7 +556,37 @@ for (const token of ["Portfolio", "/portfolio", "BriefcaseBusiness"]) {
   navigationV190.includes(token) ? pass(`V1.9.0 Portfolio navigation: ${token}`) : fail(`V1.9.0 Portfolio navigation: ${token}`);
 }
 
-console.log("\nASC WORKING V1.9.2 - Catalog Source of Truth Preflight\n");
+const commandCenterUiV200 = fs.readFileSync(path.join(root, "components/command-center/project-command-center.tsx"), "utf8");
+for (const token of ["Project Command Center", "Action Board", "Risk Radar", "Delivery Timeline", "/api/command-center"]) {
+  commandCenterUiV200.includes(token) ? pass(`V2.0.0 Command Center UI: ${token}`) : fail(`V2.0.0 Command Center UI: ${token}`);
+}
+
+const commandCenterApiV200 = fs.readFileSync(path.join(root, "app/api/command-center/route.ts"), "utf8");
+for (const token of ["loadProjectPlan", "ISSUE_SELECT", "contract_detail_items", "COMMAND_CENTER_QUERY_FAILED", "health"]) {
+  commandCenterApiV200.includes(token) ? pass(`V2.0.0 Command Center API: ${token}`) : fail(`V2.0.0 Command Center API: ${token}`);
+}
+
+const workspacePreferencesV200 = fs.readFileSync(path.join(root, "lib/workspace-preferences.ts"), "utf8");
+for (const token of ["navigationDisplayLabels", "normalizeWorkspacePreferences", "displayLabels", "/command-center"]) {
+  workspacePreferencesV200.includes(token) ? pass(`V2.0.0 Navbar preferences: ${token}`) : fail(`V2.0.0 Navbar preferences: ${token}`);
+}
+
+const sidebarV200 = fs.readFileSync(path.join(root, "components/sidebar.tsx"), "utf8");
+for (const token of ["onDoubleClick", "asc-working:navbar-reload", "navigationDisplayLabels", "displayLabel"]) {
+  sidebarV200.includes(token) ? pass(`V2.0.0 Navbar reload/display: ${token}`) : fail(`V2.0.0 Navbar reload/display: ${token}`);
+}
+
+const appShellV200 = fs.readFileSync(path.join(root, "components/app-shell.tsx"), "utf8");
+for (const token of ["navbarReloadKey", "asc-working:navbar-reload", "Project Command Center"]) {
+  appShellV200.includes(token) ? pass(`V2.0.0 Navbar remount: ${token}`) : fail(`V2.0.0 Navbar remount: ${token}`);
+}
+
+const navigationManagerV200 = fs.readFileSync(path.join(root, "components/navigation-order-manager.tsx"), "utf8");
+for (const token of ["Tên gốc", "Tên hiển thị", "Lưu navbar", "onDisplayLabelsChange"]) {
+  navigationManagerV200.includes(token) ? pass(`V2.0.0 Navbar label manager: ${token}`) : fail(`V2.0.0 Navbar label manager: ${token}`);
+}
+
+console.log("\nASC WORKING V2.0.0 - Project Command Center Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

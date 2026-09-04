@@ -1,17 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ChevronLeft, Crown, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { navigation, secondaryNavigation } from "@/lib/navigation";
 import { Logo } from "@/components/logo";
 import { NavigationOrderManager } from "@/components/navigation-order-manager";
 import { useProject } from "@/components/project-context";
-import { DEFAULT_NAV_ORDER, normalizeNavigationOrder } from "@/lib/workspace-preferences";
-import type { NavigationHref, WorkspacePreferencesApiResponse } from "@/lib/workspace-preferences";
+import { DEFAULT_NAV_ORDER, normalizeNavigationOrder, normalizeWorkspacePreferences } from "@/lib/workspace-preferences";
+import type { NavigationDisplayLabels, NavigationHref, WorkspacePreferencesApiResponse } from "@/lib/workspace-preferences";
 import { cn } from "@/lib/utils";
 
+const NAV_PREFERENCES_STORAGE_KEY = "asc-working-nav-preferences-v200";
 const NAV_ORDER_STORAGE_KEY = "asc-working-nav-order-v160";
 const LEGACY_NAV_ORDER_STORAGE_KEY = "asc-working-nav-order-v150";
 
@@ -27,8 +28,10 @@ export function Sidebar({
   onCloseMobile: () => void;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { selectedProject, isMaster } = useProject();
   const [navigationOrder, setNavigationOrder] = useState<NavigationHref[]>([...DEFAULT_NAV_ORDER]);
+  const [navigationDisplayLabels, setNavigationDisplayLabels] = useState<NavigationDisplayLabels>({});
   const [navigationManagerOpen, setNavigationManagerOpen] = useState(false);
   const [navigationSaving, setNavigationSaving] = useState(false);
   const navigationLabels = useMemo(() => Object.fromEntries(navigation.map((item) => [item.href, item.label])), []);
@@ -39,11 +42,19 @@ export function Sidebar({
   useEffect(() => {
     let cancelled = false;
     let localOrder: NavigationHref[] | null = null;
-    const saved = window.localStorage.getItem(NAV_ORDER_STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_NAV_ORDER_STORAGE_KEY);
+    let localDisplayLabels: NavigationDisplayLabels | null = null;
+    const saved = window.localStorage.getItem(NAV_PREFERENCES_STORAGE_KEY) ?? window.localStorage.getItem(NAV_ORDER_STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_NAV_ORDER_STORAGE_KEY);
     if (saved) {
       try {
-        localOrder = normalizeNavigationOrder(JSON.parse(saved));
-        window.localStorage.setItem(NAV_ORDER_STORAGE_KEY, JSON.stringify(localOrder));
+        const parsed = JSON.parse(saved);
+        const preferences = normalizeWorkspacePreferences(parsed);
+        localOrder = preferences.navigationOrder;
+        localDisplayLabels = preferences.navigationDisplayLabels;
+        window.localStorage.setItem(NAV_PREFERENCES_STORAGE_KEY, JSON.stringify({
+          order: preferences.navigationOrder,
+          displayLabels: preferences.navigationDisplayLabels,
+        }));
+        window.localStorage.removeItem(NAV_ORDER_STORAGE_KEY);
         window.localStorage.removeItem(LEGACY_NAV_ORDER_STORAGE_KEY);
       } catch {}
     }
@@ -51,23 +62,44 @@ export function Sidebar({
       .then(async (response) => (await response.json()) as WorkspacePreferencesApiResponse)
       .then((body) => {
         if (cancelled) return;
-        if (body.ok && body.source === "database") setNavigationOrder(body.preferences.navigationOrder);
-        else if (localOrder) setNavigationOrder(localOrder);
+        if (body.ok && body.source === "database") {
+          setNavigationOrder(body.preferences.navigationOrder);
+          setNavigationDisplayLabels(body.preferences.navigationDisplayLabels);
+        } else if (localOrder) {
+          setNavigationOrder(localOrder);
+          setNavigationDisplayLabels(localDisplayLabels ?? {});
+        }
       })
-      .catch(() => { if (!cancelled && localOrder) setNavigationOrder(localOrder); });
+      .catch(() => {
+        if (!cancelled && localOrder) {
+          setNavigationOrder(localOrder);
+          setNavigationDisplayLabels(localDisplayLabels ?? {});
+        }
+      });
     return () => { cancelled = true; };
   }, []);
 
   async function saveNavigationOrder() {
     const normalized = normalizeNavigationOrder(navigationOrder);
+    const preferences = normalizeWorkspacePreferences({
+      order: normalized,
+      displayLabels: navigationDisplayLabels,
+    });
     setNavigationOrder(normalized);
-    window.localStorage.setItem(NAV_ORDER_STORAGE_KEY, JSON.stringify(normalized));
+    setNavigationDisplayLabels(preferences.navigationDisplayLabels);
+    window.localStorage.setItem(NAV_PREFERENCES_STORAGE_KEY, JSON.stringify({
+      order: preferences.navigationOrder,
+      displayLabels: preferences.navigationDisplayLabels,
+    }));
     setNavigationSaving(true);
     try {
       const response = await fetch("/api/workspace/preferences", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ navigationOrder: normalized }),
+        body: JSON.stringify({
+          navigationOrder: preferences.navigationOrder,
+          navigationDisplayLabels: preferences.navigationDisplayLabels,
+        }),
       });
       const body = (await response.json()) as WorkspacePreferencesApiResponse;
       if (!body.ok && body.code !== "DEMO_READONLY") throw new Error(body.message);
@@ -77,6 +109,11 @@ export function Sidebar({
     } finally {
       setNavigationSaving(false);
     }
+  }
+
+  function reloadNavbarItem(href: NavigationHref) {
+    window.dispatchEvent(new CustomEvent("asc-working:navbar-reload", { detail: { href } }));
+    router.refresh();
   }
 
   const navContent = (
@@ -102,11 +139,21 @@ export function Sidebar({
           {orderedNavigation.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = item.icon;
+            const displayLabel = navigationDisplayLabels[item.href] ?? item.label;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={onCloseMobile}
+                onDoubleClick={(event) => {
+                  event.preventDefault();
+                  onCloseMobile();
+                  if (active) reloadNavbarItem(item.href);
+                  else {
+                    router.push(item.href);
+                    window.setTimeout(() => reloadNavbarItem(item.href), 120);
+                  }
+                }}
                 className={cn(
                   "group relative flex h-11 items-center gap-3 rounded-xl px-3 text-sm transition",
                   active
@@ -114,13 +161,13 @@ export function Sidebar({
                     : "border border-transparent text-slate-400 hover:bg-white/[0.035] hover:text-slate-100",
                   collapsed && "justify-center px-0",
                 )}
-                title={collapsed ? item.label : undefined}
+                title={collapsed ? displayLabel : `${displayLabel} • double click để reload`}
               >
                 {active ? (
                   <span className="absolute left-0 h-5 w-0.5 rounded-r-full bg-cyan-300 shadow-[0_0_12px_rgba(46,211,255,0.8)]" />
                 ) : null}
                 <Icon className={cn("size-[18px] shrink-0", active && "text-cyan-300")} />
-                <span className={cn("truncate", collapsed && "hidden")}>{item.label}</span>
+                <span className={cn("truncate", collapsed && "hidden")}>{displayLabel}</span>
               </Link>
             );
           })}
@@ -177,7 +224,7 @@ export function Sidebar({
             <div className={cn("min-w-0", collapsed && "hidden")}>
               <div className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-600">Project hiện tại</div>
               <div className="mt-1 truncate text-[11px] font-semibold text-slate-300">{selectedProject.code} • {selectedProject.organizationName || selectedProject.name}</div>
-              <div className="mt-1 text-[9px] uppercase tracking-[0.15em] text-slate-700">V1.9.2 • {isMaster ? "MASTER • ALL PROJECTS" : "PROJECT ACCESS"}</div>
+              <div className="mt-1 text-[9px] uppercase tracking-[0.15em] text-slate-700">V2.0.0 • {isMaster ? "MASTER • ALL PROJECTS" : "PROJECT ACCESS"}</div>
             </div>
           </div>
         </div>
@@ -217,7 +264,7 @@ export function Sidebar({
           </aside>
         </div>
       ) : null}
-      <NavigationOrderManager open={navigationManagerOpen} value={navigationOrder} labels={navigationLabels} saving={navigationSaving} onChange={setNavigationOrder} onSave={() => void saveNavigationOrder()} onClose={() => setNavigationManagerOpen(false)} />
+      <NavigationOrderManager open={navigationManagerOpen} value={navigationOrder} labels={navigationLabels} displayLabels={navigationDisplayLabels} saving={navigationSaving} onChange={setNavigationOrder} onDisplayLabelsChange={setNavigationDisplayLabels} onSave={() => void saveNavigationOrder()} onClose={() => setNavigationManagerOpen(false)} />
     </>
   );
 }

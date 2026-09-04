@@ -1,4 +1,17 @@
-# ASC WORKING — V1.9.2
+# ASC WORKING — V2.0.0
+
+## V2.0.0 có gì mới?
+
+Project Command Center
+
+- Module **Command Center** mới tại `/command-center` để điều hành project đang chọn trong một màn hình.
+- Health Score tổng hợp tiến độ kế hoạch, execution task, ISSUE quá hạn, blocked task và reminder quá hạn.
+- **Action Board** liệt kê việc cần xử lý trước trong 7 ngày tới.
+- **Risk Radar** gom cảnh báo thông minh từ Plan/Reminder và dữ liệu ISSUE cần chú ý.
+- **Delivery Timeline** hiển thị stage, ngày bắt đầu/kết thúc, progress và milestone.
+- Double-click item navbar để reload lại giao diện và dữ liệu của module đó.
+- Cấu hình navbar bổ sung **Tên gốc** không sửa và **Tên hiển thị** có thể chỉnh theo user.
+- Không cần migration mới; yêu cầu database đã chạy đầy đủ đến V1.9.2.
 
 ## V1.9.2 có gì mới?
 

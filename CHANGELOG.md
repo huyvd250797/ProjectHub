@@ -1,5 +1,20 @@
 # Changelog
 
+## V2.0.0 — Project Command Center
+
+### Added
+
+- Module `/command-center` mới cho màn điều hành trung tâm theo project đang chọn.
+- API `/api/command-center` tổng hợp Project, ISSUE, PLHĐ, Master Plan, Execution Task, Milestone và Smart Reminder.
+- Health Score, Action Board, Risk Radar, Delivery Timeline và Command Links.
+- Navbar double-click reload để tải lại giao diện và dữ liệu module.
+- Navbar Modules Manager có cột **Tên gốc** không sửa và **Tên hiển thị** có thể chỉnh.
+
+### Database
+
+- Không có migration mới.
+- Tên hiển thị navbar lưu trong JSONB preference hiện có, tương thích dữ liệu cũ dạng array.
+
 ## V1.9.2 — Catalog Source of Truth
 
 ### Added
