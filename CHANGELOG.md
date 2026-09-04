@@ -1,5 +1,28 @@
 # Changelog
 
+## V1.9.0 — Cross-Project Portfolio Dashboard
+
+### Added
+
+- Module `/portfolio` mới cho Cross-Project Portfolio Dashboard.
+- API `/api/portfolio` tổng hợp project, issues, stages, milestones, tasks và reminders.
+- Project Ranking theo alert score.
+- Priority Board cho danh sách project cần xử lý trước.
+- KPI tổng nhiều project: active, at risk, late, open issues, reminders và contract value.
+- Demo Mode cho Portfolio Dashboard.
+
+### Changed
+
+- Danh mục Phòng ban và Module bổ sung checkbox từng dòng và check all theo dữ liệu đang hiển thị.
+- Bổ sung bulk hard delete cho Project Catalog.
+- Health endpoint thêm feature `portfolio-dashboard`, `catalog-hard-delete`, `catalog-bulk-delete`.
+
+### Safety
+
+- Phòng ban đang được dùng bởi ISSUE, People hoặc Module owner không bị xóa.
+- Module đang được dùng bởi ISSUE, Contract Detail hoặc Module con không bị xóa.
+- Xóa catalog là hard delete, không archive.
+
 ## V1.8.0 — Smart Reminders & Alerts
 
 ### Added

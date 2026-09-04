@@ -1,4 +1,18 @@
-# ASC WORKING — V1.8.0
+# ASC WORKING — V1.9.0
+
+## V1.9.0 có gì mới?
+
+- Module **Portfolio** mới tại `/portfolio` để quản lý nhiều project trong một màn hình.
+- KPI tổng: số project, project At Risk/Late, open issues, reminders và tổng giá trị hợp đồng.
+- **Project Ranking** xếp hạng project theo alert score để biết dự án nào cần xử lý trước.
+- **Priority Board** liệt kê các project có overdue/blocker/reminder nổi bật.
+- Danh mục **Phòng ban** và **Module** có checkbox từng dòng, check all theo danh sách đang lọc.
+- Bulk delete là **hard delete**, không archive.
+- Phòng ban đang được dùng bởi ISSUE, People hoặc Module owner sẽ không bị xóa.
+- Module đang được dùng bởi ISSUE, Contract Detail hoặc Module con sẽ không bị xóa.
+- API trả rõ số dòng đã xóa và số dòng bị chặn.
+
+Chạy schema đến V1.8.0 trước. V1.9.0 không cần bảng mới; có note tại `supabase/migrations/202609040001_v190_portfolio_catalog_delete_notes.sql` và UAT theo `docs/UAT_V190_PORTFOLIO_CATALOG_DELETE_CHECKLIST.md`.
 
 ## V1.8.0 có gì mới?
 

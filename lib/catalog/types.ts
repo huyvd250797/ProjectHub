@@ -43,5 +43,5 @@ export type ProjectCatalogResponse =
   | { ok: false; code: string; message: string; fieldErrors?: Record<string, string> };
 
 export type ProjectCatalogMutationResponse =
-  | { ok: true; message: string }
+  | { ok: true; message: string; deletedCount?: number; blockedCount?: number }
   | { ok: false; code: string; message: string; fieldErrors?: Record<string, string> };

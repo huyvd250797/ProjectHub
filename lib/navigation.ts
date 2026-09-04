@@ -3,6 +3,7 @@ import {
   BarChart3,
   Building2,
   CircleGauge,
+  BriefcaseBusiness,
   FileStack,
   FileText,
   FolderOpen,
@@ -14,6 +15,7 @@ import {
 
 export const navigation = [
   { label: "Dashboard", href: "/dashboard", icon: CircleGauge },
+  { label: "Portfolio", href: "/portfolio", icon: BriefcaseBusiness },
   { label: "Kế hoạch", href: "/plan", icon: Map },
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
   { label: "Báo cáo", href: "/reports", icon: FileText },

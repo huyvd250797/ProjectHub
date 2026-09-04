@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.8.0" ? pass("Package version", "1.8.0") : fail("Package version", `Expected 1.8.0, got ${pkg.version}`);
+pkg.version === "1.9.0" ? pass("Package version", "1.9.0") : fail("Package version", `Expected 1.9.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -153,7 +153,7 @@ for (const rel of [
   "app/api/plan/checklist/route.ts",
   "app/api/plan/checklist/[itemId]/route.ts",
   "supabase/migrations/202609030003_v170_plan_execution_tracking.sql",
-  "docs/V1.8.0-SCOPE.md",
+  "docs/V1.9.0-SCOPE.md",
   "docs/PLAN_EXECUTION_TRACKING_V170_SETUP.md",
   "docs/UAT_V170_PLAN_EXECUTION_TRACKING_CHECKLIST.md",
   "app/api/plan/reminders/route.ts",
@@ -161,7 +161,14 @@ for (const rel of [
   "supabase/migrations/202609030004_v180_smart_reminders_alerts.sql",
   "docs/SMART_REMINDERS_ALERTS_V180_SETUP.md",
   "docs/UAT_V180_SMART_REMINDERS_ALERTS_CHECKLIST.md",
-  "docs/V1.8.0-VALIDATION.md",
+  "app/(workspace)/portfolio/page.tsx",
+  "app/api/portfolio/route.ts",
+  "components/portfolio/portfolio-dashboard.tsx",
+  "lib/portfolio/types.ts",
+  "lib/portfolio/demo.ts",
+  "supabase/migrations/202609040001_v190_portfolio_catalog_delete_notes.sql",
+  "docs/UAT_V190_PORTFOLIO_CATALOG_DELETE_CHECKLIST.md",
+  "docs/V1.9.0-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -435,59 +442,84 @@ for (const token of ["date_mode", "plan_duration_between_v161", "validate_projec
 }
 
 for (const token of ["Execution Tasks", "MilestoneChecklistBlock", "PlanTaskModal", "executionProgress", "Task Rủi ro"]) {
-  planWorkspace.includes(token) ? pass(`V1.8.0 Execution UI: ${token}`) : fail(`V1.8.0 Execution UI: ${token}`);
+  planWorkspace.includes(token) ? pass(`V1.9.0 Execution UI: ${token}`) : fail(`V1.9.0 Execution UI: ${token}`);
 }
 
 const planTypesV170 = fs.readFileSync(path.join(root, "lib/planning/types.ts"), "utf8");
 for (const token of ["ProjectPlanTask", "MilestoneChecklistItem", "PlanTaskStatus", "PlanTaskPriority", "executionProgress"]) {
-  planTypesV170.includes(token) ? pass(`V1.8.0 Execution types: ${token}`) : fail(`V1.8.0 Execution types: ${token}`);
+  planTypesV170.includes(token) ? pass(`V1.9.0 Execution types: ${token}`) : fail(`V1.9.0 Execution types: ${token}`);
 }
 
 const planServerV170 = fs.readFileSync(path.join(root, "lib/planning/server.ts"), "utf8");
 for (const token of ["normalizePlanTask", "normalizeChecklistItem", "project_plan_tasks", "project_milestone_checklist_items", "nextPlanTaskSortOrder"]) {
-  planServerV170.includes(token) ? pass(`V1.8.0 Execution server: ${token}`) : fail(`V1.8.0 Execution server: ${token}`);
+  planServerV170.includes(token) ? pass(`V1.9.0 Execution server: ${token}`) : fail(`V1.9.0 Execution server: ${token}`);
 }
 
 const taskApiV170 = fs.readFileSync(path.join(root, "app/api/plan/tasks/route.ts"), "utf8");
 for (const token of ["parsePlanTaskInput", "project_plan_tasks", "completed_at", "V170_MIGRATION_REQUIRED"]) {
-  taskApiV170.includes(token) ? pass(`V1.8.0 Task API: ${token}`) : fail(`V1.8.0 Task API: ${token}`);
+  taskApiV170.includes(token) ? pass(`V1.9.0 Task API: ${token}`) : fail(`V1.9.0 Task API: ${token}`);
 }
 
 const checklistApiV170 = fs.readFileSync(path.join(root, "app/api/plan/checklist/route.ts"), "utf8");
 for (const token of ["parseMilestoneChecklistInput", "project_milestone_checklist_items", "completed_at", "V170_MIGRATION_REQUIRED"]) {
-  checklistApiV170.includes(token) ? pass(`V1.8.0 Checklist API: ${token}`) : fail(`V1.8.0 Checklist API: ${token}`);
+  checklistApiV170.includes(token) ? pass(`V1.9.0 Checklist API: ${token}`) : fail(`V1.9.0 Checklist API: ${token}`);
 }
 
 const executionMigrationV170 = fs.readFileSync(path.join(root, "supabase/migrations/202609030003_v170_plan_execution_tracking.sql"), "utf8");
 for (const token of ["project_plan_tasks", "project_milestone_checklist_items", "validate_project_plan_task_v170", "validate_milestone_checklist_v170", "capture_plan_execution_activity_v170"]) {
-  executionMigrationV170.includes(token) ? pass(`V1.8.0 Execution migration: ${token}`) : fail(`V1.8.0 Execution migration: ${token}`);
+  executionMigrationV170.includes(token) ? pass(`V1.9.0 Execution migration: ${token}`) : fail(`V1.9.0 Execution migration: ${token}`);
 }
 
 for (const token of ["Smart Alerts", "PlanReminderModal", "reminderEditor", "completeReminder", "snoozeReminder", "PLAN REMINDERS"]) {
-  planWorkspace.includes(token) ? pass(`V1.8.0 Smart Alerts UI: ${token}`) : fail(`V1.8.0 Smart Alerts UI: ${token}`);
+  planWorkspace.includes(token) ? pass(`V1.9.0 Smart Alerts UI: ${token}`) : fail(`V1.9.0 Smart Alerts UI: ${token}`);
 }
 
 const planTypesV180 = fs.readFileSync(path.join(root, "lib/planning/types.ts"), "utf8");
 for (const token of ["ProjectPlanReminder", "SmartPlanAlert", "PlanReminderStatus", "PlanReminderEntityType", "smartAlertCount"]) {
-  planTypesV180.includes(token) ? pass(`V1.8.0 Smart Alerts types: ${token}`) : fail(`V1.8.0 Smart Alerts types: ${token}`);
+  planTypesV180.includes(token) ? pass(`V1.9.0 Smart Alerts types: ${token}`) : fail(`V1.9.0 Smart Alerts types: ${token}`);
 }
 
 const planServerV180 = fs.readFileSync(path.join(root, "lib/planning/server.ts"), "utf8");
 for (const token of ["normalizePlanReminder", "project_plan_reminders", "planningEntityExists", "buildSmartPlanAlerts"]) {
-  planServerV180.includes(token) ? pass(`V1.8.0 Smart Alerts server: ${token}`) : fail(`V1.8.0 Smart Alerts server: ${token}`);
+  planServerV180.includes(token) ? pass(`V1.9.0 Smart Alerts server: ${token}`) : fail(`V1.9.0 Smart Alerts server: ${token}`);
 }
 
 const reminderApiV180 = fs.readFileSync(path.join(root, "app/api/plan/reminders/route.ts"), "utf8");
 for (const token of ["parsePlanReminderInput", "project_plan_reminders", "planningEntityExists", "V180_MIGRATION_REQUIRED"]) {
-  reminderApiV180.includes(token) ? pass(`V1.8.0 Reminder API: ${token}`) : fail(`V1.8.0 Reminder API: ${token}`);
+  reminderApiV180.includes(token) ? pass(`V1.9.0 Reminder API: ${token}`) : fail(`V1.9.0 Reminder API: ${token}`);
 }
 
 const reminderMigrationV180 = fs.readFileSync(path.join(root, "supabase/migrations/202609030004_v180_smart_reminders_alerts.sql"), "utf8");
 for (const token of ["project_plan_reminders", "validate_project_plan_reminder_v180", "capture_plan_reminder_activity_v180", "push_notification_v110", "project_plan_reminders_write_pm_v180"]) {
-  reminderMigrationV180.includes(token) ? pass(`V1.8.0 Reminder migration: ${token}`) : fail(`V1.8.0 Reminder migration: ${token}`);
+  reminderMigrationV180.includes(token) ? pass(`V1.9.0 Reminder migration: ${token}`) : fail(`V1.9.0 Reminder migration: ${token}`);
 }
 
-console.log("\nASC WORKING V1.8.0 - Smart Reminders & Alerts Preflight\n");
+const portfolioUiV190 = fs.readFileSync(path.join(root, "components/portfolio/portfolio-dashboard.tsx"), "utf8");
+for (const token of ["Cross-Project Portfolio", "Project Ranking", "Priority Board", "alertScore", "/api/portfolio"]) {
+  portfolioUiV190.includes(token) ? pass(`V1.9.0 Portfolio UI: ${token}`) : fail(`V1.9.0 Portfolio UI: ${token}`);
+}
+
+const portfolioApiV190 = fs.readFileSync(path.join(root, "app/api/portfolio/route.ts"), "utf8");
+for (const token of ["getWorkspaceProjects", "project_plan_reminders", "alertScore", "PORTFOLIO_QUERY_FAILED"]) {
+  portfolioApiV190.includes(token) ? pass(`V1.9.0 Portfolio API: ${token}`) : fail(`V1.9.0 Portfolio API: ${token}`);
+}
+
+const catalogApiV190 = fs.readFileSync(path.join(root, "app/api/project-catalog/route.ts"), "utf8");
+for (const token of ["export async function DELETE", "uniqueUuidList", "contract_detail_items", "hard delete", "blockedCount"]) {
+  catalogApiV190.includes(token) ? pass(`V1.9.0 Catalog hard delete API: ${token}`) : fail(`V1.9.0 Catalog hard delete API: ${token}`);
+}
+
+const catalogUiV190 = fs.readFileSync(path.join(root, "components/catalog/project-master-data-modal.tsx"), "utf8");
+for (const token of ["selectedDepartments", "selectedModules", "toggleAllVisible", "Xóa đã chọn", "Trash2"]) {
+  catalogUiV190.includes(token) ? pass(`V1.9.0 Catalog bulk delete UI: ${token}`) : fail(`V1.9.0 Catalog bulk delete UI: ${token}`);
+}
+
+const navigationV190 = fs.readFileSync(path.join(root, "lib/navigation.ts"), "utf8");
+for (const token of ["Portfolio", "/portfolio", "BriefcaseBusiness"]) {
+  navigationV190.includes(token) ? pass(`V1.9.0 Portfolio navigation: ${token}`) : fail(`V1.9.0 Portfolio navigation: ${token}`);
+}
+
+console.log("\nASC WORKING V1.9.0 - Cross-Project Portfolio Dashboard Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

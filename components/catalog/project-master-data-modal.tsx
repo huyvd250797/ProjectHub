@@ -13,6 +13,7 @@ import {
   Search,
   Settings2,
   ShieldCheck,
+  Trash2,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -71,6 +72,8 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
   const [search, setSearch] = useState("");
   const [departmentDraft, setDepartmentDraft] = useState<DepartmentDraft>(emptyDepartment);
   const [moduleDraft, setModuleDraft] = useState<ModuleDraft>(emptyModule);
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [selectedModules, setSelectedModules] = useState<string[]>([]);
 
   const load = useCallback(async (preserveMessage = false) => {
     setLoading(true);
@@ -111,6 +114,31 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
     setMessage(null);
     if (nextTab === "departments") setDepartmentDraft(emptyDepartment);
     else setModuleDraft(emptyModule);
+  }
+
+  function visibleIds() {
+    return tab === "departments" ? filteredDepartments.map((row) => row.id) : filteredModules.map((row) => row.id);
+  }
+
+  function selectedIds() {
+    return tab === "departments" ? selectedDepartments : selectedModules;
+  }
+
+  function toggleSelected(id: string, checked: boolean) {
+    if (tab === "departments") {
+      setSelectedDepartments((current) => checked ? [...new Set([...current, id])] : current.filter((item) => item !== id));
+      return;
+    }
+    setSelectedModules((current) => checked ? [...new Set([...current, id])] : current.filter((item) => item !== id));
+  }
+
+  function toggleAllVisible(checked: boolean) {
+    const ids = visibleIds();
+    if (tab === "departments") {
+      setSelectedDepartments((current) => checked ? [...new Set([...current, ...ids])] : current.filter((item) => !ids.includes(item)));
+      return;
+    }
+    setSelectedModules((current) => checked ? [...new Set([...current, ...ids])] : current.filter((item) => !ids.includes(item)));
   }
 
   function editDepartment(row: ProjectCatalogDepartment) {
@@ -180,7 +208,35 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
     } finally { setSaving(false); }
   }
 
+  async function deleteSelected() {
+    if (!data?.canManage || saving) return;
+    const ids = selectedIds();
+    if (!ids.length) return;
+    const label = tab === "departments" ? "phòng ban" : "Module";
+    if (!window.confirm(`Xóa thật ${ids.length} ${label} đã chọn? Dữ liệu đang được sử dụng sẽ được giữ lại.`)) return;
+    setSaving(true); setFieldErrors({}); setMessage(null);
+    try {
+      const response = await fetch("/api/project-catalog", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: selectedProject.id, entity: tab === "departments" ? "department" : "module", ids }),
+      });
+      const body = (await response.json()) as ProjectCatalogMutationResponse;
+      if (!body.ok) throw new Error(body.message);
+      if (tab === "departments") setSelectedDepartments([]);
+      else setSelectedModules([]);
+      await load(true);
+      setMessage({ type: body.blockedCount ? "error" : "ok", text: body.message });
+      window.dispatchEvent(new CustomEvent("asc-working:catalog-changed", { detail: { projectId: selectedProject.id, entity: tab === "departments" ? "department" : "module" } }));
+    } catch (reason) {
+      setMessage({ type: "error", text: reason instanceof Error ? reason.message : "Không xóa được dữ liệu." });
+    } finally { setSaving(false); }
+  }
+
   const activeDraft = tab === "departments" ? departmentDraft.id : moduleDraft.id;
+  const visible = visibleIds();
+  const selected = selectedIds();
+  const allVisibleSelected = visible.length > 0 && visible.every((id) => selected.includes(id));
 
   return (
     <div className="fixed inset-0 z-[230] flex items-center justify-center p-3 md:p-6">
@@ -203,6 +259,7 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
           <button type="button" onClick={() => { setTab("departments"); setSearch(""); resetDraft("departments"); }} className={cn("flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-medium", tab === "departments" ? "bg-cyan-300/[0.09] text-cyan-100" : "text-slate-500 hover:bg-white/[0.03] hover:text-slate-300")}><Building2 className="size-3.5" /> Phòng ban <span className="text-[9px] opacity-60">{data?.departments.length ?? 0}</span></button>
           <button type="button" onClick={() => { setTab("modules"); setSearch(""); resetDraft("modules"); }} className={cn("flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-medium", tab === "modules" ? "bg-violet-300/[0.09] text-violet-100" : "text-slate-500 hover:bg-white/[0.03] hover:text-slate-300")}><Layers3 className="size-3.5" /> Module PLHĐ <span className="text-[9px] opacity-60">{data?.modules.length ?? 0}</span></button>
           <div className="relative ml-auto w-full sm:w-[320px]"><Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-600" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={tab === "departments" ? "Tìm mã, tên phòng ban..." : "Tìm Module, phân hệ, phòng ban..."} className="h-9 w-full rounded-xl border border-white/[0.07] bg-black/10 pl-9 pr-3 text-xs text-slate-300 outline-none placeholder:text-slate-700 focus:border-cyan-300/20" /></div>
+          {data?.canManage ? <button type="button" disabled={!selected.length || saving} onClick={() => void deleteSelected()} className="flex h-9 items-center gap-2 rounded-xl border border-rose-300/15 bg-rose-300/[0.055] px-3 text-[10px] font-medium text-rose-100 disabled:cursor-not-allowed disabled:opacity-35"><Trash2 className="size-3.5" /> Xóa đã chọn {selected.length ? `(${selected.length})` : ""}</button> : null}
         </div>
 
         <div className="scrollbar-thin flex-1 overflow-y-auto p-5 md:p-6">
@@ -214,16 +271,16 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
                 {tab === "departments" ? (
                   <div className="max-h-[600px] overflow-auto scrollbar-thin">
                     <table className="w-full min-w-[650px] text-left text-xs">
-                      <thead className="sticky top-0 z-10 bg-[#0b192a]/95 text-[9px] uppercase tracking-[0.13em] text-slate-600"><tr><th className="px-4 py-3">Mã</th><th className="px-4 py-3">Tên phòng ban</th><th className="px-4 py-3">Trạng thái</th><th className="px-4 py-3 text-right">Thao tác</th></tr></thead>
-                      <tbody>{filteredDepartments.map((row) => <tr key={row.id} className="border-t border-white/[0.045] hover:bg-white/[0.02]"><td className="px-4 py-3 font-mono text-[10px] text-cyan-300/60">{row.code || "—"}</td><td className="px-4 py-3 font-medium text-slate-300">{row.name}</td><td className="px-4 py-3"><span className={cn("rounded-lg border px-2 py-1 text-[9px]", row.isActive ? "border-emerald-300/12 bg-emerald-300/[0.04] text-emerald-200/70" : "border-white/[0.06] text-slate-600")}>{row.isActive ? "Đang dùng" : "Ngừng dùng"}</span></td><td className="px-4 py-3 text-right">{data.canManage ? <button onClick={() => editDepartment(row)} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] text-slate-500 hover:bg-white/[0.04] hover:text-cyan-200"><Pencil className="size-3" /> Sửa</button> : null}</td></tr>)}</tbody>
+                      <thead className="sticky top-0 z-10 bg-[#0b192a]/95 text-[9px] uppercase tracking-[0.13em] text-slate-600"><tr><th className="w-12 px-4 py-3">{data.canManage ? <input type="checkbox" checked={allVisibleSelected} onChange={(event) => toggleAllVisible(event.target.checked)} aria-label="Chọn tất cả phòng ban đang hiển thị" /> : null}</th><th className="px-4 py-3">Mã</th><th className="px-4 py-3">Tên phòng ban</th><th className="px-4 py-3">Trạng thái</th><th className="px-4 py-3 text-right">Thao tác</th></tr></thead>
+                      <tbody>{filteredDepartments.map((row) => <tr key={row.id} className="border-t border-white/[0.045] hover:bg-white/[0.02]"><td className="px-4 py-3">{data.canManage ? <input type="checkbox" checked={selectedDepartments.includes(row.id)} onChange={(event) => toggleSelected(row.id, event.target.checked)} aria-label={`Chọn ${row.name}`} /> : null}</td><td className="px-4 py-3 font-mono text-[10px] text-cyan-300/60">{row.code || "—"}</td><td className="px-4 py-3 font-medium text-slate-300">{row.name}</td><td className="px-4 py-3"><span className={cn("rounded-lg border px-2 py-1 text-[9px]", row.isActive ? "border-emerald-300/12 bg-emerald-300/[0.04] text-emerald-200/70" : "border-white/[0.06] text-slate-600")}>{row.isActive ? "Đang dùng" : "Ngừng dùng"}</span></td><td className="px-4 py-3 text-right">{data.canManage ? <button onClick={() => editDepartment(row)} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] text-slate-500 hover:bg-white/[0.04] hover:text-cyan-200"><Pencil className="size-3" /> Sửa</button> : null}</td></tr>)}</tbody>
                     </table>
                     {!filteredDepartments.length ? <div className="p-12 text-center text-xs text-slate-600">Chưa có phòng ban phù hợp.</div> : null}
                   </div>
                 ) : (
                   <div className="max-h-[600px] overflow-auto scrollbar-thin">
                     <table className="w-full min-w-[860px] text-left text-xs">
-                      <thead className="sticky top-0 z-10 bg-[#0b192a]/95 text-[9px] uppercase tracking-[0.13em] text-slate-600"><tr><th className="px-4 py-3">Mã</th><th className="px-4 py-3">Module</th><th className="px-4 py-3">Phân hệ/Nhóm</th><th className="px-4 py-3">Phòng ban</th><th className="px-4 py-3">Trạng thái</th><th className="px-4 py-3 text-right">Thao tác</th></tr></thead>
-                      <tbody>{filteredModules.map((row) => <tr key={row.id} className="border-t border-white/[0.045] hover:bg-white/[0.02]"><td className="px-4 py-3 font-mono text-[10px] text-violet-300/65">{row.code || "—"}</td><td className="max-w-[280px] px-4 py-3"><div className="truncate font-medium text-slate-300" title={row.name}>{row.name}</div>{row.classification ? <div className="mt-1 truncate text-[9px] text-slate-700">{row.classification}</div> : null}</td><td className="max-w-[200px] truncate px-4 py-3 text-slate-500" title={row.parentName ?? ""}>{row.parentName || "—"}</td><td className="max-w-[180px] truncate px-4 py-3 text-slate-500" title={row.ownerDepartmentName ?? ""}>{row.ownerDepartmentName || "—"}</td><td className="px-4 py-3 text-[10px] text-slate-500">{row.moduleStatusLabel || "—"}</td><td className="px-4 py-3 text-right">{data.canManage ? <button onClick={() => editModule(row)} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] text-slate-500 hover:bg-white/[0.04] hover:text-violet-200"><Pencil className="size-3" /> Sửa</button> : null}</td></tr>)}</tbody>
+                      <thead className="sticky top-0 z-10 bg-[#0b192a]/95 text-[9px] uppercase tracking-[0.13em] text-slate-600"><tr><th className="w-12 px-4 py-3">{data.canManage ? <input type="checkbox" checked={allVisibleSelected} onChange={(event) => toggleAllVisible(event.target.checked)} aria-label="Chọn tất cả Module đang hiển thị" /> : null}</th><th className="px-4 py-3">Mã</th><th className="px-4 py-3">Module</th><th className="px-4 py-3">Phân hệ/Nhóm</th><th className="px-4 py-3">Phòng ban</th><th className="px-4 py-3">Trạng thái</th><th className="px-4 py-3 text-right">Thao tác</th></tr></thead>
+                      <tbody>{filteredModules.map((row) => <tr key={row.id} className="border-t border-white/[0.045] hover:bg-white/[0.02]"><td className="px-4 py-3">{data.canManage ? <input type="checkbox" checked={selectedModules.includes(row.id)} onChange={(event) => toggleSelected(row.id, event.target.checked)} aria-label={`Chọn ${row.name}`} /> : null}</td><td className="px-4 py-3 font-mono text-[10px] text-violet-300/65">{row.code || "—"}</td><td className="max-w-[280px] px-4 py-3"><div className="truncate font-medium text-slate-300" title={row.name}>{row.name}</div>{row.classification ? <div className="mt-1 truncate text-[9px] text-slate-700">{row.classification}</div> : null}</td><td className="max-w-[200px] truncate px-4 py-3 text-slate-500" title={row.parentName ?? ""}>{row.parentName || "—"}</td><td className="max-w-[180px] truncate px-4 py-3 text-slate-500" title={row.ownerDepartmentName ?? ""}>{row.ownerDepartmentName || "—"}</td><td className="px-4 py-3 text-[10px] text-slate-500">{row.moduleStatusLabel || "—"}</td><td className="px-4 py-3 text-right">{data.canManage ? <button onClick={() => editModule(row)} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] text-slate-500 hover:bg-white/[0.04] hover:text-violet-200"><Pencil className="size-3" /> Sửa</button> : null}</td></tr>)}</tbody>
                     </table>
                     {!filteredModules.length ? <div className="p-12 text-center text-xs text-slate-600">Chưa có Module phù hợp.</div> : null}
                   </div>
@@ -253,7 +310,7 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
                     <button disabled={saving} onClick={() => void saveModule()} className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-violet-200 px-4 text-xs font-semibold text-[#07111f] disabled:opacity-50">{saving ? <LoaderCircle className="size-4 animate-spin" /> : <Check className="size-4" />}{moduleDraft.id ? "Lưu thay đổi" : "Thêm Module"}</button>
                   </>
                 ) : (
-                  <div className="rounded-xl border border-amber-300/12 bg-amber-300/[0.04] p-4"><div className="flex items-center gap-2 text-xs font-semibold text-amber-100"><ShieldCheck className="size-4" /> Chế độ chỉ xem</div><p className="mt-2 text-[10px] leading-5 text-amber-100/50">Role {data.role} được xem danh mục. Chỉ MASTER/Admin/PM mới được thêm hoặc chỉnh sửa Phòng ban và Module của Project.</p></div>
+                  <div className="rounded-xl border border-amber-300/12 bg-amber-300/[0.04] p-4"><div className="flex items-center gap-2 text-xs font-semibold text-amber-100"><ShieldCheck className="size-4" /> Chế độ chỉ xem</div><p className="mt-2 text-[10px] leading-5 text-amber-100/50">Role {data.role} được xem danh mục. Chỉ MASTER/Admin/PM mới được thêm, chỉnh sửa hoặc xóa Phòng ban và Module của Project.</p></div>
                 )}
               </aside>
             </div>

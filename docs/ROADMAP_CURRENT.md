@@ -31,13 +31,14 @@
 - ✅ V1.6.1 — Editable Stage Date Ranges
 - ✅ V1.7.0 — Plan Execution & Tracking
 - ✅ V1.8.0 — Smart Reminders & Alerts
+- ✅ V1.9.0 — Cross-Project Portfolio Dashboard
 
 ## Current
-- **V1.8.0 — Smart Reminders & Alerts**
+- **V1.9.0 — Cross-Project Portfolio Dashboard**
 
 ## Deferred by product decision
 - Jira Integration / Sync
 
 ## Candidate next
-- V1.9.0 — Cross-Project Portfolio Dashboard
 - V2.0.0 — Project Templates & Faster Project Setup
+- V2.1.0 — PM Workload & Capacity Planning

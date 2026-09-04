@@ -35,6 +35,11 @@ function integer(value: unknown, fallback = 0) {
   return Number.isFinite(parsed) ? Math.trunc(parsed) : fallback;
 }
 
+function uniqueUuidList(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.map((item) => text(item, 60)).filter((item) => uuidPattern.test(item)))];
+}
+
 function canManage(role: string | null) {
   return role === "admin" || role === "pm";
 }
@@ -313,4 +318,61 @@ export async function PATCH(request: NextRequest) {
     .eq("item_type", "module");
   if (error) return NextResponse.json({ ok: false, code: "MODULE_UPDATE_FAILED", message: databaseMessage(error, entity) } satisfies ProjectCatalogMutationResponse, { status: 400 });
   return NextResponse.json({ ok: true, message: "Đã cập nhật Module PLHĐ." } satisfies ProjectCatalogMutationResponse);
+}
+
+export async function DELETE(request: NextRequest) {
+  // V1.9.0 hard delete: unused catalog rows are removed permanently, not archived.
+  let body: Record<string, unknown>;
+  try { body = await request.json() as Record<string, unknown>; }
+  catch { return NextResponse.json({ ok: false, code: "INVALID_JSON", message: "Dữ liệu gửi lên không hợp lệ." } satisfies ProjectCatalogMutationResponse, { status: 400 }); }
+
+  const projectId = text(body.projectId, 60);
+  const entity = body.entity === "module" ? "module" : body.entity === "department" ? "department" : null;
+  const ids = uniqueUuidList(body.ids);
+  if (!entity || !ids.length) return NextResponse.json({ ok: false, code: "INVALID_TARGET", message: "Chưa chọn dữ liệu cần xóa." } satisfies ProjectCatalogMutationResponse, { status: 400 });
+
+  const context = await getContext(projectId);
+  if ("error" in context) return context.error;
+  const { supabase, role } = context;
+  if (!canManage(role)) return NextResponse.json({ ok: false, code: "FORBIDDEN_WRITE", message: "Chỉ MASTER/Admin/PM mới được xóa danh mục Project." } satisfies ProjectCatalogMutationResponse, { status: 403 });
+
+  if (entity === "department") {
+    const [{ data: owned }, issueUsage, peopleUsage, moduleUsage] = await Promise.all([
+      supabase.from("departments").select("id").eq("project_id", projectId).in("id", ids),
+      supabase.from("issues").select("department_id").eq("project_id", projectId).in("department_id", ids),
+      supabase.from("people").select("department_id").eq("project_id", projectId).in("department_id", ids),
+      supabase.from("contract_items").select("owner_department_id").eq("project_id", projectId).in("owner_department_id", ids),
+    ]);
+    const ownedIds = new Set((owned ?? []).map((row) => String(row.id)));
+    const blocked = new Set<string>();
+    for (const row of issueUsage.data ?? []) if (row.department_id) blocked.add(String(row.department_id));
+    for (const row of peopleUsage.data ?? []) if (row.department_id) blocked.add(String(row.department_id));
+    for (const row of moduleUsage.data ?? []) if (row.owner_department_id) blocked.add(String(row.owner_department_id));
+    const deletable = ids.filter((id) => ownedIds.has(id) && !blocked.has(id));
+    if (deletable.length) {
+      const { error } = await supabase.from("departments").delete().eq("project_id", projectId).in("id", deletable);
+      if (error) return NextResponse.json({ ok: false, code: "DEPARTMENT_DELETE_FAILED", message: `Không xóa được phòng ban: ${error.message}` } satisfies ProjectCatalogMutationResponse, { status: 400 });
+    }
+    const blockedCount = ids.filter((id) => ownedIds.has(id) && blocked.has(id)).length;
+    return NextResponse.json({ ok: true, deletedCount: deletable.length, blockedCount, message: blockedCount ? `Đã xóa ${deletable.length} phòng ban. ${blockedCount} phòng ban đang được sử dụng nên không xóa.` : `Đã xóa ${deletable.length} phòng ban.` } satisfies ProjectCatalogMutationResponse);
+  }
+
+  const [{ data: owned }, issueUsage, detailUsage, childUsage] = await Promise.all([
+    supabase.from("contract_items").select("id").eq("project_id", projectId).eq("item_type", "module").in("id", ids),
+    supabase.from("issues").select("module_id").eq("project_id", projectId).in("module_id", ids),
+    supabase.from("contract_detail_items").select("contract_item_id").eq("project_id", projectId).in("contract_item_id", ids),
+    supabase.from("contract_items").select("parent_id").eq("project_id", projectId).in("parent_id", ids),
+  ]);
+  const ownedIds = new Set((owned ?? []).map((row) => String(row.id)));
+  const blocked = new Set<string>();
+  for (const row of issueUsage.data ?? []) if (row.module_id) blocked.add(String(row.module_id));
+  for (const row of detailUsage.data ?? []) if (row.contract_item_id) blocked.add(String(row.contract_item_id));
+  for (const row of childUsage.data ?? []) if (row.parent_id) blocked.add(String(row.parent_id));
+  const deletable = ids.filter((id) => ownedIds.has(id) && !blocked.has(id));
+  if (deletable.length) {
+    const { error } = await supabase.from("contract_items").delete().eq("project_id", projectId).eq("item_type", "module").in("id", deletable);
+    if (error) return NextResponse.json({ ok: false, code: "MODULE_DELETE_FAILED", message: `Không xóa được Module: ${error.message}` } satisfies ProjectCatalogMutationResponse, { status: 400 });
+  }
+  const blockedCount = ids.filter((id) => ownedIds.has(id) && blocked.has(id)).length;
+  return NextResponse.json({ ok: true, deletedCount: deletable.length, blockedCount, message: blockedCount ? `Đã xóa ${deletable.length} Module. ${blockedCount} Module đang được sử dụng nên không xóa.` : `Đã xóa ${deletable.length} Module.` } satisfies ProjectCatalogMutationResponse);
 }
