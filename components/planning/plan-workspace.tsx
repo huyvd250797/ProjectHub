@@ -32,7 +32,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { useProject } from "@/components/project-context";
-import { MasterPlanModal, MilestoneChecklistModal, MilestoneModal, PlanReminderModal, PlanTaskModal, StageModal } from "@/components/planning/plan-modals";
+import { AutoGeneratePlanModal, MasterPlanModal, MilestoneChecklistModal, MilestoneModal, PlanReminderModal, PlanTaskModal, StageModal } from "@/components/planning/plan-modals";
 import { PlanTimeline } from "@/components/planning/plan-timeline";
 import { nextScheduleDate, normalizeScheduleStart, parseDateOnly } from "@/lib/planning/schedule";
 import type {
@@ -326,6 +326,7 @@ export function PlanWorkspace() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [action, setAction] = useState("");
+  const [autoGenerateOpen, setAutoGenerateOpen] = useState(false);
   const [masterOpen, setMasterOpen] = useState(false);
   const [stageEditor, setStageEditor] = useState<ProjectPlanStage | null | undefined>(undefined);
   const [milestoneEditor, setMilestoneEditor] = useState<ProjectMilestone | null | undefined>(undefined);
@@ -348,7 +349,7 @@ export function PlanWorkspace() {
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
-      setView("overview"); setNotice(""); setMasterOpen(false); setStageEditor(undefined); setMilestoneEditor(undefined);
+      setView("overview"); setNotice(""); setAutoGenerateOpen(false); setMasterOpen(false); setStageEditor(undefined); setMilestoneEditor(undefined);
       setTaskEditor(undefined); setChecklistEditor(null); setReminderEditor(undefined);
       void loadPlan();
     });
@@ -395,7 +396,7 @@ export function PlanWorkspace() {
   }
 
   function saved(message: string) {
-    setMasterOpen(false); setStageEditor(undefined); setMilestoneEditor(undefined); setTaskEditor(undefined); setChecklistEditor(null); setReminderEditor(undefined); setNotice(message); void loadPlan();
+    setAutoGenerateOpen(false); setMasterOpen(false); setStageEditor(undefined); setMilestoneEditor(undefined); setTaskEditor(undefined); setChecklistEditor(null); setReminderEditor(undefined); setNotice(message); void loadPlan();
   }
 
   async function recalculate() {
@@ -489,6 +490,7 @@ export function PlanWorkspace() {
           {data ? <button type="button" onClick={() => exportPlan(data)} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-white"><Download className="size-3.5" /> Export</button> : null}
           <button type="button" onClick={() => void loadPlan()} className="grid size-10 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-slate-500 hover:text-cyan-200" aria-label="Làm mới"><RefreshCw className={cn("size-4", loading && "animate-spin")} /></button>
           {data?.canEdit && data.masterPlan ? <button type="button" disabled={Boolean(action)} onClick={() => void recalculate()} className="flex h-10 items-center gap-2 rounded-xl border border-violet-300/15 bg-violet-300/[0.055] px-3 text-[10px] text-violet-200 hover:bg-violet-300/[0.09] disabled:opacity-40">{action === "recalculate" ? <LoaderCircle className="size-3.5 animate-spin" /> : <Route className="size-3.5" />} Tính lại lịch</button> : null}
+          {data?.canEdit ? <button type="button" onClick={() => setAutoGenerateOpen(true)} className="flex h-10 items-center gap-2 rounded-xl border border-amber-300/18 bg-amber-300/[0.065] px-3 text-[10px] font-medium text-amber-100 hover:bg-amber-300/[0.1]"><Sparkles className="size-3.5" /> Auto Generate Plan</button> : null}
           {data?.canEdit ? <button type="button" onClick={() => setMasterOpen(true)} className="flex h-10 items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.09] px-3 text-[10px] font-medium text-cyan-100 hover:bg-cyan-300/[0.14]"><Target className="size-3.5" /> {data.masterPlan ? "Chỉnh Master Plan" : "Tạo Master Plan"}</button> : null}
         </div>}
       />
@@ -518,7 +520,7 @@ export function PlanWorkspace() {
           {view === "overview" ? (
             <>
               {!data.masterPlan ? (
-                <div className="tech-panel grid min-h-[360px] place-items-center rounded-2xl px-6 text-center"><div><Target className="mx-auto size-10 text-cyan-300/45" /><h2 className="mt-5 text-lg font-semibold text-white">Project chưa có Master Plan</h2><p className="mx-auto mt-2 max-w-lg text-xs leading-5 text-slate-500">Khởi tạo ngày bắt đầu, ngày mục tiêu và cách tính thời lượng. Sau đó thêm Project Stages; hệ thống sẽ tự dựng timeline tuần tự.</p>{data.canEdit ? <button type="button" onClick={() => setMasterOpen(true)} className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.09] px-4 text-xs text-cyan-100"><Plus className="size-4" /> Khởi tạo Master Plan</button> : null}</div></div>
+                <div className="tech-panel grid min-h-[360px] place-items-center rounded-2xl px-6 text-center"><div><Target className="mx-auto size-10 text-cyan-300/45" /><h2 className="mt-5 text-lg font-semibold text-white">Project chưa có Master Plan</h2><p className="mx-auto mt-2 max-w-lg text-xs leading-5 text-slate-500">Khởi tạo ngày bắt đầu, ngày mục tiêu và cách tính thời lượng. Auto Generate Plan có thể dựng nhanh stage, số ngày và milestone từ khoảng ngày bạn nhập.</p>{data.canEdit ? <div className="mt-5 flex flex-wrap justify-center gap-2"><button type="button" onClick={() => setAutoGenerateOpen(true)} className="inline-flex h-10 items-center gap-2 rounded-xl border border-amber-300/20 bg-amber-300/[0.08] px-4 text-xs text-amber-100"><Sparkles className="size-4" /> Auto Generate Plan</button><button type="button" onClick={() => setMasterOpen(true)} className="inline-flex h-10 items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.09] px-4 text-xs text-cyan-100"><Plus className="size-4" /> Khởi tạo thủ công</button></div> : null}</div></div>
               ) : (
                 <>
                   <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -617,6 +619,7 @@ export function PlanWorkspace() {
       ) : null}
 
       {masterOpen && data ? <MasterPlanModal projectId={selectedProject.id} projectName={selectedProject.code} plan={data.masterPlan} onClose={() => setMasterOpen(false)} onSaved={saved} /> : null}
+      {autoGenerateOpen && data ? <AutoGeneratePlanModal projectId={selectedProject.id} projectName={selectedProject.code} plan={data.masterPlan} existingStageCount={data.stages.length} existingMilestoneCount={data.milestones.length} onClose={() => setAutoGenerateOpen(false)} onSaved={saved} /> : null}
       {stageEditor !== undefined && data ? <StageModal projectId={selectedProject.id} stage={stageEditor} suggestedCode={suggestedStageCode} suggestedStartDate={suggestedStageStart} scheduleMode={data.masterPlan?.scheduleMode ?? "calendar_days"} people={data.people} onClose={() => setStageEditor(undefined)} onSaved={saved} /> : null}
       {milestoneEditor !== undefined && data ? <MilestoneModal projectId={selectedProject.id} milestone={milestoneEditor} defaultDate={data.masterPlan?.targetEndDate ?? data.summary.forecastEndDate ?? new Date().toISOString().slice(0, 10)} stages={data.stages} people={data.people} onClose={() => setMilestoneEditor(undefined)} onSaved={saved} /> : null}
       {taskEditor !== undefined && data ? <PlanTaskModal projectId={selectedProject.id} task={taskEditor} defaultStageId={defaultTaskStage?.id ?? ""} defaultDueDate={defaultTaskStage?.endDate ?? data.summary.forecastEndDate ?? ""} stages={data.stages} people={data.people} onClose={() => setTaskEditor(undefined)} onSaved={saved} /> : null}

@@ -1,4 +1,7 @@
 import type {
+  AutoGeneratePlanInput,
+  AutoPlanApplyMode,
+  AutoPlanProfile,
   MasterPlanInput,
   MasterPlanStatus,
   MilestoneChecklistInput,
@@ -15,6 +18,7 @@ import type {
   ProjectStageStatus,
   StageInput,
 } from "@/lib/planning/types";
+import { countScheduleDays, normalizeScheduleStart } from "@/lib/planning/schedule";
 
 type ParseResult<T> =
   | { ok: true; input: T }
@@ -82,6 +86,38 @@ export function parseMasterPlanInput(value: unknown): ParseResult<MasterPlanInpu
   return Object.keys(errors).length
     ? { ok: false, errors }
     : { ok: true, input: { projectId, title, objective, startDate, targetEndDate, scheduleMode, status, notes, recalculate: body.recalculate !== false } };
+}
+
+export function parseAutoGeneratePlanInput(value: unknown): ParseResult<AutoGeneratePlanInput> {
+  const body = record(value);
+  const errors: Record<string, string> = {};
+  const projectId = requiredText(body.projectId);
+  const title = requiredText(body.title);
+  const objective = nullableText(body.objective);
+  const startDate = requiredText(body.startDate);
+  const targetEndDate = requiredText(body.targetEndDate);
+  const scheduleMode = requiredText(body.scheduleMode || "business_days") as PlanScheduleMode;
+  const profile = requiredText(body.profile || "standard_implementation") as AutoPlanProfile;
+  const applyMode = requiredText(body.applyMode || "append") as AutoPlanApplyMode;
+
+  if (!UUID_PATTERN.test(projectId)) errors.projectId = "Project không hợp lệ.";
+  if (title.length < 2 || title.length > 160) errors.title = "Tên Master Plan cần từ 2 đến 160 ký tự.";
+  if (objective && objective.length > 2_000) errors.objective = "Mục tiêu tối đa 2.000 ký tự.";
+  if (!validDate(startDate)) errors.startDate = "Ngày bắt đầu không hợp lệ.";
+  if (!validDate(targetEndDate)) errors.targetEndDate = "Ngày kết thúc không hợp lệ.";
+  if (validDate(startDate) && validDate(targetEndDate) && targetEndDate < startDate) errors.targetEndDate = "Ngày kết thúc phải từ ngày bắt đầu trở đi.";
+  if (!(["calendar_days", "business_days"] as string[]).includes(scheduleMode)) errors.scheduleMode = "Cách tính ngày không hợp lệ.";
+  if (!(["standard_implementation", "compressed_delivery", "uat_go_live"] as string[]).includes(profile)) errors.profile = "Kiểu gợi ý kế hoạch không hợp lệ.";
+  if (!(["append", "replace_existing"] as string[]).includes(applyMode)) errors.applyMode = "Cách áp dụng kế hoạch không hợp lệ.";
+  if (validDate(startDate) && validDate(targetEndDate) && targetEndDate >= startDate) {
+    const totalDays = countScheduleDays(normalizeScheduleStart(startDate, scheduleMode), targetEndDate, scheduleMode);
+    if (totalDays < 1) errors.targetEndDate = scheduleMode === "business_days" ? "Khoảng ngày đã chọn không có ngày làm việc." : "Khoảng ngày không hợp lệ.";
+    if (totalDays > 3_650) errors.targetEndDate = "Khoảng kế hoạch tối đa 3.650 ngày.";
+  }
+
+  return Object.keys(errors).length
+    ? { ok: false, errors }
+    : { ok: true, input: { projectId, title, objective, startDate, targetEndDate, scheduleMode, profile, applyMode, dryRun: body.dryRun !== false } };
 }
 
 export function parseStageInput(value: unknown): ParseResult<StageInput> {

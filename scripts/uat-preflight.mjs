@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "2.0.0" ? pass("Package version", "2.0.0") : fail("Package version", `Expected 2.0.0, got ${pkg.version}`);
+pkg.version === "2.1.0" ? pass("Package version", "2.1.0") : fail("Package version", `Expected 2.1.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -179,6 +179,10 @@ for (const rel of [
   "docs/V1.9.2-VALIDATION.md",
   "docs/V2.0.0-SCOPE.md",
   "docs/V2.0.0-VALIDATION.md",
+  "app/api/plan/auto-generate/route.ts",
+  "lib/planning/auto-generate.ts",
+  "docs/V2.1.0-SCOPE.md",
+  "docs/V2.1.0-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -577,7 +581,7 @@ for (const token of ["onDoubleClick", "asc-working:navbar-reload", "navigationDi
 }
 
 const appShellV200 = fs.readFileSync(path.join(root, "components/app-shell.tsx"), "utf8");
-for (const token of ["navbarReloadKey", "asc-working:navbar-reload", "Project Command Center"]) {
+for (const token of ["navbarReloadKey", "asc-working:navbar-reload", "Auto Generate Plan"]) {
   appShellV200.includes(token) ? pass(`V2.0.0 Navbar remount: ${token}`) : fail(`V2.0.0 Navbar remount: ${token}`);
 }
 
@@ -586,7 +590,27 @@ for (const token of ["Tên gốc", "Tên hiển thị", "Lưu navbar", "onDispla
   navigationManagerV200.includes(token) ? pass(`V2.0.0 Navbar label manager: ${token}`) : fail(`V2.0.0 Navbar label manager: ${token}`);
 }
 
-console.log("\nASC WORKING V2.0.0 - Project Command Center Preflight\n");
+const autoGeneratePlanApiV210 = fs.readFileSync(path.join(root, "app/api/plan/auto-generate/route.ts"), "utf8");
+for (const token of ["createAutoPlanPreview", "replace_existing", "PLAN_HAS_EXECUTION_DATA", "project_stages", "project_milestones", "dryRun"]) {
+  autoGeneratePlanApiV210.includes(token) ? pass(`V2.1.0 Auto Generate Plan API: ${token}`) : fail(`V2.1.0 Auto Generate Plan API: ${token}`);
+}
+
+const autoGeneratePlanCoreV210 = fs.readFileSync(path.join(root, "lib/planning/auto-generate.ts"), "utf8");
+for (const token of ["standard_implementation", "compressed_delivery", "uat_go_live", "countScheduleDays", "milestoneTitle"]) {
+  autoGeneratePlanCoreV210.includes(token) ? pass(`V2.1.0 Auto plan engine: ${token}`) : fail(`V2.1.0 Auto plan engine: ${token}`);
+}
+
+const planModalsV210 = fs.readFileSync(path.join(root, "components/planning/plan-modals.tsx"), "utf8");
+for (const token of ["AutoGeneratePlanModal", "Tự sinh stage, số ngày và milestone", "createAutoPlanPreview", "Tạo kế hoạch", "replace_existing"]) {
+  planModalsV210.includes(token) ? pass(`V2.1.0 Auto Generate Plan modal: ${token}`) : fail(`V2.1.0 Auto Generate Plan modal: ${token}`);
+}
+
+const planWorkspaceV210 = fs.readFileSync(path.join(root, "components/planning/plan-workspace.tsx"), "utf8");
+for (const token of ["autoGenerateOpen", "Auto Generate Plan", "AutoGeneratePlanModal"]) {
+  planWorkspaceV210.includes(token) ? pass(`V2.1.0 Auto Generate Plan workspace: ${token}`) : fail(`V2.1.0 Auto Generate Plan workspace: ${token}`);
+}
+
+console.log("\nASC WORKING V2.1.0 - Auto Generate Plan Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

@@ -1,10 +1,13 @@
 "use client";
 
-import { BellRing, CalendarClock, CalendarRange, Check, CheckSquare2, ClipboardList, Flag, Layers3, LoaderCircle, Save, Target, X } from "lucide-react";
+import { BellRing, CalendarClock, CalendarRange, Check, CheckSquare2, ClipboardList, Flag, Layers3, LoaderCircle, Save, Sparkles, Target, X } from "lucide-react";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { ThemedSelect } from "@/components/ui/themed-select";
+import { createAutoPlanPreview } from "@/lib/planning/auto-generate";
 import { addScheduleDuration, countScheduleDays } from "@/lib/planning/schedule";
 import type {
+  AutoPlanApplyMode,
+  AutoPlanProfile,
   MasterPlan,
   MasterPlanStatus,
   MilestoneChecklistItem,
@@ -34,6 +37,17 @@ const masterStatusOptions = [
 const scheduleOptions = [
   { value: "calendar_days", label: "Ngày lịch", description: "Tính cả thứ Bảy và Chủ nhật" },
   { value: "business_days", label: "Ngày làm việc", description: "Bỏ qua thứ Bảy và Chủ nhật" },
+];
+
+const autoPlanProfileOptions = [
+  { value: "standard_implementation", label: "Triển khai chuẩn", description: "6 stage: kickoff, phân tích, build, UAT, chuyển giao, go-live" },
+  { value: "compressed_delivery", label: "Triển khai nhanh", description: "5 stage, ưu tiên tốc độ và phạm vi trọng yếu" },
+  { value: "uat_go_live", label: "UAT / Go-live", description: "Tập trung readiness, UAT, sign-off và hypercare" },
+];
+
+const autoPlanApplyOptions = [
+  { value: "append", label: "Tạo thêm vào kế hoạch hiện tại", description: "Giữ stage/milestone đang có và thêm bộ gợi ý mới phía sau" },
+  { value: "replace_existing", label: "Thay thế stage/milestone hiện có", description: "Chỉ áp dụng khi chưa có task, checklist hoặc reminder phụ thuộc" },
 ];
 
 const stageStatusOptions = [
@@ -110,12 +124,25 @@ function defaultDateTimeLocal() {
   return toDateTimeLocal(next.toISOString());
 }
 
+function addCalendarDays(value: string, days: number) {
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  parsed.setUTCDate(parsed.getUTCDate() + days);
+  return parsed.toISOString().slice(0, 10);
+}
+
+function displayDate(value: string) {
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" }).format(parsed);
+}
+
 function ModalShell({
   eyebrow,
   title,
   description,
   icon,
   saving,
+  submitLabel = "Lưu thay đổi",
   onClose,
   onSubmit,
   children,
@@ -125,6 +152,7 @@ function ModalShell({
   description: string;
   icon: ReactNode;
   saving: boolean;
+  submitLabel?: string;
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   children: ReactNode;
@@ -145,7 +173,7 @@ function ModalShell({
         <div className="scrollbar-thin overflow-y-auto p-5 md:p-6">{children}</div>
         <div className="flex items-center justify-end gap-2 border-t border-white/[0.07] px-5 py-4 md:px-6">
           <button type="button" onClick={onClose} className="h-10 rounded-xl border border-white/[0.08] px-4 text-xs text-slate-500 hover:text-slate-200">Hủy</button>
-          <button type="submit" disabled={saving} className="flex h-10 items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.1] px-4 text-xs font-medium text-cyan-100 hover:bg-cyan-300/[0.15] disabled:opacity-45">{saving ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />} Lưu thay đổi</button>
+          <button type="submit" disabled={saving} className="flex h-10 items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.1] px-4 text-xs font-medium text-cyan-100 hover:bg-cyan-300/[0.15] disabled:opacity-45">{saving ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />} {submitLabel}</button>
         </div>
       </form>
     </div>
@@ -215,6 +243,88 @@ export function MasterPlanModal({
         <div className="md:col-span-2"><FieldLabel>Ghi chú điều hành</FieldLabel><textarea className="field min-h-28 resize-y py-3" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Giả định, ràng buộc, nguyên tắc điều phối..." /><FieldError message={fieldErrors.notes} /></div>
       </div>
       <div className="mt-5 flex items-start gap-3 rounded-xl border border-cyan-300/10 bg-cyan-300/[0.035] p-4 text-[10px] leading-5 text-slate-500"><Check className="mt-0.5 size-4 shrink-0 text-cyan-300/70" /><span>Khi lưu, hệ thống tính lại các stage ở chế độ tự động nhưng giữ nguyên Từ ngày – Đến ngày đã nhập thủ công. Ngày Master Plan cũng đồng bộ sang hồ sơ Project để Dashboard và Analytics sử dụng.</span></div>
+    </ModalShell>
+  );
+}
+
+export function AutoGeneratePlanModal({
+  projectId,
+  projectName,
+  plan,
+  existingStageCount,
+  existingMilestoneCount,
+  onClose,
+  onSaved,
+}: {
+  projectId: string;
+  projectName: string;
+  plan: MasterPlan | null;
+  existingStageCount: number;
+  existingMilestoneCount: number;
+  onClose: () => void;
+  onSaved: (message: string) => void;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [title, setTitle] = useState(plan?.title ?? `Master Plan ${projectName}`);
+  const [objective, setObjective] = useState(plan?.objective ?? "Kế hoạch triển khai được sinh tự động từ ngày bắt đầu/kết thúc, có thể chỉnh thủ công theo thực tế dự án.");
+  const [startDate, setStartDate] = useState(plan?.startDate ?? today);
+  const [targetEndDate, setTargetEndDate] = useState(plan?.targetEndDate ?? addCalendarDays(today, 89));
+  const [scheduleMode, setScheduleMode] = useState<PlanScheduleMode>(plan?.scheduleMode ?? "business_days");
+  const [profile, setProfile] = useState<AutoPlanProfile>("standard_implementation");
+  const [applyMode, setApplyMode] = useState<AutoPlanApplyMode>(existingStageCount || existingMilestoneCount ? "append" : "replace_existing");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const preview = useMemo(() => {
+    if (!startDate || !targetEndDate || targetEndDate < startDate) return null;
+    const total = countScheduleDays(startDate, targetEndDate, scheduleMode);
+    if (total < 1 || total > 3_650) return null;
+    return createAutoPlanPreview({ startDate, targetEndDate, scheduleMode, profile });
+  }, [profile, scheduleMode, startDate, targetEndDate]);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true); setError(""); setFieldErrors({});
+    try {
+      const result = await readMutation(await fetch("/api/plan/auto-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId, title, objective, startDate, targetEndDate, scheduleMode, profile, applyMode, dryRun: false }),
+      }));
+      onSaved(result.message);
+    } catch (reason) {
+      const parsed = mutationError(reason); setError(parsed.message); setFieldErrors(parsed.fieldErrors);
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <ModalShell eyebrow="Auto Generate Plan" title="Tự sinh stage, số ngày và milestone" description="Nhập ngày bắt đầu/kết thúc để app đề xuất timeline triển khai. Sau khi tạo, bạn vẫn chỉnh thủ công từng stage và milestone như bình thường." icon={<Sparkles className="size-5" />} saving={saving} submitLabel="Tạo kế hoạch" onClose={onClose} onSubmit={submit}>
+      {error ? <div className="mb-5 rounded-xl border border-rose-300/15 bg-rose-300/[0.05] px-4 py-3 text-xs text-rose-200">{error}</div> : null}
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div className="md:col-span-2"><FieldLabel required>Tên Master Plan</FieldLabel><input className="field" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Ví dụ: Master Plan triển khai HIU-CR" /><FieldError message={fieldErrors.title} /></div>
+        <div className="md:col-span-2"><FieldLabel>Mục tiêu tổng thể</FieldLabel><textarea className="field min-h-20 resize-y py-3" value={objective} onChange={(event) => setObjective(event.target.value)} placeholder="Mục tiêu, phạm vi và đầu ra chính của kế hoạch..." /><FieldError message={fieldErrors.objective} /></div>
+        <div><FieldLabel required>Ngày bắt đầu</FieldLabel><input type="date" className="field" value={startDate} onChange={(event) => { const value = event.target.value; setStartDate(value); if (targetEndDate && value && targetEndDate < value) setTargetEndDate(value); }} /><FieldError message={fieldErrors.startDate} /></div>
+        <div><FieldLabel required>Ngày kết thúc</FieldLabel><input type="date" className="field" min={startDate || undefined} value={targetEndDate} onChange={(event) => setTargetEndDate(event.target.value)} /><FieldError message={fieldErrors.targetEndDate} /></div>
+        <div><FieldLabel required>Cách tính ngày</FieldLabel><ThemedSelect value={scheduleMode} onChange={(value) => setScheduleMode(value as PlanScheduleMode)} options={scheduleOptions} ariaLabel="Cách tính ngày Auto Generate Plan" leading={<CalendarClock className="size-3.5" />} /><FieldError message={fieldErrors.scheduleMode} /></div>
+        <div><FieldLabel required>Kiểu gợi ý</FieldLabel><ThemedSelect value={profile} onChange={(value) => setProfile(value as AutoPlanProfile)} options={autoPlanProfileOptions} ariaLabel="Kiểu gợi ý kế hoạch" leading={<Sparkles className="size-3.5" />} /><FieldError message={fieldErrors.profile} /></div>
+        <div className="md:col-span-2"><FieldLabel required>Cách áp dụng</FieldLabel><ThemedSelect value={applyMode} onChange={(value) => setApplyMode(value as AutoPlanApplyMode)} options={autoPlanApplyOptions} ariaLabel="Cách áp dụng kế hoạch tự động" /><FieldError message={fieldErrors.applyMode} />{existingStageCount || existingMilestoneCount ? <div className="mt-1.5 text-[9px] text-amber-200/70">Project hiện có {existingStageCount} stage và {existingMilestoneCount} milestone. Nếu thay thế, hệ thống sẽ kiểm tra dữ liệu thực thi phụ thuộc trước khi xóa.</div> : null}</div>
+      </div>
+
+      <div className="mt-6 overflow-hidden rounded-2xl border border-white/[0.07] bg-black/10">
+        <div className="flex flex-col gap-3 border-b border-white/[0.06] p-4 md:flex-row md:items-center md:justify-between">
+          <div><div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-cyan-300/65">Preview</div><div className="mt-1 text-sm font-semibold text-white">{preview ? `${preview.stageCount} stage • ${preview.totalDays} ngày • ${preview.milestoneCount} milestone` : "Chưa đủ dữ liệu hợp lệ để xem trước"}</div></div>
+          <div className="text-[10px] text-slate-500">{preview ? `${displayDate(preview.stages[0].startDate)} → ${displayDate(preview.stages.at(-1)?.endDate ?? targetEndDate)}` : "Kiểm tra lại khoảng ngày"}</div>
+        </div>
+        {preview ? (
+          <div className="scrollbar-thin overflow-x-auto">
+            <table className="w-full min-w-[920px] text-left">
+              <thead className="border-b border-white/[0.06] text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-600"><tr><th className="px-4 py-3">Stage</th><th className="w-28 px-4 py-3">Số ngày</th><th className="w-56 px-4 py-3">Từ ngày → Đến ngày</th><th className="px-4 py-3">Milestone đề xuất</th></tr></thead>
+              <tbody>{preview.stages.map((stage) => <tr key={stage.code} className="border-b border-white/[0.045] last:border-b-0"><td className="px-4 py-3"><div className="flex items-start gap-3"><span className="mt-1 size-2.5 rounded-full" style={{ backgroundColor: stage.color, boxShadow: `0 0 12px ${stage.color}55` }} /><div><div className="text-xs font-medium text-slate-300">{stage.name}</div><div className="mt-1 text-[9px] text-slate-600">{stage.code} • {stage.description}</div></div></div></td><td className="px-4 py-3 text-sm font-semibold text-white">{stage.durationDays}</td><td className="px-4 py-3 text-[10px] text-slate-400">{displayDate(stage.startDate)} → {displayDate(stage.endDate)}</td><td className="px-4 py-3"><div className="text-xs font-medium text-amber-100">{stage.milestoneTitle}</div><div className="mt-1 text-[9px] text-slate-600">{stage.milestoneDescription}</div></td></tr>)}</tbody>
+            </table>
+          </div>
+        ) : <div className="grid min-h-36 place-items-center px-6 text-center text-xs text-slate-600">Nhập khoảng ngày hợp lệ để xem stage và milestone đề xuất.</div>}
+      </div>
+      <div className="mt-5 flex items-start gap-3 rounded-xl border border-cyan-300/10 bg-cyan-300/[0.035] p-4 text-[10px] leading-5 text-slate-500"><Sparkles className="mt-0.5 size-4 shrink-0 text-cyan-300/70" /><span>Auto Generate Plan chỉ tạo baseline ban đầu. Toàn bộ stage được lưu ở chế độ nhập ngày, nên bạn có thể mở từng stage để sửa Từ ngày, Đến ngày, số ngày, màu, người phụ trách và tiến độ.</span></div>
     </ModalShell>
   );
 }

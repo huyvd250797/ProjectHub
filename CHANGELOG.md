@@ -1,5 +1,24 @@
 # Changelog
 
+## V2.1.0 — Auto Generate Plan
+
+### Added
+
+- Nút **Auto Generate Plan** trong màn Master Plan.
+- Modal nhập ngày bắt đầu/kết thúc, cách tính ngày và kiểu gợi ý kế hoạch.
+- Engine tự chia stage theo tổng số ngày và sinh milestone cuối từng stage.
+- API `/api/plan/auto-generate` hỗ trợ dry-run preview và apply dữ liệu thật.
+
+### Safety
+
+- Stage tự sinh được lưu dạng `manual` để người dùng chỉnh lại Từ ngày/Đến ngày sau khi tạo.
+- Chế độ thay thế stage/milestone bị chặn nếu project đã có task, checklist hoặc reminder phụ thuộc.
+
+### Database
+
+- Không có migration mới.
+- Dùng lại `project_master_plans`, `project_stages` và `project_milestones`.
+
 ## V2.0.0 — Project Command Center
 
 ### Added

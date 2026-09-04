@@ -1,4 +1,16 @@
-# ASC WORKING — V2.0.0
+# ASC WORKING — V2.1.0
+
+## V2.1.0 có gì mới?
+
+Auto Generate Plan
+
+- Module Plan bổ sung nút **Auto Generate Plan** để nhập ngày bắt đầu/kết thúc và tự đề xuất timeline.
+- App tự chia tổng thời lượng thành stage, số ngày, Từ ngày, Đến ngày và milestone cuối mỗi stage.
+- Có 3 kiểu gợi ý: **Triển khai chuẩn**, **Triển khai nhanh**, **UAT / Go-live**.
+- Có màn preview trước khi tạo để kiểm tra stage, số ngày và milestone.
+- Sau khi tạo, toàn bộ stage được lưu ở chế độ nhập ngày nên vẫn chỉnh thủ công lại được.
+- Hỗ trợ tạo thêm vào kế hoạch hiện tại hoặc thay thế stage/milestone hiện có khi chưa có task/checklist/reminder phụ thuộc.
+- Không cần migration mới; dùng lại schema Master Plan, Project Stages và Milestones hiện có.
 
 ## V2.0.0 có gì mới?
 

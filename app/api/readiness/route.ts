@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { ReadinessApiResponse, ReadinessCheck, ReadinessStatus } from "@/lib/readiness/types";
+import { createAutoPlanPreview } from "@/lib/planning/auto-generate";
 import { securityEnvironmentReady } from "@/lib/resources/server";
 import { getGlobalRole, getEffectiveProjectRole } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "2.0.0",
+        version: "2.1.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "2.0.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "2.1.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -190,6 +191,20 @@ export async function GET(request: NextRequest) {
     planningSchemaError ? "Không đọc được dữ liệu kế hoạch; chạy các migration kế hoạch đến V1.8.0." : `Master Plan, stage, milestone, ${planTasks} task, ${checklistItems} checklist và ${planReminders} reminder đã sẵn sàng.`,
     planningSchema.durationMs,
   ));
+  const autoPlan = createAutoPlanPreview({
+    startDate: new Date().toISOString().slice(0, 10),
+    targetEndDate: new Date(Date.now() + 89 * 86_400_000).toISOString().slice(0, 10),
+    scheduleMode: "business_days",
+    profile: "standard_implementation",
+  });
+  checks.push(check(
+    "auto_generate_plan",
+    "Auto Generate Plan",
+    planningSchemaError || autoPlan.stageCount < 1 || autoPlan.milestoneCount < 1 ? "fail" : "pass",
+    planningSchemaError
+      ? "Auto Generate Plan cần schema kế hoạch hiện có."
+      : `Có thể đề xuất ${autoPlan.stageCount} stage và ${autoPlan.milestoneCount} milestone từ ngày bắt đầu/kết thúc.`,
+  ));
   checks.push(check(
     "project_command_center",
     "Project Command Center",
@@ -309,7 +324,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "2.0.0",
+      version: "2.1.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,
