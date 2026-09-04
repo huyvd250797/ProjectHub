@@ -184,7 +184,7 @@ export async function buildImportTemplate(
     ["item_type", "root", "Root"],
     ["item_type", "subsystem", "Phân hệ"],
     ["item_type", "module", "Module"],
-    ["item_type", "other", "Khác"],
+    ["node_type", "function", "Chức năng"],
     ["project_status", "active", "Active"],
     ["project_status", "paused", "Paused"],
     ["project_status", "completed", "Completed"],

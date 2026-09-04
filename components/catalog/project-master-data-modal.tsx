@@ -5,7 +5,6 @@ import {
   Check,
   DatabaseZap,
   Download,
-  FileText,
   Layers3,
   LoaderCircle,
   Pencil,
@@ -62,7 +61,7 @@ type DetailDraft = {
 
 const emptyDepartment: DepartmentDraft = { id: "", code: "", name: "", isActive: true };
 const emptyModule: ModuleDraft = { id: "", code: "", name: "", itemType: "module", parentId: "", ownerDepartmentId: "", moduleStatusCode: "", classification: "", sortOrder: "0" };
-const emptyDetail: DetailDraft = { id: "", code: "", name: "", nodeType: "other", parentId: "", contractItemId: "", level: "3", sortOrder: "0", note: "" };
+const emptyDetail: DetailDraft = { id: "", code: "", name: "", nodeType: "function", parentId: "", contractItemId: "", level: "3", sortOrder: "0", note: "" };
 
 function normalize(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("vi").trim();
@@ -96,6 +95,7 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
   const [departmentDraft, setDepartmentDraft] = useState<DepartmentDraft>(emptyDepartment);
   const [moduleDraft, setModuleDraft] = useState<ModuleDraft>(emptyModule);
   const [detailDraft, setDetailDraft] = useState<DetailDraft>(emptyDetail);
+  const [plhdEditor, setPlhdEditor] = useState<"module" | "function">("module");
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [selectedDetails, setSelectedDetails] = useState<string[]>([]);
@@ -144,8 +144,11 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
     setFieldErrors({});
     setMessage(null);
     if (nextTab === "departments") setDepartmentDraft(emptyDepartment);
-    else if (nextTab === "modules") setModuleDraft(emptyModule);
-    else setDetailDraft(emptyDetail);
+    else {
+      setModuleDraft(emptyModule);
+      setDetailDraft(emptyDetail);
+      setPlhdEditor("module");
+    }
   }
 
   function switchTab(nextTab: ProjectCatalogTab) {
@@ -156,20 +159,17 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
 
   function visibleIds() {
     if (tab === "departments") return filteredDepartments.map((row) => row.id);
-    if (tab === "modules") return filteredModules.map((row) => row.id);
-    return filteredDetails.map((row) => row.id);
+    return filteredModules.map((row) => row.id);
   }
 
   function selectedIds() {
     if (tab === "departments") return selectedDepartments;
-    if (tab === "modules") return selectedModules;
-    return selectedDetails;
+    return selectedModules;
   }
 
   function setSelected(ids: string[]) {
     if (tab === "departments") setSelectedDepartments(ids);
-    else if (tab === "modules") setSelectedModules(ids);
-    else setSelectedDetails(ids);
+    else setSelectedModules(ids);
   }
 
   function toggleSelected(id: string, checked: boolean) {
@@ -191,6 +191,7 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
 
   function editModule(row: ProjectCatalogModule) {
     setTab("modules");
+    setPlhdEditor("module");
     setModuleDraft({
       id: row.id,
       code: row.code ?? "",
@@ -206,12 +207,13 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
   }
 
   function editDetail(row: ProjectCatalogDetail) {
-    setTab("details");
+    setTab("modules");
+    setPlhdEditor("function");
     setDetailDraft({
       id: row.id,
       code: row.code ?? "",
       name: row.content,
-      nodeType: row.nodeType ?? "other",
+      nodeType: row.nodeType ?? "function",
       parentId: row.parentId ?? "",
       contractItemId: row.contractItemId ?? "",
       level: String(row.level ?? 3),
@@ -242,9 +244,9 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
   async function saveDetail() {
     if (!data?.canManage || saving) return;
     const errors: Record<string, string> = {};
-    if (!detailDraft.name.trim()) errors.name = "Nội dung chi tiết là bắt buộc.";
+    if (!detailDraft.name.trim()) errors.name = "Nội dung Chức năng là bắt buộc.";
     if (Object.keys(errors).length) { setFieldErrors(errors); setMessage({ type: "error", text: "Vui lòng kiểm tra các trường được đánh dấu." }); return; }
-    await saveCatalog(detailDraft.id ? "PATCH" : "POST", { entity: "detail", ...detailDraft }, "Không lưu được chi tiết PLHĐ.");
+    await saveCatalog(detailDraft.id ? "PATCH" : "POST", { entity: "detail", ...detailDraft }, "Không lưu được Chức năng.");
     if (!detailDraft.id) setDetailDraft(emptyDetail);
   }
 
@@ -271,33 +273,54 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
   async function deleteSelected() {
     if (!data?.canManage || saving) return;
     const ids = selectedIds();
-    if (!ids.length) return;
-    const label = tab === "departments" ? "phòng ban" : tab === "modules" ? "PLHĐ" : "chi tiết PLHĐ";
-    if (!window.confirm(`Xóa thật ${ids.length} ${label} đã chọn? Dữ liệu đang được sử dụng sẽ được giữ lại.`)) return;
+    const detailIds = tab === "modules" ? selectedDetails : [];
+    if (!ids.length && !detailIds.length) return;
+    const totalSelected = ids.length + detailIds.length;
+    const label = tab === "departments" ? "phòng ban" : "dòng PLHĐ / chức năng";
+    if (!window.confirm(`Xóa thật ${totalSelected} ${label} đã chọn? Dữ liệu đang được sử dụng sẽ được giữ lại.`)) return;
     setSaving(true); setFieldErrors({}); setMessage(null);
     try {
-      const response = await fetch("/api/project-catalog", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId: selectedProject.id, entity: tab === "departments" ? "department" : tab === "modules" ? "module" : "detail", ids }),
-      });
-      const body = (await response.json()) as ProjectCatalogMutationResponse;
-      if (!body.ok) throw new Error(body.message);
+      const responses: ProjectCatalogMutationResponse[] = [];
+      if (ids.length) {
+        const response = await fetch("/api/project-catalog", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId: selectedProject.id, entity: tab === "departments" ? "department" : "module", ids }),
+        });
+        const body = (await response.json()) as ProjectCatalogMutationResponse;
+        if (!body.ok) throw new Error(body.message);
+        responses.push(body);
+      }
+      if (detailIds.length) {
+        const response = await fetch("/api/project-catalog", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId: selectedProject.id, entity: "detail", ids: detailIds }),
+        });
+        const body = (await response.json()) as ProjectCatalogMutationResponse;
+        if (!body.ok) throw new Error(body.message);
+        responses.push(body);
+      }
       if (tab === "departments") setSelectedDepartments([]);
-      else if (tab === "modules") setSelectedModules([]);
-      else setSelectedDetails([]);
+      else {
+        setSelectedModules([]);
+        setSelectedDetails([]);
+      }
       await load(true);
-      setMessage({ type: body.blockedCount ? "error" : "ok", text: body.message });
+      const blockedCount = responses.reduce((total, item) => total + (item.ok ? item.blockedCount ?? 0 : 0), 0);
+      setMessage({ type: blockedCount ? "error" : "ok", text: responses.map((item) => item.ok ? item.message : "").filter(Boolean).join(" ") });
       window.dispatchEvent(new CustomEvent("asc-working:catalog-changed", { detail: { projectId: selectedProject.id, entity: tab } }));
     } catch (reason) {
       setMessage({ type: "error", text: reason instanceof Error ? reason.message : "Không xóa được dữ liệu." });
     } finally { setSaving(false); }
   }
 
-  const activeDraft = tab === "departments" ? departmentDraft.id : tab === "modules" ? moduleDraft.id : detailDraft.id;
+  const activeDraft = tab === "departments" ? departmentDraft.id : plhdEditor === "module" ? moduleDraft.id : detailDraft.id;
   const visible = visibleIds();
   const selected = selectedIds();
+  const selectedTotal = tab === "departments" ? selectedDepartments.length : selectedModules.length + selectedDetails.length;
   const allVisibleSelected = visible.length > 0 && visible.every((id) => selected.includes(id));
+  const allVisibleDetailsSelected = filteredDetails.length > 0 && filteredDetails.every((row) => selectedDetails.includes(row.id));
 
   return (
     <div className="fixed inset-0 z-[230] flex items-center justify-center p-3 md:p-6">
@@ -306,7 +329,7 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
         <header className="flex items-start gap-4 border-b border-white/[0.06] px-5 py-4 md:px-6">
           <div className="grid size-11 shrink-0 place-items-center rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.05]"><Settings2 className="size-4.5 text-cyan-200/80" /></div>
           <div className="min-w-0 flex-1">
-            <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/60">Project Master Data • V2.1.0</div>
+          <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/60">Project Master Data • V2.2.0</div>
             <h2 className="mt-1 text-lg font-semibold text-white">Danh mục {selectedProject.code} • {selectedProject.name}</h2>
             <p className="mt-1 text-[10px] text-slate-500">Danh mục là nguồn chuẩn cho PLHĐ. Dữ liệu có trong danh mục mới được hiển thị ra lưới PLHĐ bên ngoài.</p>
           </div>
@@ -318,13 +341,12 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
 
         <div className="flex flex-wrap items-center gap-2 border-b border-white/[0.06] px-5 py-3 md:px-6">
           <TabButton active={tab === "departments"} icon={<Building2 className="size-3.5" />} label="Phòng ban" count={data?.departments.length ?? 0} onClick={() => switchTab("departments")} />
-          <TabButton active={tab === "modules"} icon={<Layers3 className="size-3.5" />} label="PLHĐ" count={data?.modules.length ?? 0} onClick={() => switchTab("modules")} />
-          <TabButton active={tab === "details"} icon={<FileText className="size-3.5" />} label="Chi tiết PLHĐ" count={data?.details.length ?? 0} onClick={() => switchTab("details")} />
+          <TabButton active={tab !== "departments"} icon={<Layers3 className="size-3.5" />} label="PLHĐ" count={(data?.modules.length ?? 0) + (data?.details.length ?? 0)} onClick={() => switchTab("modules")} />
           <div className="relative ml-auto w-full sm:w-[340px]">
             <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-600" />
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={tab === "departments" ? "Tìm mã, tên phòng ban..." : tab === "modules" ? "Tìm PLHĐ, phân hệ, module..." : "Tìm chi tiết PLHĐ, module liên kết..."} className="h-9 w-full rounded-xl border border-white/[0.07] bg-black/10 pl-9 pr-3 text-xs text-slate-300 outline-none placeholder:text-slate-700 focus:border-cyan-300/20" />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={tab === "departments" ? "Tìm mã, tên phòng ban..." : "Tìm PLHĐ, phân hệ, module, chức năng..."} className="h-9 w-full rounded-xl border border-white/[0.07] bg-black/10 pl-9 pr-3 text-xs text-slate-300 outline-none placeholder:text-slate-700 focus:border-cyan-300/20" />
           </div>
-          {data?.canManage ? <button type="button" disabled={!selected.length || saving} onClick={() => void deleteSelected()} className="flex h-9 items-center gap-2 rounded-xl border border-rose-300/15 bg-rose-300/[0.055] px-3 text-[10px] font-medium text-rose-100 disabled:cursor-not-allowed disabled:opacity-35"><Trash2 className="size-3.5" /> Xóa đã chọn {selected.length ? `(${selected.length})` : ""}</button> : null}
+          {data?.canManage ? <button type="button" disabled={!selectedTotal || saving} onClick={() => void deleteSelected()} className="flex h-9 items-center gap-2 rounded-xl border border-rose-300/15 bg-rose-300/[0.055] px-3 text-[10px] font-medium text-rose-100 disabled:cursor-not-allowed disabled:opacity-35"><Trash2 className="size-3.5" /> Xóa đã chọn {selectedTotal ? `(${selectedTotal})` : ""}</button> : null}
         </div>
 
         <div className="scrollbar-thin flex-1 overflow-y-auto p-5 md:p-6">
@@ -335,10 +357,13 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
               <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.012]">
                 {tab === "departments" ? (
                   <DepartmentTable rows={filteredDepartments} canManage={data.canManage} allVisibleSelected={allVisibleSelected} selected={selectedDepartments} onAll={toggleAllVisible} onSelect={toggleSelected} onEdit={editDepartment} />
-                ) : tab === "modules" ? (
-                  <ModuleTable rows={filteredModules} canManage={data.canManage} allVisibleSelected={allVisibleSelected} selected={selectedModules} onAll={toggleAllVisible} onSelect={toggleSelected} onEdit={editModule} />
                 ) : (
-                  <DetailTable rows={filteredDetails} canManage={data.canManage} allVisibleSelected={allVisibleSelected} selected={selectedDetails} onAll={toggleAllVisible} onSelect={toggleSelected} onEdit={editDetail} />
+                  <div className="space-y-4 p-3">
+                    <CatalogSectionTitle title="Nhóm / Phân hệ / Module" count={filteredModules.length} />
+                    <ModuleTable rows={filteredModules} canManage={data.canManage} allVisibleSelected={allVisibleSelected} selected={selectedModules} onAll={toggleAllVisible} onSelect={toggleSelected} onEdit={editModule} />
+                    <CatalogSectionTitle title="Chức năng" count={filteredDetails.length} />
+                    <DetailTable rows={filteredDetails} canManage={data.canManage} allVisibleSelected={allVisibleDetailsSelected} selected={selectedDetails} onAll={(checked) => setSelectedDetails(checked ? [...new Set([...selectedDetails, ...filteredDetails.map((row) => row.id)])] : selectedDetails.filter((id) => !filteredDetails.some((row) => row.id === id)))} onSelect={(id, checked) => setSelectedDetails(checked ? [...new Set([...selectedDetails, id])] : selectedDetails.filter((item) => item !== id))} onEdit={editDetail} />
+                  </div>
                 )}
               </div>
 
@@ -346,10 +371,18 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
                 {data.canManage ? (
                   tab === "departments" ? (
                     <DepartmentForm draft={departmentDraft} active={Boolean(activeDraft)} fieldErrors={fieldErrors} saving={saving} onDraft={setDepartmentDraft} onReset={() => resetDraft()} onSave={() => void saveDepartment()} />
-                  ) : tab === "modules" ? (
-                    <ModuleForm data={data} draft={moduleDraft} active={Boolean(activeDraft)} fieldErrors={fieldErrors} saving={saving} onDraft={setModuleDraft} onReset={() => resetDraft()} onSave={() => void saveModule()} />
                   ) : (
-                    <DetailForm data={data} draft={detailDraft} active={Boolean(activeDraft)} fieldErrors={fieldErrors} saving={saving} onDraft={setDetailDraft} onReset={() => resetDraft()} onSave={() => void saveDetail()} />
+                    <>
+                      <div className="mb-4 grid grid-cols-2 gap-2 rounded-xl border border-white/[0.06] bg-black/10 p-1">
+                        <button type="button" onClick={() => { setPlhdEditor("module"); setFieldErrors({}); setMessage(null); }} className={cn("rounded-lg px-2 py-2 text-[10px] font-medium", plhdEditor === "module" ? "bg-cyan-300/[0.12] text-cyan-100" : "text-slate-500 hover:text-slate-300")}>Nhóm / Module</button>
+                        <button type="button" onClick={() => { setPlhdEditor("function"); setFieldErrors({}); setMessage(null); }} className={cn("rounded-lg px-2 py-2 text-[10px] font-medium", plhdEditor === "function" ? "bg-cyan-300/[0.12] text-cyan-100" : "text-slate-500 hover:text-slate-300")}>Chức năng</button>
+                      </div>
+                      {plhdEditor === "module" ? (
+                        <ModuleForm data={data} draft={moduleDraft} active={Boolean(activeDraft)} fieldErrors={fieldErrors} saving={saving} onDraft={setModuleDraft} onReset={() => resetDraft()} onSave={() => void saveModule()} />
+                      ) : (
+                        <DetailForm data={data} draft={detailDraft} active={Boolean(activeDraft)} fieldErrors={fieldErrors} saving={saving} onDraft={setDetailDraft} onReset={() => resetDraft()} onSave={() => void saveDetail()} />
+                      )}
+                    </>
                   )
                 ) : (
                   <div className="rounded-xl border border-amber-300/12 bg-amber-300/[0.04] p-4"><div className="flex items-center gap-2 text-xs font-semibold text-amber-100"><ShieldCheck className="size-4" /> Chế độ chỉ xem</div><p className="mt-2 text-[10px] leading-5 text-amber-100/50">Role {data.role} được xem danh mục. Chỉ MASTER/Admin/PM mới được thêm, chỉnh sửa hoặc xóa dữ liệu Project.</p></div>
@@ -369,6 +402,15 @@ function TabButton({ active, icon, label, count, onClick }: { active: boolean; i
 
 function HeaderCheckbox({ checked, onChange, label }: { checked: boolean; onChange: (checked: boolean) => void; label: string }) {
   return <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} aria-label={label} />;
+}
+
+function CatalogSectionTitle({ title, count }: { title: string; count: number }) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-1">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-cyan-300/65">{title}</div>
+      <div className="rounded-lg border border-white/[0.06] bg-white/[0.025] px-2 py-1 text-[9px] text-slate-500">{count} dòng</div>
+    </div>
+  );
 }
 
 function DepartmentTable({ rows, canManage, allVisibleSelected, selected, onAll, onSelect, onEdit }: { rows: ProjectCatalogDepartment[]; canManage: boolean; allVisibleSelected: boolean; selected: string[]; onAll: (checked: boolean) => void; onSelect: (id: string, checked: boolean) => void; onEdit: (row: ProjectCatalogDepartment) => void }) {
@@ -399,10 +441,10 @@ function DetailTable({ rows, canManage, allVisibleSelected, selected, onAll, onS
   return (
     <div className="max-h-[600px] overflow-auto scrollbar-thin">
       <table className="w-full min-w-[960px] text-left text-xs">
-        <thead className="sticky top-0 z-10 bg-[#0b192a]/95 text-[9px] uppercase tracking-[0.13em] text-slate-600"><tr><th className="w-12 px-4 py-3">{canManage ? <HeaderCheckbox checked={allVisibleSelected} onChange={onAll} label="Chọn tất cả chi tiết PLHĐ đang hiển thị" /> : null}</th><th className="px-4 py-3">Mã</th><th className="px-4 py-3">Nội dung</th><th className="px-4 py-3">PLHĐ liên kết</th><th className="px-4 py-3">Chi tiết cha</th><th className="px-4 py-3">Cấp</th><th className="px-4 py-3">Loại node</th><th className="px-4 py-3 text-right">Thao tác</th></tr></thead>
+        <thead className="sticky top-0 z-10 bg-[#0b192a]/95 text-[9px] uppercase tracking-[0.13em] text-slate-600"><tr><th className="w-12 px-4 py-3">{canManage ? <HeaderCheckbox checked={allVisibleSelected} onChange={onAll} label="Chọn tất cả Chức năng đang hiển thị" /> : null}</th><th className="px-4 py-3">Mã</th><th className="px-4 py-3">Nội dung</th><th className="px-4 py-3">PLHĐ liên kết</th><th className="px-4 py-3">Chức năng cha</th><th className="px-4 py-3">Cấp</th><th className="px-4 py-3">Loại node</th><th className="px-4 py-3 text-right">Thao tác</th></tr></thead>
         <tbody>{rows.map((row) => <tr key={row.id} className="border-t border-white/[0.045] hover:bg-white/[0.02]"><td className="px-4 py-3">{canManage ? <input type="checkbox" checked={selected.includes(row.id)} onChange={(event) => onSelect(row.id, event.target.checked)} aria-label={`Chọn ${row.content}`} /> : null}</td><td className="px-4 py-3 font-mono text-[10px] text-cyan-300/65">{row.code || "-"}</td><td className="max-w-[360px] px-4 py-3"><div className="truncate font-medium text-slate-300" title={row.content}>{row.content}</div>{row.note ? <div className="mt-1 truncate text-[9px] text-slate-700">{row.note}</div> : null}</td><td className="max-w-[220px] truncate px-4 py-3 text-slate-500" title={row.contractItemName ?? ""}>{row.contractItemName || "-"}</td><td className="max-w-[220px] truncate px-4 py-3 text-slate-500" title={row.parentContent ?? ""}>{row.parentContent || "-"}</td><td className="px-4 py-3 text-slate-500">{row.level}</td><td className="px-4 py-3 text-slate-500">{row.nodeType || "-"}</td><td className="px-4 py-3 text-right">{canManage ? <button onClick={() => onEdit(row)} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] text-slate-500 hover:bg-white/[0.04] hover:text-cyan-200"><Pencil className="size-3" /> Sửa</button> : null}</td></tr>)}</tbody>
       </table>
-      {!rows.length ? <div className="p-12 text-center text-xs text-slate-600">Chưa có chi tiết PLHĐ phù hợp.</div> : null}
+      {!rows.length ? <div className="p-12 text-center text-xs text-slate-600">Chưa có Chức năng phù hợp.</div> : null}
     </div>
   );
 }
@@ -416,7 +458,7 @@ function ModuleForm({ data, draft, active, fieldErrors, saving, onDraft, onReset
 }
 
 function DetailForm({ data, draft, active, fieldErrors, saving, onDraft, onReset, onSave }: { data: ProjectCatalogData; draft: DetailDraft; active: boolean; fieldErrors: Record<string, string>; saving: boolean; onDraft: React.Dispatch<React.SetStateAction<DetailDraft>>; onReset: () => void; onSave: () => void }) {
-  return <><FormHeader eyebrow="PLHĐ Detail Catalog" title={active ? "Cập nhật chi tiết PLHĐ" : "Thêm chi tiết PLHĐ"} active={active} onReset={onReset} /><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1"><div className="grid gap-3 sm:grid-cols-3"><Field label="Mã"><input value={draft.code} onChange={(e) => onDraft((c) => ({ ...c, code: e.target.value }))} className={fieldClass} placeholder="1.1" /></Field><Field label="Cấp"><input type="number" value={draft.level} onChange={(e) => onDraft((c) => ({ ...c, level: e.target.value }))} className={fieldClass} /></Field><Field label="Thứ tự"><input type="number" value={draft.sortOrder} onChange={(e) => onDraft((c) => ({ ...c, sortOrder: e.target.value }))} className={fieldClass} /></Field></div><Field label="Nội dung chi tiết" required error={fieldErrors.name}><textarea value={draft.name} onChange={(e) => onDraft((c) => ({ ...c, name: e.target.value }))} className={areaClass} placeholder="Nội dung chi tiết phụ lục hợp đồng" /></Field><Field label="PLHĐ liên kết" error={fieldErrors.contractItemId}><ThemedSelect ariaLabel="PLHĐ liên kết" value={draft.contractItemId} onChange={(value) => onDraft((c) => ({ ...c, contractItemId: value }))} options={[{ value: "", label: "Chưa gán PLHĐ" }, ...data.contractItemOptions]} placeholder="Chưa gán" menuClassName="min-w-[360px]" /></Field><Field label="Chi tiết cha" error={fieldErrors.parentId}><ThemedSelect ariaLabel="Chi tiết cha" value={draft.parentId} onChange={(value) => onDraft((c) => ({ ...c, parentId: value }))} options={[{ value: "", label: "Không gán chi tiết cha" }, ...data.detailParentOptions.filter((item) => item.value !== draft.id)]} placeholder="Không gán" menuClassName="min-w-[360px]" /></Field><Field label="Loại node"><input value={draft.nodeType} onChange={(e) => onDraft((c) => ({ ...c, nodeType: e.target.value }))} className={fieldClass} placeholder="other / section / detail" /></Field><Field label="Ghi chú"><textarea value={draft.note} onChange={(e) => onDraft((c) => ({ ...c, note: e.target.value }))} className={areaClass} placeholder="Ghi chú nội bộ..." /></Field></div><SaveButton saving={saving} label={active ? "Lưu thay đổi" : "Thêm chi tiết"} onClick={onSave} /></>;
+  return <><FormHeader eyebrow="PLHĐ Function Catalog" title={active ? "Cập nhật Chức năng" : "Thêm Chức năng"} active={active} onReset={onReset} /><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1"><div className="grid gap-3 sm:grid-cols-3"><Field label="Mã"><input value={draft.code} onChange={(e) => onDraft((c) => ({ ...c, code: e.target.value }))} className={fieldClass} placeholder="1.1" /></Field><Field label="Cấp"><input type="number" value={draft.level} onChange={(e) => onDraft((c) => ({ ...c, level: e.target.value }))} className={fieldClass} /></Field><Field label="Thứ tự"><input type="number" value={draft.sortOrder} onChange={(e) => onDraft((c) => ({ ...c, sortOrder: e.target.value }))} className={fieldClass} /></Field></div><Field label="Nội dung Chức năng" required error={fieldErrors.name}><textarea value={draft.name} onChange={(e) => onDraft((c) => ({ ...c, name: e.target.value }))} className={areaClass} placeholder="Nội dung Chức năng phụ lục hợp đồng" /></Field><Field label="PLHĐ liên kết" error={fieldErrors.contractItemId}><ThemedSelect ariaLabel="PLHĐ liên kết" value={draft.contractItemId} onChange={(value) => onDraft((c) => ({ ...c, contractItemId: value }))} options={[{ value: "", label: "Chưa gán PLHĐ" }, ...data.contractItemOptions]} placeholder="Chưa gán" menuClassName="min-w-[360px]" /></Field><Field label="Chức năng cha" error={fieldErrors.parentId}><ThemedSelect ariaLabel="Chức năng cha" value={draft.parentId} onChange={(value) => onDraft((c) => ({ ...c, parentId: value }))} options={[{ value: "", label: "Không gán Chức năng cha" }, ...data.detailParentOptions.filter((item) => item.value !== draft.id)]} placeholder="Không gán" menuClassName="min-w-[360px]" /></Field><Field label="Loại node"><input value={draft.nodeType} onChange={(e) => onDraft((c) => ({ ...c, nodeType: e.target.value }))} className={fieldClass} placeholder="function" /></Field><Field label="Ghi chú"><textarea value={draft.note} onChange={(e) => onDraft((c) => ({ ...c, note: e.target.value }))} className={areaClass} placeholder="Ghi chú nội bộ..." /></Field></div><SaveButton saving={saving} label={active ? "Lưu thay đổi" : "Thêm Chức năng"} onClick={onSave} /></>;
 }
 
 function FormHeader({ eyebrow, title, active, onReset }: { eyebrow: string; title: string; active: boolean; onReset: () => void }) {
@@ -429,13 +471,14 @@ function SaveButton({ saving, label, onClick }: { saving: boolean; label: string
 
 export function ProjectMasterDataButton({ defaultTab, label, className }: { defaultTab: ProjectCatalogTab; label?: string; className?: string }) {
   const [open, setOpen] = useState(false);
+  const safeTab: ProjectCatalogTab = defaultTab === "details" ? "modules" : defaultTab;
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} className={cn("flex h-9 items-center gap-2 rounded-xl border border-cyan-300/12 bg-cyan-300/[0.045] px-3 text-[10px] font-medium text-cyan-100/75 transition hover:bg-cyan-300/[0.08]", className)}>
-        {defaultTab === "departments" ? <Building2 className="size-3.5" /> : defaultTab === "details" ? <FileText className="size-3.5" /> : <DatabaseZap className="size-3.5" />}
-        {label ?? (defaultTab === "departments" ? "Danh mục Phòng ban" : defaultTab === "details" ? "Danh mục chi tiết PLHĐ" : "Danh mục PLHĐ")}
+        {safeTab === "departments" ? <Building2 className="size-3.5" /> : <DatabaseZap className="size-3.5" />}
+        {label ?? (safeTab === "departments" ? "Danh mục Phòng ban" : "Danh mục PLHĐ")}
       </button>
-      {open ? <CatalogModal initialTab={defaultTab} onClose={() => setOpen(false)} /> : null}
+      {open ? <CatalogModal initialTab={safeTab} onClose={() => setOpen(false)} /> : null}
     </>
   );
 }

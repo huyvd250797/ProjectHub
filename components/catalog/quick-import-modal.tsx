@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 const sectionOptions: Array<{ key: QuickCatalogImportSection; label: string; description: string }> = [
   { key: "departments", label: "Phòng ban", description: "Sheet Phòng ban • cột A có thể chỉ cần tên." },
   { key: "contractItems", label: "PLHĐ / Module", description: "Sheet PLHĐ • hỗ trợ file một cột như mẫu hiện tại." },
-  { key: "contractDetails", label: "PLHĐ chi tiết", description: "Sheet PLHĐ chi tiết • Mã + Nội dung; tự dựng cây và mapping Module." },
+  { key: "contractDetails", label: "Chức năng", description: "Sheet PLHĐ chi tiết • Mã + Nội dung; tự dựng cây Chức năng và mapping Module." },
 ];
 
 function formatBytes(value: number) {
@@ -191,7 +191,7 @@ export function QuickCatalogImportModal({
           <div className="grid size-11 shrink-0 place-items-center rounded-2xl border border-emerald-300/14 bg-emerald-300/[0.055]"><FileSpreadsheet className="size-5 text-emerald-200/80" /></div>
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-emerald-300/60">Fast Excel Import • V1.3.2</div>
-            <h2 className="mt-1 text-lg font-semibold text-white">Import Phòng ban • PLHĐ • PLHĐ chi tiết</h2>
+            <h2 className="mt-1 text-lg font-semibold text-white">Import Phòng ban • PLHĐ • Chức năng</h2>
             <p className="mt-1 text-[10px] text-slate-500">Project đích: <span className="font-semibold text-amber-200/80">{selectedProject.code}</span>. Hỗ trợ trực tiếp file 3 sheet đơn giản như file Excel bạn đang sử dụng, không cần nhập tay từng dòng.</p>
           </div>
           <a href="/templates/ASC-WORKING-V1.3.2-Mau-Import-PhongBan-PLHD.xlsx" className="hidden h-9 items-center gap-2 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-400 hover:border-emerald-300/15 hover:text-emerald-200 md:flex"><Download className="size-3.5" /> Tải mẫu</a>
@@ -215,7 +215,7 @@ export function QuickCatalogImportModal({
                 <input ref={inputRef} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={(event) => chooseFile(event.target.files?.[0])} />
                 <div className="mx-auto grid size-12 place-items-center rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.045]"><UploadCloud className="size-5 text-cyan-200/70" /></div>
                 <div className="mt-4 text-sm font-semibold text-slate-200">Chọn file Excel hiện có</div>
-                <div className="mt-2 text-[11px] leading-5 text-slate-600">Chấp nhận sheet <b>Phòng ban</b>, <b>PLHĐ</b>, <b>PLHĐ chi tiết</b> hoặc <b>PLHĐ - Chi tiết</b>. File không bắt buộc có header. Tối đa <b>20 MB</b>.</div>
+                <div className="mt-2 text-[11px] leading-5 text-slate-600">Chấp nhận sheet <b>Phòng ban</b>, <b>PLHĐ</b>, <b>PLHĐ chi tiết</b> hoặc <b>PLHĐ - Chi tiết</b>. Dòng chi tiết sẽ hiển thị là <b>Chức năng</b> dưới Module. File không bắt buộc có header. Tối đa <b>20 MB</b>.</div>
                 <button type="button" onClick={() => inputRef.current?.click()} className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.035] px-4 py-2.5 text-xs font-medium text-slate-200 hover:border-cyan-300/18 hover:bg-cyan-300/[0.04]">Chọn file .xlsx</button>
                 <a href="/templates/ASC-WORKING-V1.3.2-Mau-Import-PhongBan-PLHD.xlsx" className="mt-3 flex items-center justify-center gap-2 text-[10px] text-emerald-300/65 hover:text-emerald-200 md:hidden"><Download className="size-3" /> Tải mẫu nhanh</a>
               </div>
@@ -237,7 +237,7 @@ export function QuickCatalogImportModal({
                       ["Phòng ban", preview.summary.departments],
                       ["PLHĐ", preview.summary.contractItems],
                       ["Module", preview.summary.modules],
-                      ["PLHĐ chi tiết", preview.summary.contractDetails],
+                      ["Chức năng", preview.summary.contractDetails],
                     ].map(([label, value]) => <div key={String(label)} className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-4"><div className="text-[9px] uppercase tracking-[0.13em] text-slate-600">{label}</div><div className="mt-2 text-xl font-semibold text-slate-200">{value}</div></div>)}
                   </div>
 
@@ -260,8 +260,8 @@ export function QuickCatalogImportModal({
               <div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-violet-300/60">Cách đọc file hiện tại</div>
               <div className="mt-3 space-y-3 text-[10px] leading-5 text-slate-500">
                 <div><b className="text-slate-300">Phòng ban:</b> cột A là tên. Cột B nếu có sẽ hiểu là mã.</div>
-                <div><b className="text-slate-300">PLHĐ:</b> cột A là tên. Nếu có cột Loại, hệ thống đọc đủ cây <b>subsystem → module → other</b>. Dòng subsystem/module ghi vào PLHĐ; dòng other được tách sang chi tiết phụ lục hợp đồng và gắn với Module gần nhất.</div>
-                <div><b className="text-slate-300">PLHĐ chi tiết:</b> cột A là mã, cột B là nội dung. Mã A/B/C → Nhóm; I/II/III → Phân hệ; 1/2/3 → Module; 1.1/1,1... → cấp chi tiết. Dòng trống mã trở thành nghiệp vụ con.</div>
+                <div><b className="text-slate-300">PLHĐ:</b> cột A là tên. Nếu có cột Loại, hệ thống đọc đủ cây <b>subsystem → module → function</b>. File cũ ghi <b>other/khác</b> vẫn được nhận là Chức năng và gắn với Module gần nhất.</div>
+                <div><b className="text-slate-300">Chức năng:</b> cột A là mã, cột B là nội dung. Các dòng này được lưu vào danh mục Chức năng dưới Module để lưới PLHĐ bên ngoài hiển thị cùng một cây.</div>
               </div>
 
               {preview?.databasePreview ? (

@@ -46,6 +46,10 @@ export type MasterProjectMutationResponse =
   | { ok: true; project: MasterProjectRow }
   | { ok: false; code: string; message: string };
 
+export type MasterProjectDeleteResponse =
+  | { ok: true; deletedProjectId: string; message: string }
+  | { ok: false; code: string; message: string };
+
 export type MasterMembersResponse =
   | { ok: true; members: MasterProjectMember[] }
   | { ok: false; code: string; message: string };

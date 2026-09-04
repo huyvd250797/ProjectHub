@@ -21,6 +21,12 @@ function nullableText(value: unknown, max = 500) {
   return result || null;
 }
 
+function functionNodeType(value: unknown) {
+  const raw = normalizeName(text(value, 80));
+  if (!raw || raw === "other" || raw === "khac" || raw === "chuc nang" || raw === "function") return "function";
+  return text(value, 80);
+}
+
 function normalizeName(value: string) {
   return value
     .normalize("NFD")
@@ -73,7 +79,7 @@ function databaseMessage(error: { code?: string | null; message: string }, entit
       ? "Phòng ban này đã tồn tại trong Project. Hãy kiểm tra lại tên phòng ban."
       : entity === "module"
         ? "Dữ liệu PLHĐ bị trùng với ràng buộc hiện có của Project."
-        : "Dữ liệu chi tiết PLHĐ bị trùng với ràng buộc hiện có của Project.";
+        : "Dữ liệu Chức năng bị trùng với ràng buộc hiện có của Project.";
   }
   if (error.code === "23503") return "Dữ liệu liên kết không còn hợp lệ. Hãy tải lại danh mục và chọn lại.";
   return error.message;
@@ -181,7 +187,7 @@ export async function GET(request: NextRequest) {
       contractItemName: row.contract_item_id ? parentName.get(String(row.contract_item_id)) ?? null : null,
       code: row.code ? String(row.code) : null,
       content: String(row.content ?? ""),
-      nodeType: row.node_type ? String(row.node_type) : null,
+      nodeType: functionNodeType(row.node_type),
       level: Number(row.level ?? 0),
       sortOrder: Number(row.sort_order ?? 0),
       note: row.note ? String(row.note) : null,
@@ -193,9 +199,9 @@ export async function GET(request: NextRequest) {
       value: row.id,
       label: `${row.code ? `${row.code} • ` : ""}${row.name}${row.itemType === "root" ? " • Nhóm" : " • Phân hệ"}`,
       })),
-    contractItemOptions: modules.map((row) => ({
+    contractItemOptions: modules.filter((row) => row.itemType === "module").map((row) => ({
       value: row.id,
-      label: `${row.code ? `${row.code} • ` : ""}${row.name}${row.itemType === "root" ? " • Nhóm" : row.itemType === "subsystem" ? " • Phân hệ" : " • Module"}`,
+      label: `${row.code ? `${row.code} • ` : ""}${row.name} • Module`,
     })),
     detailParentOptions: (detailResult.data ?? []).map((row) => ({
       value: String(row.id),
@@ -239,7 +245,7 @@ async function verifyContractItem(supabase: Awaited<ReturnType<typeof createClie
     .select("id,item_type")
     .eq("id", contractItemId)
     .eq("project_id", projectId)
-    .in("item_type", ["root", "subsystem", "module"])
+    .eq("item_type", "module")
     .maybeSingle();
   return Boolean(data?.id);
 }
@@ -270,7 +276,7 @@ export async function POST(request: NextRequest) {
   if (!canManage(role)) return NextResponse.json({ ok: false, code: "FORBIDDEN_WRITE", message: "Chỉ MASTER/Admin/PM mới được cập nhật danh mục Project." } satisfies ProjectCatalogMutationResponse, { status: 403 });
 
   const name = text(body.name, 300);
-  if (!name) return NextResponse.json({ ok: false, code: "VALIDATION_ERROR", message: entity === "department" ? "Vui lòng nhập Tên phòng ban." : entity === "module" ? "Vui lòng nhập Tên PLHĐ." : "Vui lòng nhập Nội dung chi tiết PLHĐ.", fieldErrors: { name: "Thông tin này là bắt buộc." } } satisfies ProjectCatalogMutationResponse, { status: 400 });
+  if (!name) return NextResponse.json({ ok: false, code: "VALIDATION_ERROR", message: entity === "department" ? "Vui lòng nhập Tên phòng ban." : entity === "module" ? "Vui lòng nhập Tên PLHĐ." : "Vui lòng nhập Nội dung Chức năng PLHĐ.", fieldErrors: { name: "Thông tin này là bắt buộc." } } satisfies ProjectCatalogMutationResponse, { status: 400 });
 
   if (entity === "department") {
     const { error } = await supabase.from("departments").insert({
@@ -288,7 +294,7 @@ export async function POST(request: NextRequest) {
     const parentId = nullableText(body.parentId, 60);
     const contractItemId = nullableText(body.contractItemId, 60);
     if ((parentId && !uuidPattern.test(parentId)) || !(await verifyDetailParent(supabase, projectId, parentId))) {
-      return NextResponse.json({ ok: false, code: "DETAIL_PARENT_INVALID", message: "Chi tiết cha không hợp lệ hoặc không thuộc Project.", fieldErrors: { parentId: "Hãy chọn lại chi tiết cha." } } satisfies ProjectCatalogMutationResponse, { status: 400 });
+      return NextResponse.json({ ok: false, code: "DETAIL_PARENT_INVALID", message: "Chức năng cha không hợp lệ hoặc không thuộc Project.", fieldErrors: { parentId: "Hãy chọn lại chi tiết cha." } } satisfies ProjectCatalogMutationResponse, { status: 400 });
     }
     if ((contractItemId && !uuidPattern.test(contractItemId)) || !(await verifyContractItem(supabase, projectId, contractItemId))) {
       return NextResponse.json({ ok: false, code: "CONTRACT_ITEM_INVALID", message: "PLHĐ liên kết không hợp lệ hoặc không thuộc Project.", fieldErrors: { contractItemId: "Hãy chọn lại PLHĐ liên kết." } } satisfies ProjectCatalogMutationResponse, { status: 400 });
@@ -299,13 +305,13 @@ export async function POST(request: NextRequest) {
       contract_item_id: contractItemId,
       code: nullableText(body.code, 120),
       content: name,
-      node_type: nullableText(body.nodeType, 80) ?? "other",
+      node_type: functionNodeType(body.nodeType),
       level: integer(body.level, 3),
       sort_order: integer(body.sortOrder, 0),
       note: nullableText(body.note, 1000),
     });
     if (error) return NextResponse.json({ ok: false, code: "DETAIL_CREATE_FAILED", message: databaseMessage(error, entity) } satisfies ProjectCatalogMutationResponse, { status: 400 });
-    return NextResponse.json({ ok: true, message: "Đã thêm chi tiết PLHĐ vào Project." } satisfies ProjectCatalogMutationResponse, { status: 201 });
+    return NextResponse.json({ ok: true, message: "Đã thêm Chức năng vào Project." } satisfies ProjectCatalogMutationResponse, { status: 201 });
   }
 
   const parentId = nullableText(body.parentId, 60);
@@ -340,7 +346,7 @@ export async function PATCH(request: NextRequest) {
 
   const projectId = text(body.projectId, 60);
   const id = text(body.id, 60);
-  const entity = body.entity === "module" ? "module" : body.entity === "department" ? "department" : body.entity === "detail" ? "detail" : null;
+  const entity = body.entity === "module" ? "module" : body.entity === "department" ? "department" : body.entity === "detail" ? "detail" : body.entity === "moduleStatus" ? "moduleStatus" : null;
   if (!entity || !uuidPattern.test(id)) return NextResponse.json({ ok: false, code: "INVALID_TARGET", message: "Danh mục cần cập nhật không hợp lệ." } satisfies ProjectCatalogMutationResponse, { status: 400 });
 
   const context = await getContext(projectId);
@@ -348,8 +354,32 @@ export async function PATCH(request: NextRequest) {
   const { supabase, role } = context;
   if (!canManage(role)) return NextResponse.json({ ok: false, code: "FORBIDDEN_WRITE", message: "Chỉ MASTER/Admin/PM mới được cập nhật danh mục Project." } satisfies ProjectCatalogMutationResponse, { status: 403 });
 
+  if (entity === "moduleStatus") {
+    const { data: target, error: targetError } = await supabase
+      .from("contract_items")
+      .select("id,item_type")
+      .eq("id", id)
+      .eq("project_id", projectId)
+      .in("item_type", ["subsystem", "module"])
+      .maybeSingle();
+    if (targetError || !target) {
+      return NextResponse.json({ ok: false, code: "MODULE_STATUS_TARGET_INVALID", message: "Chỉ Phân hệ hoặc Module mới được cập nhật trạng thái trực tiếp." } satisfies ProjectCatalogMutationResponse, { status: 400 });
+    }
+    const { error } = await supabase
+      .from("contract_items")
+      .update({
+        module_status_code: nullableText(body.moduleStatusCode, 80),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("project_id", projectId)
+      .in("item_type", ["subsystem", "module"]);
+    if (error) return NextResponse.json({ ok: false, code: "MODULE_STATUS_UPDATE_FAILED", message: `Không cập nhật được trạng thái PLHĐ: ${error.message}` } satisfies ProjectCatalogMutationResponse, { status: 400 });
+    return NextResponse.json({ ok: true, message: "Đã cập nhật trạng thái PLHĐ." } satisfies ProjectCatalogMutationResponse);
+  }
+
   const name = text(body.name, 300);
-  if (!name) return NextResponse.json({ ok: false, code: "VALIDATION_ERROR", message: entity === "department" ? "Vui lòng nhập Tên phòng ban." : entity === "module" ? "Vui lòng nhập Tên PLHĐ." : "Vui lòng nhập Nội dung chi tiết PLHĐ.", fieldErrors: { name: "Thông tin này là bắt buộc." } } satisfies ProjectCatalogMutationResponse, { status: 400 });
+  if (!name) return NextResponse.json({ ok: false, code: "VALIDATION_ERROR", message: entity === "department" ? "Vui lòng nhập Tên phòng ban." : entity === "module" ? "Vui lòng nhập Tên PLHĐ." : "Vui lòng nhập Nội dung Chức năng PLHĐ.", fieldErrors: { name: "Thông tin này là bắt buộc." } } satisfies ProjectCatalogMutationResponse, { status: 400 });
 
   if (entity === "department") {
     const { error } = await supabase
@@ -372,7 +402,7 @@ export async function PATCH(request: NextRequest) {
     const contractItemId = nullableText(body.contractItemId, 60);
     if (parentId === id) return NextResponse.json({ ok: false, code: "DETAIL_PARENT_SELF", message: "Chi tiết PLHĐ không thể chọn chính nó làm cấp cha.", fieldErrors: { parentId: "Hãy chọn chi tiết cha khác." } } satisfies ProjectCatalogMutationResponse, { status: 400 });
     if ((parentId && !uuidPattern.test(parentId)) || !(await verifyDetailParent(supabase, projectId, parentId))) {
-      return NextResponse.json({ ok: false, code: "DETAIL_PARENT_INVALID", message: "Chi tiết cha không hợp lệ hoặc không thuộc Project.", fieldErrors: { parentId: "Hãy chọn lại chi tiết cha." } } satisfies ProjectCatalogMutationResponse, { status: 400 });
+      return NextResponse.json({ ok: false, code: "DETAIL_PARENT_INVALID", message: "Chức năng cha không hợp lệ hoặc không thuộc Project.", fieldErrors: { parentId: "Hãy chọn lại chi tiết cha." } } satisfies ProjectCatalogMutationResponse, { status: 400 });
     }
     if ((contractItemId && !uuidPattern.test(contractItemId)) || !(await verifyContractItem(supabase, projectId, contractItemId))) {
       return NextResponse.json({ ok: false, code: "CONTRACT_ITEM_INVALID", message: "PLHĐ liên kết không hợp lệ hoặc không thuộc Project.", fieldErrors: { contractItemId: "Hãy chọn lại PLHĐ liên kết." } } satisfies ProjectCatalogMutationResponse, { status: 400 });
@@ -384,7 +414,7 @@ export async function PATCH(request: NextRequest) {
         contract_item_id: contractItemId,
         code: nullableText(body.code, 120),
         content: name,
-        node_type: nullableText(body.nodeType, 80) ?? "other",
+        node_type: functionNodeType(body.nodeType),
         level: integer(body.level, 3),
         sort_order: integer(body.sortOrder, 0),
         note: nullableText(body.note, 1000),
@@ -393,7 +423,7 @@ export async function PATCH(request: NextRequest) {
       .eq("id", id)
       .eq("project_id", projectId);
     if (error) return NextResponse.json({ ok: false, code: "DETAIL_UPDATE_FAILED", message: databaseMessage(error, entity) } satisfies ProjectCatalogMutationResponse, { status: 400 });
-    return NextResponse.json({ ok: true, message: "Đã cập nhật chi tiết PLHĐ." } satisfies ProjectCatalogMutationResponse);
+    return NextResponse.json({ ok: true, message: "Đã cập nhật Chức năng." } satisfies ProjectCatalogMutationResponse);
   }
 
   const parentId = nullableText(body.parentId, 60);
@@ -475,10 +505,10 @@ export async function DELETE(request: NextRequest) {
     const deletable = ids.filter((id) => ownedIds.has(id) && !blocked.has(id));
     if (deletable.length) {
       const { error } = await supabase.from("contract_detail_items").delete().eq("project_id", projectId).in("id", deletable);
-      if (error) return NextResponse.json({ ok: false, code: "DETAIL_DELETE_FAILED", message: `Không xóa được chi tiết PLHĐ: ${error.message}` } satisfies ProjectCatalogMutationResponse, { status: 400 });
+      if (error) return NextResponse.json({ ok: false, code: "DETAIL_DELETE_FAILED", message: `Không xóa được Chức năng: ${error.message}` } satisfies ProjectCatalogMutationResponse, { status: 400 });
     }
     const blockedCount = ids.filter((id) => ownedIds.has(id) && blocked.has(id)).length;
-    return NextResponse.json({ ok: true, deletedCount: deletable.length, blockedCount, message: blockedCount ? `Đã xóa ${deletable.length} chi tiết PLHĐ. ${blockedCount} dòng có chi tiết con nên không xóa.` : `Đã xóa ${deletable.length} chi tiết PLHĐ.` } satisfies ProjectCatalogMutationResponse);
+    return NextResponse.json({ ok: true, deletedCount: deletable.length, blockedCount, message: blockedCount ? `Đã xóa ${deletable.length} Chức năng. ${blockedCount} dòng có chi tiết con nên không xóa.` : `Đã xóa ${deletable.length} Chức năng.` } satisfies ProjectCatalogMutationResponse);
   }
 
   const [{ data: owned }, issueUsage, detailUsage, childUsage] = await Promise.all([

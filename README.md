@@ -1,4 +1,17 @@
-# ASC WORKING — V2.1.0
+# ASC WORKING — V2.2.0
+
+## V2.2.0 có gì mới?
+
+PLHĐ Function Tree & Project Delete
+
+- PLHĐ chỉ còn một màn cây duy nhất: **Nhóm -> Phân hệ -> Module -> Chức năng**.
+- Chức năng được lưu ở `contract_detail_items` và hiển thị trực tiếp dưới Module.
+- Dữ liệu cũ `other/khác` được chuẩn hóa thành `function`.
+- Danh mục PLHĐ gom chung Nhóm / Phân hệ / Module và Chức năng trong một tab PLHĐ.
+- Trên lưới PLHĐ, chỉ Phân hệ và Module được đổi trạng thái trực tiếp từng dòng.
+- MASTER có thể xóa Project bằng xác nhận mã Project; dữ liệu liên quan bị xóa cứng qua FK cascade.
+
+Chạy sau V2.1.0: `supabase/migrations/202609040003_v220_plhd_function_tree_project_delete.sql`.
 
 ## V2.1.0 có gì mới?
 

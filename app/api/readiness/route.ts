@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "2.1.0",
+        version: "2.2.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "2.1.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "2.2.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -324,7 +324,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "2.1.0",
+      version: "2.2.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

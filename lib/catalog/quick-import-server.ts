@@ -147,7 +147,7 @@ export async function loadQuickCatalogReference(
     );
   }
 
-  const itemTypes = new Set<ParsedContractItem["itemType"]>(["root", "subsystem", "module", "other"]);
+  const itemTypes = new Set<ParsedContractItem["itemType"]>(["root", "subsystem", "module"]);
 
   return {
     departments: departmentRows.map((row) => ({
@@ -163,7 +163,7 @@ export async function loadQuickCatalogReference(
         code: nullableText(row.code),
         name: text(row.name),
         normalizedName: normalizeImportName(text(row.name)),
-        itemType: itemTypes.has(rawType) ? rawType : "other",
+        itemType: itemTypes.has(rawType) ? rawType : "module",
         sortOrder: Number(row.sort_order ?? 0),
       };
     }),
@@ -312,14 +312,16 @@ function normalizeItemType(value: unknown) {
   if (["root", "nhom", "group", "he thong", "phan mem"].includes(normalized)) return "root" as const;
   if (["subsystem", "phan he", "phanhe"].includes(normalized)) return "subsystem" as const;
   if (["module", "modul"].includes(normalized)) return "module" as const;
-  if (["other", "khac"].includes(normalized)) return "other" as const;
+  if (["other", "khac", "function", "chuc nang", "chucnang"].includes(normalized)) return "function" as const;
   return null;
 }
+
+type QuickPlhdRowType = ParsedContractItem["itemType"] | "function";
 
 function matchExistingContractItem(
   reference: QuickCatalogReference,
   used: Set<string>,
-  itemType: ParsedContractItem["itemType"],
+    itemType: ParsedContractItem["itemType"],
   code: string | null,
   normalizedName: string,
 ) {
@@ -366,7 +368,7 @@ function parseContractItems(
     const normalizedName = normalizeImportName(name);
     const nextName = normalizeImportName(text(cellAt(dataRows[index + 1]?.row ?? [], columns.name)));
     const explicitType = normalizeItemType(cellAt(entry.row, columns.type));
-    const inferredType: ParsedContractItem["itemType"] = explicitType
+    const inferredType: QuickPlhdRowType = explicitType
       ?? (index === 0
         ? "root"
         : normalizedName.startsWith("phan he ") || (nextName && nextName === normalizedName)
@@ -374,21 +376,21 @@ function parseContractItems(
           : "module");
 
     const code = nullableText(cellAt(entry.row, columns.code));
-    if (inferredType === "other") {
+    if (inferredType === "function") {
       const detailLevel = 3;
       const parentKey = embeddedDetailParentAtLevel.get(detailLevel - 1) ?? null;
       const existing = matchExistingDetail(reference, usedExistingDetails, code ?? "", name, detailLevel);
       const pathSignature = [currentModule ?? parentKey ?? currentSubsystem ?? currentRoot ?? "root", code || "blank", normalizedName].join("|");
       const importKey = existing?.importKey ?? stableKey("plhd-detail", pathSignature);
       if (currentModule) mappedEmbeddedDetails += 1;
-      else warnings.push(`PLHĐ dòng ${entry.sourceRow}: dòng Other '${name}' chưa có Module cha trước đó để mapping chi tiết.`);
+      else warnings.push(`PLHĐ dòng ${entry.sourceRow}: dòng Chức năng '${name}' chưa có Module cha trước đó để mapping.`);
       embeddedDetails.push({
         importKey,
         parentKey,
         contractItemKey: currentModule,
         code,
         content: name,
-        nodeType: "other",
+        nodeType: "function",
         level: detailLevel,
         sortOrder: embeddedDetails.length + 1,
         note: nullableText(cellAt(entry.row, columns.classification)),
@@ -444,7 +446,7 @@ function parseContractItems(
     warnings.push("Không nhận diện được Nhóm/Root trong sheet PLHĐ. Các Module sẽ được import ở cấp gốc.");
   }
   if (embeddedDetails.length > 0) {
-    warnings.push(`Đã nhận diện ${embeddedDetails.length} dòng Other trong sheet PLHĐ là chi tiết phụ lục hợp đồng.`);
+    warnings.push(`Đã nhận diện ${embeddedDetails.length} dòng Chức năng trong sheet PLHĐ và gắn dưới Module hiện hành.`);
   }
   return { items, embeddedDetails, mappedEmbeddedDetails };
 }
@@ -624,8 +626,8 @@ export function parseQuickCatalogWorkbook(
 
   if (sections.has("departments") && departments.length === 0) errors.push("Sheet Phòng ban không có dữ liệu hợp lệ để import.");
   if (sections.has("contractItems") && contractItems.items.length === 0) errors.push("Sheet PLHĐ không có dữ liệu hợp lệ để import.");
-  if (sections.has("contractDetails") && !detailSheet && contractItems.embeddedDetails.length === 0) errors.push("Không tìm thấy sheet 'PLHĐ chi tiết' hoặc dòng Other trong sheet PLHĐ.");
-  if (sections.has("contractDetails") && contractDetails.length === 0) errors.push("Sheet PLHĐ chi tiết không có dữ liệu hợp lệ để import.");
+  if (sections.has("contractDetails") && !detailSheet && contractItems.embeddedDetails.length === 0) errors.push("Không tìm thấy sheet 'PLHĐ chi tiết' hoặc dòng Chức năng trong sheet PLHĐ.");
+  if (sections.has("contractDetails") && contractDetails.length === 0) errors.push("Sheet Chức năng không có dữ liệu hợp lệ để import.");
   if (sections.has("contractDetails") && sheetDetailResult.unmappedBusinessRows > 0) {
     warnings.push(`${sheetDetailResult.unmappedBusinessRows} dòng nghiệp vụ PLHĐ chi tiết chưa tự mapping được Module. Dữ liệu vẫn được import và có thể rà soát mapping sau.`);
   }
@@ -667,7 +669,7 @@ export function parseQuickCatalogWorkbook(
     sheets: [
       { key: "departments", label: "Phòng ban", sheetName: departmentSheet?.name ?? null, found: Boolean(departmentSheet), rows: Math.max(0, departmentRows.length - (looksLikeHeader(departmentRows[0]?.row ?? [], "departments") ? 1 : 0)) },
       { key: "contractItems", label: "PLHĐ", sheetName: contractSheet?.name ?? null, found: Boolean(contractSheet), rows: Math.max(0, contractRows.length - (looksLikeHeader(contractRows[0]?.row ?? [], "contractItems") ? 1 : 0)) },
-      { key: "contractDetails", label: "PLHĐ chi tiết", sheetName: detailSheet?.name ?? null, found: Boolean(detailSheet), rows: Math.max(0, detailRows.length - (looksLikeHeader(detailRows[0]?.row ?? [], "contractDetails") ? 1 : 0)) },
+      { key: "contractDetails", label: "Chức năng", sheetName: detailSheet?.name ?? null, found: Boolean(detailSheet), rows: Math.max(0, detailRows.length - (looksLikeHeader(detailRows[0]?.row ?? [], "contractDetails") ? 1 : 0)) },
     ],
     summary,
     warnings: [...new Set(warnings)].slice(0, 80),

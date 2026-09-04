@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "2.1.0" ? pass("Package version", "2.1.0") : fail("Package version", `Expected 2.1.0, got ${pkg.version}`);
+pkg.version === "2.2.0" ? pass("Package version", "2.2.0") : fail("Package version", `Expected 2.2.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -183,6 +183,9 @@ for (const rel of [
   "lib/planning/auto-generate.ts",
   "docs/V2.1.0-SCOPE.md",
   "docs/V2.1.0-VALIDATION.md",
+  "supabase/migrations/202609040003_v220_plhd_function_tree_project_delete.sql",
+  "docs/V2.2.0-SCOPE.md",
+  "docs/V2.2.0-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -329,7 +332,7 @@ for (const token of ["departments", "contract_items", "item_type", "normalized_n
 }
 
 const projectCatalogModal = fs.readFileSync(path.join(root, "components/catalog/project-master-data-modal.tsx"), "utf8");
-for (const token of ["Project Master Data", "Danh mục Phòng ban", "Chi tiết PLHĐ", "max-w-[1340px]", "asc-working:catalog-changed"]) {
+for (const token of ["Project Master Data", "Danh mục Phòng ban", "Chức năng", "max-w-[1340px]", "asc-working:catalog-changed"]) {
   projectCatalogModal.includes(token) ? pass(`V1.3.1 Project Master Data UI: ${token}`) : fail(`V1.3.1 Project Master Data UI: ${token}`);
 }
 
@@ -529,7 +532,7 @@ for (const token of ["selectedDepartments", "selectedModules", "toggleAllVisible
 }
 
 const quickImportServerV190 = fs.readFileSync(path.join(root, "lib/catalog/quick-import-server.ts"), "utf8");
-for (const token of ["ParsedContractTree", "embeddedDetails", "nodeType: \"other\"", "dòng Other trong sheet PLHĐ", "contractItems.items"]) {
+for (const token of ["ParsedContractTree", "embeddedDetails", "nodeType: \"function\"", "dòng Chức năng", "contractItems.items"]) {
   quickImportServerV190.includes(token) ? pass(`V1.9.0 PLHĐ import tree parser: ${token}`) : fail(`V1.9.0 PLHĐ import tree parser: ${token}`);
 }
 
@@ -541,7 +544,7 @@ for (const token of ["details:", "contract_detail_items", "entity === \"detail\"
   catalogApiV190.includes(token) ? pass(`V1.9.2 Catalog source API: ${token}`) : fail(`V1.9.2 Catalog source API: ${token}`);
 }
 
-for (const token of ["Chi tiết PLHĐ", "DetailTable", "DetailForm", "Danh mục chi tiết PLHĐ", "data?.details.length"]) {
+for (const token of ["Chức năng", "DetailTable", "DetailForm", "plhdEditor", "data?.details.length"]) {
   catalogUiV190.includes(token) ? pass(`V1.9.2 Catalog detail UI: ${token}`) : fail(`V1.9.2 Catalog detail UI: ${token}`);
 }
 
@@ -581,7 +584,7 @@ for (const token of ["onDoubleClick", "asc-working:navbar-reload", "navigationDi
 }
 
 const appShellV200 = fs.readFileSync(path.join(root, "components/app-shell.tsx"), "utf8");
-for (const token of ["navbarReloadKey", "asc-working:navbar-reload", "Auto Generate Plan"]) {
+for (const token of ["navbarReloadKey", "asc-working:navbar-reload", "PLHĐ Function Tree & Project Delete"]) {
   appShellV200.includes(token) ? pass(`V2.0.0 Navbar remount: ${token}`) : fail(`V2.0.0 Navbar remount: ${token}`);
 }
 
@@ -610,7 +613,27 @@ for (const token of ["autoGenerateOpen", "Auto Generate Plan", "AutoGeneratePlan
   planWorkspaceV210.includes(token) ? pass(`V2.1.0 Auto Generate Plan workspace: ${token}`) : fail(`V2.1.0 Auto Generate Plan workspace: ${token}`);
 }
 
-console.log("\nASC WORKING V2.1.0 - Auto Generate Plan Preflight\n");
+const contractViewV220 = fs.readFileSync(path.join(root, "components/contract-view.tsx"), "utf8");
+for (const token of ["Cây PLHĐ duy nhất", "kind === \"function\"", "updateModuleStatus", "Single PLHĐ Function Tree", "Nhóm / Phân hệ / Module / Chức năng"]) {
+  contractViewV220.includes(token) ? pass(`V2.2.0 PLHĐ function tree: ${token}`) : fail(`V2.2.0 PLHĐ function tree: ${token}`);
+}
+
+const projectDeleteApiV220 = fs.readFileSync(path.join(root, "app/api/master/projects/[projectId]/route.ts"), "utf8");
+for (const token of ["export async function DELETE", "createServiceClient", "project hard delete", "SERVICE_ROLE_REQUIRED"]) {
+  projectDeleteApiV220.includes(token) ? pass(`V2.2.0 Project delete API: ${token}`) : fail(`V2.2.0 Project delete API: ${token}`);
+}
+
+const projectDeleteUiV220 = fs.readFileSync(path.join(root, "components/master/master-project-console.tsx"), "utf8");
+for (const token of ["deleteProject", "Xóa Project", "Nhập đúng mã Project", "MasterProjectDeleteResponse"]) {
+  projectDeleteUiV220.includes(token) ? pass(`V2.2.0 Project delete UI: ${token}`) : fail(`V2.2.0 Project delete UI: ${token}`);
+}
+
+const migrationV220 = fs.readFileSync(path.join(root, "supabase/migrations/202609040003_v220_plhd_function_tree_project_delete.sql"), "utf8");
+for (const token of ["node_type = 'function'", "contract_detail_project_function_idx", "project hard delete"]) {
+  migrationV220.includes(token) ? pass(`V2.2.0 Migration: ${token}`) : fail(`V2.2.0 Migration: ${token}`);
+}
+
+console.log("\nASC WORKING V2.2.0 - PLHĐ Function Tree & Project Delete Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

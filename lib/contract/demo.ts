@@ -114,6 +114,8 @@ export function createDemoContract(projectId: string): ContractData {
     source: "demo",
     generatedAt: new Date().toISOString(),
     projectId,
+    role: "admin",
+    canManage: true,
     summary: {
       items: overview.length,
       modules: overview.filter((item) => item.itemType === "module").length,

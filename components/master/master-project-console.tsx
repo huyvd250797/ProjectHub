@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Save,
   Search,
+  Trash2,
   UserPlus,
   UsersRound,
   X,
@@ -28,6 +29,7 @@ import { ThemedSelect } from "@/components/ui/themed-select";
 import type {
   MasterProjectMember,
   MasterProjectRow,
+  MasterProjectDeleteResponse,
   MasterProjectsResponse,
   MasterMembersResponse,
   MasterProjectMutationResponse,
@@ -167,6 +169,26 @@ export function MasterProjectConsole() {
     router.refresh();
   }
 
+  async function deleteProject(project: MasterProjectRow) {
+    const typedCode = window.prompt(`Xóa vĩnh viễn Project ${project.code}? Nhập đúng mã Project để xác nhận.`);
+    if (typedCode !== project.code) return;
+    setSaving(true);
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/master/projects/${project.id}`, { method: "DELETE" });
+      const result = (await response.json()) as MasterProjectDeleteResponse;
+      if (!response.ok || !result.ok) throw new Error(result.ok ? "Không xóa được Project." : result.message);
+      setProjects((items) => items.filter((item) => item.id !== project.id));
+      setSelectedProject(null);
+      setMessage(result.message);
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Không xóa được Project.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -256,6 +278,8 @@ export function MasterProjectConsole() {
           onClose={() => setSelectedProject(null)}
           onProjectUpdated={handleProjectUpdated}
           onMembersChanged={loadProjects}
+          onProjectDeleted={deleteProject}
+          deleting={saving}
         />
       ) : null}
     </>
@@ -267,11 +291,15 @@ function ProjectDrawer({
   onClose,
   onProjectUpdated,
   onMembersChanged,
+  onProjectDeleted,
+  deleting,
 }: {
   project: MasterProjectRow;
   onClose: () => void;
   onProjectUpdated: (project: MasterProjectRow) => void;
   onMembersChanged: () => Promise<void>;
+  onProjectDeleted: (project: MasterProjectRow) => Promise<void>;
+  deleting: boolean;
 }) {
   const [tab, setTab] = useState<"profile" | "members">("profile");
 
@@ -282,6 +310,7 @@ function ProjectDrawer({
         <div className="flex items-start gap-3 border-b border-white/[0.06] p-5">
           <div className="grid size-10 place-items-center rounded-xl border border-cyan-300/12 bg-cyan-300/[0.05]"><BriefcaseBusiness className="size-4 text-cyan-200" /></div>
           <div className="min-w-0 flex-1"><div className="text-[9px] uppercase tracking-[0.18em] text-cyan-300/60">Master Project Management</div><div className="mt-1 truncate text-sm font-semibold text-white">{project.code} • {project.organizationName || project.name}</div><div className="mt-1 truncate text-[10px] text-slate-600">{project.name}</div></div>
+          <button disabled={deleting} onClick={() => void onProjectDeleted(project)} className="flex h-9 items-center gap-2 rounded-xl border border-rose-300/12 bg-rose-300/[0.04] px-3 text-[10px] font-medium text-rose-200/75 hover:bg-rose-300/[0.07] disabled:opacity-45"><Trash2 className="size-3.5" /> Xóa Project</button>
           <button onClick={onClose} className="grid size-9 place-items-center rounded-xl border border-white/[0.06] text-slate-500 hover:text-white"><X className="size-4" /></button>
         </div>
 

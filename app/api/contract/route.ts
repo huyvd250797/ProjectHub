@@ -6,6 +6,7 @@ import type {
   ContractDetailItem,
   ContractOverviewItem,
 } from "@/lib/contract/types";
+import { getProjectRole } from "@/lib/issues/server";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,13 @@ function textOrNull(value: unknown) {
   return String(value);
 }
 
-function normalizeContract(raw: Record<string, unknown>, projectId: string): ContractData {
+function normalizeNodeType(value: unknown) {
+  const raw = textOrNull(value);
+  if (!raw) return "function";
+  return raw === "other" || raw === "khac" ? "function" : raw;
+}
+
+function normalizeContract(raw: Record<string, unknown>, projectId: string, role: ContractData["role"]): ContractData {
   const summary = (raw.summary ?? {}) as Record<string, unknown>;
   const overviewRows = Array.isArray(raw.overview) ? raw.overview : [];
   const detailRows = Array.isArray(raw.details) ? raw.details : [];
@@ -33,6 +40,8 @@ function normalizeContract(raw: Record<string, unknown>, projectId: string): Con
     source: "database",
     generatedAt: new Date().toISOString(),
     projectId,
+    role,
+    canManage: role === "admin" || role === "pm",
     summary: {
       items: numberValue(summary.items),
       modules: numberValue(summary.modules),
@@ -73,7 +82,7 @@ function normalizeContract(raw: Record<string, unknown>, projectId: string): Con
         contractItemId: textOrNull(row.contractItemId),
         code: String(row.code ?? ""),
         content: String(row.content ?? ""),
-        nodeType: textOrNull(row.nodeType),
+        nodeType: normalizeNodeType(row.nodeType),
         level: numberValue(row.level),
         sortOrder: numberValue(row.sortOrder),
         note: textOrNull(row.note),
@@ -126,6 +135,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase.rpc("get_project_contract", {
     p_project_id: projectId,
   });
+  const role = await getProjectRole(supabase, projectId, user.id);
 
   if (error) {
     const migrationMissing = /get_project_contract|function .* does not exist/i.test(error.message);
@@ -150,7 +160,7 @@ export async function GET(request: NextRequest) {
 
   const body: ContractApiResponse = {
     ok: true,
-    data: normalizeContract(data as Record<string, unknown>, projectId),
+    data: normalizeContract(data as Record<string, unknown>, projectId, role),
   };
   return NextResponse.json(body);
 }

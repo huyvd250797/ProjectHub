@@ -18,10 +18,9 @@ export default function ContractPage() {
           <div className="flex flex-wrap items-center justify-end gap-2">
             <ProjectQuickImportButton label="Import PLHĐ / Chi tiết" initialSections={["contractItems", "contractDetails"]} />
             <ProjectMasterDataButton defaultTab="modules" label="Danh mục PLHĐ" />
-            <ProjectMasterDataButton defaultTab="details" label="Danh mục chi tiết PLHĐ" />
             <div className="flex items-center gap-2 rounded-xl border border-cyan-300/10 bg-cyan-300/[0.04] px-3 py-2 text-[10px] text-cyan-100/60">
               <DatabaseZap className="size-3.5" />
-              Real Project Data • V1.3.2
+              Real Project Data • V2.2.0
               <FileStack className="ml-1 size-3.5 text-violet-300/60" />
             </div>
           </div>

@@ -1,3 +1,5 @@
+import type { ProjectRole } from "@/lib/issues/types";
+
 export type ContractSource = "database" | "demo";
 
 export type ContractOverviewItem = {
@@ -5,7 +7,7 @@ export type ContractOverviewItem = {
   parentId: string | null;
   code: string;
   name: string;
-  itemType: "root" | "subsystem" | "module" | "other";
+  itemType: "root" | "subsystem" | "module";
   ownerDepartmentId: string | null;
   ownerDepartmentName: string | null;
   moduleStatusCode: string | null;
@@ -41,6 +43,8 @@ export type ContractData = {
   source: ContractSource;
   generatedAt: string;
   projectId: string;
+  role: ProjectRole | null;
+  canManage: boolean;
   summary: {
     items: number;
     modules: number;

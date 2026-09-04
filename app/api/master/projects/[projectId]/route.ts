@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import {
   MASTER_PROJECT_SELECT,
   normalizeMasterProject,
   requireMaster,
   slugify,
 } from "@/lib/master/server";
-import type { MasterProjectMutationResponse } from "@/lib/master/types";
+import type { MasterProjectDeleteResponse, MasterProjectMutationResponse } from "@/lib/master/types";
 
 export const dynamic = "force-dynamic";
 
@@ -77,4 +78,32 @@ export async function PATCH(request: Request, context: { params: Promise<{ proje
 
   const { count } = await supabase.from("people").select("id", { count: "exact", head: true }).eq("project_id", projectId).eq("person_type", "asc").eq("is_active", true);
   return NextResponse.json({ ok: true, project: normalizeMasterProject(data, count ?? 0) } satisfies MasterProjectMutationResponse);
+}
+
+export async function DELETE(_request: Request, context: { params: Promise<{ projectId: string }> }) {
+  const { projectId } = await context.params;
+  const supabase = await createClient();
+  if (!supabase) return NextResponse.json({ ok: false, code: "DEMO_MODE", message: "Demo Mode không xóa Project." } satisfies MasterProjectDeleteResponse, { status: 409 });
+  const access = await requireMaster(supabase);
+  if (!access.user) return NextResponse.json({ ok: false, code: "UNAUTHORIZED", message: "Phiên đăng nhập đã hết hạn." } satisfies MasterProjectDeleteResponse, { status: 401 });
+  if (!access.isMaster) return NextResponse.json({ ok: false, code: "MASTER_REQUIRED", message: "Chỉ MASTER được xóa Project." } satisfies MasterProjectDeleteResponse, { status: 403 });
+
+  const service = createServiceClient();
+  if (!service) {
+    return NextResponse.json({ ok: false, code: "SERVICE_ROLE_REQUIRED", message: "Cần SUPABASE_SERVICE_ROLE_KEY để xóa Project và dữ liệu liên quan." } satisfies MasterProjectDeleteResponse, { status: 503 });
+  }
+
+  const { data: project, error: readError } = await service
+    .from("projects")
+    .select("id,code")
+    .eq("id", projectId)
+    .maybeSingle();
+  if (readError) return NextResponse.json({ ok: false, code: "PROJECT_READ_FAILED", message: readError.message } satisfies MasterProjectDeleteResponse, { status: 500 });
+  if (!project?.id) return NextResponse.json({ ok: false, code: "PROJECT_NOT_FOUND", message: "Không tìm thấy Project cần xóa." } satisfies MasterProjectDeleteResponse, { status: 404 });
+
+  // V2.2.0 project hard delete: related project_id data is removed through existing FK cascade rules.
+  const { error } = await service.from("projects").delete().eq("id", projectId);
+  if (error) return NextResponse.json({ ok: false, code: "PROJECT_DELETE_FAILED", message: `Không xóa được Project: ${error.message}` } satisfies MasterProjectDeleteResponse, { status: 500 });
+
+  return NextResponse.json({ ok: true, deletedProjectId: projectId, message: `Đã xóa Project ${String(project.code ?? "")} và dữ liệu liên quan.` } satisfies MasterProjectDeleteResponse);
 }

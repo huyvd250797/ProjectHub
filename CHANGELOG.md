@@ -1,5 +1,29 @@
 # Changelog
 
+## V2.2.0 — PLHĐ Function Tree & Project Delete
+
+### Added
+
+- Màn PLHĐ một cây duy nhất theo cấu trúc Nhóm -> Phân hệ -> Module -> Chức năng.
+- Collapse / expand trực tiếp cho các cấp có con.
+- Sửa nhanh trạng thái trên từng dòng Phân hệ hoặc Module.
+- Xóa Project trong Master Project Console với xác nhận bằng mã Project.
+
+### Changed
+
+- Dòng `other/khác` trong import PLHĐ được hiểu là Chức năng và lưu vào `contract_detail_items.node_type = function`.
+- Danh mục PLHĐ gom chung Nhóm / Phân hệ / Module và Chức năng trong một tab.
+- Màn PLHĐ ngoài lấy danh mục project làm nguồn hiển thị duy nhất.
+
+### Safety
+
+- API chặn cập nhật trạng thái cho Nhóm và Chức năng.
+- Xóa Project chỉ dành cho MASTER và dùng hard delete qua FK cascade hiện có.
+
+### Database
+
+- Thêm migration `202609040003_v220_plhd_function_tree_project_delete.sql` để chuẩn hóa node cũ sang `function`.
+
 ## V2.1.0 — Auto Generate Plan
 
 ### Added

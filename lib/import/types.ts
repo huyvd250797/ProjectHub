@@ -132,7 +132,7 @@ export type CanonicalProjectPayload = {
     parentKey: string | null;
     code: string | null;
     name: string;
-    itemType: "root" | "subsystem" | "module" | "other";
+    itemType: "root" | "subsystem" | "module";
     departmentKey: string | null;
     moduleStatusCode: string | null;
     classification: string | null;

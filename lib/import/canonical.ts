@@ -320,13 +320,13 @@ export function parseCanonicalImportWorkbook(
     })
     .filter((row) => row.importKey && row.fullName);
 
-  const itemTypes = new Set(["root", "subsystem", "module", "other"]);
+  const itemTypes = new Set(["root", "subsystem", "module"]);
   const contractItems = contractRows
     .map((row, index) => {
       const importKey = requiredKey(messages, "PLHĐ", index, row, ["name", "code"]);
       const name = stringValue(row.name);
       const itemTypeRaw = normalizeImportName(stringValue(row.item_type)) || "module";
-      const itemType = itemTypes.has(itemTypeRaw) ? itemTypeRaw : "other";
+      const itemType = itemTypes.has(itemTypeRaw) ? itemTypeRaw : "module";
       const parentKey = nullableString(row.parent_key);
       const departmentKey = nullableString(row.department_key);
       if (parentKey && !contractKeys.has(normalizeImportName(parentKey))) {
@@ -340,7 +340,7 @@ export function parseCanonicalImportWorkbook(
         parentKey,
         code: nullableString(row.code),
         name,
-        itemType: itemType as "root" | "subsystem" | "module" | "other",
+        itemType: itemType as "root" | "subsystem" | "module",
         departmentKey,
         moduleStatusCode: nullableString(row.module_status_code),
         classification: nullableString(row.classification),
@@ -373,7 +373,7 @@ export function parseCanonicalImportWorkbook(
         contractItemKey,
         code: nullableString(row.code),
         content,
-        nodeType: nullableString(row.node_type),
+        nodeType: nullableString(row.node_type) ?? "function",
         level: numberValue(row.level),
         sortOrder: numberValue(row.sort_order),
         note: nullableString(row.note),
