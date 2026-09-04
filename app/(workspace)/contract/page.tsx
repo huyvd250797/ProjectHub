@@ -20,7 +20,7 @@ export default function ContractPage() {
             <ProjectMasterDataButton defaultTab="modules" label="Danh mục PLHĐ" />
             <div className="flex items-center gap-2 rounded-xl border border-cyan-300/10 bg-cyan-300/[0.04] px-3 py-2 text-[10px] text-cyan-100/60">
               <DatabaseZap className="size-3.5" />
-              Real Project Data • V2.2.0
+              Real Project Data • V2.2.1
               <FileStack className="ml-1 size-3.5 text-violet-300/60" />
             </div>
           </div>

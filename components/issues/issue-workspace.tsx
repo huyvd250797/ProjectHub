@@ -68,6 +68,19 @@ function formatDate(value: string | null) {
   try { return new Intl.DateTimeFormat("vi-VN").format(new Date(`${value}T00:00:00`)); } catch { return value; }
 }
 function isOverdue(value: string | null) { return Boolean(value && value < new Date().toISOString().slice(0, 10)); }
+function jiraCodeFromUrl(value: string | null) {
+  if (!value) return "";
+  const trimmed = value.trim();
+  const browseMatch = trimmed.match(/\/browse\/([^/?#]+)/i);
+  if (browseMatch?.[1]) return decodeURIComponent(browseMatch[1]);
+  try {
+    const url = new URL(trimmed);
+    const last = url.pathname.split("/").filter(Boolean).pop();
+    return last ? decodeURIComponent(last) : "Jira";
+  } catch {
+    return trimmed.length <= 26 ? trimmed : "Jira";
+  }
+}
 function statusTone(code: string | null) {
   if (code === "released" || code === "resolved") return "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-200";
   if (code === "processing") return "border-cyan-300/15 bg-cyan-300/[0.06] text-cyan-200";
@@ -483,7 +496,7 @@ export function IssueWorkspace() {
       return <FloatingSelect ariaLabel="Phụ trách" compact disabled={editingDisabled} value={issue.assigneeId} options={assigneeOptions} onChange={(value) => inlineUpdate(issue, "assigneeId", value)} placeholder="Chưa phụ trách" tagStyle={customizedTagStyle("assignee", issue.assigneeId)} />;
     }
     if (id === "dueDate") return <span className={cn("text-[10px]", isOverdue(issue.dueDate) ? "font-semibold text-rose-300/80" : "text-slate-600")}>{formatDate(issue.dueDate)}</span>;
-    return issue.jiraUrl ? <a href={issue.jiraUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] px-2 py-1 text-[9px] text-cyan-300/60 hover:border-cyan-300/18 hover:text-cyan-200"><ExternalLink className="size-3" /> Jira</a> : <span className="text-slate-800">—</span>;
+    return issue.jiraUrl ? <a href={issue.jiraUrl} target="_blank" rel="noreferrer" title={issue.jiraUrl} className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-white/[0.06] px-2 py-1 text-[9px] font-medium text-cyan-300/70 hover:border-cyan-300/18 hover:text-cyan-200"><ExternalLink className="size-3 shrink-0" /><span className="truncate">{jiraCodeFromUrl(issue.jiraUrl)}</span></a> : <span className="text-slate-800">—</span>;
   }
 
   return (

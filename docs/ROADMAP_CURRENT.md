@@ -36,9 +36,10 @@
 - ✅ V2.0.0 — Project Command Center
 - ✅ V2.1.0 — Auto Generate Plan
 - ✅ V2.2.0 — PLHĐ Function Tree & Project Delete
+- ✅ V2.2.1 — PLHĐ Grid UX & Jira Code Display
 
 ## Current
-- **V2.2.0 — PLHĐ Function Tree & Project Delete**
+- **V2.2.1 — PLHĐ Grid UX & Jira Code Display**
 
 ## Deferred by product decision
 - Jira Integration / Sync

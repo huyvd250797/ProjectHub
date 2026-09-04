@@ -1,4 +1,15 @@
-# ASC WORKING — V2.2.0
+# ASC WORKING — V2.2.1
+
+## V2.2.1 có gì mới?
+
+PLHĐ Grid UX & Jira Code Display
+
+- Đổi tiêu đề khu vực PLHĐ thành **Cấu trúc PLHĐ** cho dễ hiểu hơn.
+- Lưới PLHĐ cho phép kéo đổi vị trí cột và kéo resize độ rộng cột ngay trên header.
+- Dòng PLHĐ tự xuống hàng để hiển thị đủ nội dung Nhóm / Phân hệ / Module / Chức năng.
+- Thu nhỏ combobox trạng thái Module/Phân hệ để tránh dính vào cột kế bên.
+- Cột Jira trong ISSUE hiển thị mã ticket lấy từ link `/browse/...`, ví dụ `INTRACOM01-540`, và bấm trực tiếp để mở link Jira đã setup.
+- Không cần migration mới; đây là hotfix frontend trên nền schema V2.2.0.
 
 ## V2.2.0 có gì mới?
 

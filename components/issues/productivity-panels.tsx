@@ -15,13 +15,13 @@ export const ISSUE_COLUMNS: Array<{ id: IssueColumnId; label: string; min: numbe
   { id: "department", label: "Phòng ban", min: 130, max: 320 },
   { id: "assignee", label: "Phụ trách", min: 120, max: 280 },
   { id: "dueDate", label: "Due Date", min: 105, max: 170 },
-  { id: "jira", label: "Jira", min: 76, max: 130 },
+  { id: "jira", label: "Jira", min: 120, max: 220 },
 ];
 
 export const DEFAULT_ISSUE_PREFERENCES: IssueColumnPreferences = {
   visibleColumns: ISSUE_COLUMNS.map((item) => item.id),
   columnOrder: ISSUE_COLUMNS.map((item) => item.id),
-  columnWidths: Object.fromEntries(ISSUE_COLUMNS.map((item) => [item.id, item.id === "content" ? 420 : item.id === "issueNo" ? 82 : item.id === "jira" ? 84 : 160])),
+  columnWidths: Object.fromEntries(ISSUE_COLUMNS.map((item) => [item.id, item.id === "content" ? 420 : item.id === "issueNo" ? 82 : item.id === "jira" ? 140 : 160])),
   pinnedColumns: ["issueNo", "content"],
   pageSize: 50,
   filtersVisible: true,

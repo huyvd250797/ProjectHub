@@ -11,6 +11,7 @@ import {
   ChevronsUpDown,
   FileSearch,
   FilterX,
+  GripVertical,
   LoaderCircle,
   Network,
   PanelRightClose,
@@ -18,16 +19,13 @@ import {
   Unlink2,
   X,
 } from "lucide-react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useProject } from "@/components/project-context";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import type { ProjectCatalogMutationResponse } from "@/lib/catalog/types";
 import type { ContractApiResponse, ContractData, ContractDetailItem, ContractOverviewItem } from "@/lib/contract/types";
 import { cn } from "@/lib/utils";
-
-const ROW_HEIGHT = 52;
-const VIEWPORT_HEIGHT = 640;
-const OVERSCAN = 8;
 
 type PlhdNodeKind = "root" | "subsystem" | "module" | "function";
 type PlhdNode = {
@@ -53,6 +51,50 @@ type PlhdNode = {
   hasChildren: boolean;
 };
 type FlatPlhdRow = { item: PlhdNode; depth: number };
+type PlhdColumnId = "code" | "name" | "kind" | "department" | "issue" | "handedOver" | "remaining" | "progress" | "status" | "detail";
+type PlhdColumnSpec = { id: PlhdColumnId; label: string; width: number; min: number; max: number; align?: "right" | "center" };
+
+const PLHD_COLUMN_STORAGE_KEY = "asc-working-plhd-column-layout-v221";
+const PLHD_COLUMNS: PlhdColumnSpec[] = [
+  { id: "code", label: "Mã", width: 92, min: 70, max: 150 },
+  { id: "name", label: "Cấu trúc PLHĐ", width: 420, min: 260, max: 760 },
+  { id: "kind", label: "Loại", width: 116, min: 95, max: 170 },
+  { id: "department", label: "Phòng ban", width: 170, min: 120, max: 280 },
+  { id: "issue", label: "ISSUE", width: 86, min: 72, max: 130, align: "center" },
+  { id: "handedOver", label: "Đã bàn giao", width: 104, min: 90, max: 150, align: "center" },
+  { id: "remaining", label: "Còn lại", width: 92, min: 80, max: 140, align: "center" },
+  { id: "progress", label: "Tiến độ", width: 150, min: 120, max: 220 },
+  { id: "status", label: "Trạng thái", width: 152, min: 128, max: 220 },
+  { id: "detail", label: "Chi tiết", width: 112, min: 92, max: 170 },
+];
+
+const DEFAULT_PLHD_COLUMN_ORDER = PLHD_COLUMNS.map((column) => column.id);
+const DEFAULT_PLHD_COLUMN_WIDTHS = Object.fromEntries(PLHD_COLUMNS.map((column) => [column.id, column.width])) as Record<PlhdColumnId, number>;
+
+function columnSpec(id: PlhdColumnId) {
+  return PLHD_COLUMNS.find((column) => column.id === id) ?? PLHD_COLUMNS[0];
+}
+
+function restorePlhdColumnLayout() {
+  if (typeof window === "undefined") return { order: DEFAULT_PLHD_COLUMN_ORDER, widths: DEFAULT_PLHD_COLUMN_WIDTHS };
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(PLHD_COLUMN_STORAGE_KEY) ?? "{}") as { order?: unknown; widths?: unknown };
+    const order = Array.isArray(parsed.order)
+      ? parsed.order.filter((id): id is PlhdColumnId => DEFAULT_PLHD_COLUMN_ORDER.includes(id as PlhdColumnId))
+      : [];
+    for (const id of DEFAULT_PLHD_COLUMN_ORDER) if (!order.includes(id)) order.push(id);
+    const rawWidths = parsed.widths && typeof parsed.widths === "object" && !Array.isArray(parsed.widths) ? parsed.widths as Record<string, unknown> : {};
+    const widths = { ...DEFAULT_PLHD_COLUMN_WIDTHS };
+    for (const id of DEFAULT_PLHD_COLUMN_ORDER) {
+      const spec = columnSpec(id);
+      const width = Number(rawWidths[id]);
+      if (Number.isFinite(width)) widths[id] = Math.min(spec.max, Math.max(spec.min, Math.round(width)));
+    }
+    return { order, widths };
+  } catch {
+    return { order: DEFAULT_PLHD_COLUMN_ORDER, widths: DEFAULT_PLHD_COLUMN_WIDTHS };
+  }
+}
 
 function normalize(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("vi").trim();
@@ -352,7 +394,10 @@ export function ContractView() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [selectedNode, setSelectedNode] = useState<PlhdNode | null>(null);
   const [statusSavingKey, setStatusSavingKey] = useState("");
-  const [scrollTop, setScrollTop] = useState(0);
+  const [draggedColumn, setDraggedColumn] = useState<PlhdColumnId | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<PlhdColumnId | null>(null);
+  const [columnOrder, setColumnOrder] = useState<PlhdColumnId[]>(() => restorePlhdColumnLayout().order);
+  const [columnWidths, setColumnWidths] = useState<Record<PlhdColumnId, number>>(() => restorePlhdColumnLayout().widths);
   const viewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -362,7 +407,6 @@ export function ContractView() {
     setData(null);
     setSearch("");
     setSelectedNode(null);
-    setScrollTop(0);
 
     fetch(`/api/contract?projectId=${encodeURIComponent(selectedProject.id)}`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
@@ -394,17 +438,17 @@ export function ContractView() {
     return () => window.removeEventListener("asc-working:catalog-changed", handleCatalogChanged);
   }, [selectedProject.id]);
 
+  useEffect(() => {
+    window.localStorage.setItem(PLHD_COLUMN_STORAGE_KEY, JSON.stringify({ order: columnOrder, widths: columnWidths }));
+  }, [columnOrder, columnWidths]);
+
   const nodes = useMemo(() => data ? buildPlhdNodes(data.overview, data.details) : [], [data]);
   const flatRows = useMemo(
     () => buildVisibleRows(nodes, expanded, deferredSearch, { itemType, departmentId, moduleStatus, pendingOnly }),
     [nodes, expanded, deferredSearch, itemType, departmentId, moduleStatus, pendingOnly],
   );
-  const virtualWindow = useMemo(() => {
-    const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
-    const visibleCount = Math.ceil(VIEWPORT_HEIGHT / ROW_HEIGHT) + OVERSCAN * 2;
-    const end = Math.min(flatRows.length, start + visibleCount);
-    return { start, end, rows: flatRows.slice(start, end) };
-  }, [flatRows, scrollTop]);
+  const gridTemplateColumns = useMemo(() => columnOrder.map((id) => `${columnWidths[id] ?? columnSpec(id).width}px`).join(" "), [columnOrder, columnWidths]);
+  const tableWidth = useMemo(() => columnOrder.reduce((sum, id) => sum + (columnWidths[id] ?? columnSpec(id).width), 0), [columnOrder, columnWidths]);
 
   function resetFilters() {
     setSearch("");
@@ -454,6 +498,84 @@ export function ContractView() {
     }
   }
 
+  function dropColumn(target: PlhdColumnId) {
+    if (!draggedColumn || draggedColumn === target) return;
+    setColumnOrder((current) => {
+      const next = [...current];
+      const from = next.indexOf(draggedColumn);
+      const to = next.indexOf(target);
+      if (from < 0 || to < 0) return current;
+      next.splice(from, 1);
+      next.splice(to, 0, draggedColumn);
+      return next;
+    });
+    setDraggedColumn(null);
+    setDragOverColumn(null);
+  }
+
+  function startResize(columnId: PlhdColumnId, event: ReactMouseEvent<HTMLSpanElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    const spec = columnSpec(columnId);
+    const startX = event.clientX;
+    const startWidth = columnWidths[columnId] ?? spec.width;
+    const onMove = (moveEvent: MouseEvent) => {
+      const nextWidth = Math.min(spec.max, Math.max(spec.min, startWidth + moveEvent.clientX - startX));
+      setColumnWidths((current) => ({ ...current, [columnId]: Math.round(nextWidth) }));
+    };
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }
+
+  function renderCell(item: PlhdNode, depth: number, columnId: PlhdColumnId) {
+    const editableStatus = data?.canManage && item.sourceType === "item" && (item.kind === "subsystem" || item.kind === "module");
+    if (columnId === "code") {
+      return <span className="font-mono text-[10px] leading-5 text-cyan-300/65 break-all">{item.code || "-"}</span>;
+    }
+    if (columnId === "name") {
+      return (
+        <div className="flex min-w-0 items-start pr-3" style={{ paddingLeft: Math.min(depth, 7) * 18 }}>
+          <button
+            type="button"
+            onClick={(event) => { event.stopPropagation(); if (item.hasChildren) toggleNode(item.key); }}
+            className={cn("mr-2 mt-0.5 grid size-6 shrink-0 place-items-center rounded-md text-slate-600", item.hasChildren && "hover:bg-white/[0.04] hover:text-cyan-200")}
+            aria-label={item.hasChildren ? `${expanded.has(item.key) || deferredSearch ? "Thu gọn" : "Mở rộng"} ${item.name}` : undefined}
+          >
+            {item.hasChildren ? (expanded.has(item.key) || deferredSearch ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />) : <span className="size-1 rounded-full bg-slate-700" />}
+          </button>
+          <span className={cn("min-w-0 whitespace-normal break-words leading-5", item.kind === "root" ? "font-semibold text-cyan-100" : item.kind === "subsystem" ? "font-semibold text-violet-100" : item.kind === "module" ? "font-medium text-slate-200" : "text-slate-400")}>
+            {item.name}
+            {item.note ? <span className="ml-2 inline-block size-1.5 rounded-full bg-amber-300/70 align-middle" title={item.note} /> : null}
+          </span>
+        </div>
+      );
+    }
+    if (columnId === "kind") return <span className="rounded-lg border border-white/[0.06] bg-white/[0.025] px-2 py-1 text-[9px] text-slate-500">{kindLabel(item.kind)}</span>;
+    if (columnId === "department") return <span className="block whitespace-normal break-words leading-5 text-slate-500">{item.ownerDepartmentName || "-"}</span>;
+    if (columnId === "issue") return <span className="font-semibold text-cyan-200/75">{item.issueTotal > 0 && item.sourceType === "item" ? <Link href={`/issues?moduleId=${encodeURIComponent(item.sourceId)}`} onClick={(event) => event.stopPropagation()} className="inline-flex items-center gap-1">{item.issueTotal}<ArrowUpRight className="size-3" /></Link> : "0"}</span>;
+    if (columnId === "handedOver") return <span className="font-medium text-emerald-300/70">{item.handedOver || 0}</span>;
+    if (columnId === "remaining") return <span className={cn("font-medium", item.remaining > 0 ? "text-amber-200/80" : "text-slate-600")}>{item.remaining || 0}</span>;
+    if (columnId === "progress") {
+      return <span className="flex min-w-[118px] items-center gap-2.5"><span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.05]"><span className={cn("block h-full rounded-full", progressTone(item.progress))} style={{ width: `${Math.min(100, item.progress)}%` }} /></span><span className="w-8 text-right text-[10px] text-slate-500">{item.progress}%</span></span>;
+    }
+    if (columnId === "status") {
+      return (
+        <span onClick={(event) => event.stopPropagation()} className="block max-w-[152px]">
+          {editableStatus ? (
+            <ThemedSelect ariaLabel={`Trạng thái ${item.name}`} value={item.moduleStatusCode ?? ""} onChange={(value) => void updateModuleStatus(item, value)} disabled={statusSavingKey === item.key} buttonClassName="h-8 min-h-0 px-2.5 text-[10px]" menuClassName="min-w-[220px]" options={[{ value: "", label: "Chưa cập nhật" }, ...data.filters.moduleStatuses]} />
+          ) : (
+            <span className={cn("inline-flex min-h-7 max-w-full items-center rounded-lg border px-2 py-1 text-[9px] leading-4", item.moduleStatusLabel ? "border-cyan-300/10 bg-cyan-300/[0.045] text-cyan-100/65" : "border-white/[0.05] bg-white/[0.02] text-slate-700")}>{item.moduleStatusLabel || "-"}</span>
+          )}
+        </span>
+      );
+    }
+    return <span className="flex items-center gap-1.5 text-[10px]">{item.kind === "function" ? <><CheckCircle2 className="size-3.5 text-emerald-300/60" /><span className="text-emerald-200/55">Chức năng</span></> : <><Network className="size-3.5 text-cyan-300/55" /><span className="text-slate-500">{formatNumber(item.detailCount)}</span></>}</span>;
+  }
+
   if (loading) return <ContractLoading />;
   if (error) return <ContractError message={error} retry={() => setReloadKey((key) => key + 1)} />;
   if (!data) return null;
@@ -475,7 +597,7 @@ export function ContractView() {
       <div className="tech-panel overflow-hidden rounded-2xl">
         <div className="flex flex-col gap-3 border-b border-white/[0.06] p-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-cyan-100"><Network className="size-4 text-cyan-300/70" /> Cây PLHĐ duy nhất</div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-cyan-100"><Network className="size-4 text-cyan-300/70" /> Cấu trúc PLHĐ</div>
             <div className="mt-1 text-[10px] text-slate-600">Nhóm / Phân hệ / Module / Chức năng, lấy dữ liệu trực tiếp từ danh mục project.</div>
           </div>
           <div className="flex flex-1 flex-col gap-2 lg:flex-row xl:max-w-[1020px]">
@@ -499,51 +621,52 @@ export function ContractView() {
         </div>
 
         {nodes.length === 0 ? <EmptyContract source={data.source} /> : (
-          <div className="overflow-hidden">
-            <div className="grid h-10 grid-cols-[92px_1fr_120px_150px_78px_94px_94px_140px_180px_90px] items-center border-b border-white/[0.06] bg-[#0b192a]/90 px-3 text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-600">
-              {["Mã", "Cấu trúc PLHĐ", "Loại", "Phòng ban", "ISSUE", "Đã bàn giao", "Còn lại", "Tiến độ", "Trạng thái", "Chi tiết"].map((head) => <span key={head}>{head}</span>)}
-            </div>
-            <div ref={viewportRef} onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)} className="scrollbar-thin relative overflow-auto" style={{ height: VIEWPORT_HEIGHT }}>
-              <div className="relative min-w-[1230px]" style={{ height: flatRows.length * ROW_HEIGHT }}>
-                {virtualWindow.rows.map(({ item, depth }, localIndex) => {
-                  const absoluteIndex = virtualWindow.start + localIndex;
-                  const editableStatus = data.canManage && item.sourceType === "item" && (item.kind === "subsystem" || item.kind === "module");
+          <div ref={viewportRef} className="scrollbar-thin max-h-[680px] overflow-auto overscroll-contain">
+            <div style={{ width: tableWidth, minWidth: "100%" }}>
+              <div className="sticky top-0 z-20 grid min-h-11 items-stretch border-b border-white/[0.06] bg-[#0b192a]/[0.98] px-3 text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-600 shadow-[0_1px_0_rgba(255,255,255,0.035)] backdrop-blur-xl" style={{ gridTemplateColumns }}>
+                {columnOrder.map((id) => {
+                  const spec = columnSpec(id);
                   return (
-                    <div key={item.key} role="button" tabIndex={0} onClick={() => setSelectedNode(item)} onKeyDown={(event) => { if (event.key === "Enter") setSelectedNode(item); }} className={cn("absolute left-0 grid w-full grid-cols-[92px_1fr_120px_150px_78px_94px_94px_140px_180px_90px] items-center border-b border-white/[0.035] px-3 text-left text-xs transition hover:bg-white/[0.025]", item.kind === "root" && "bg-cyan-300/[0.025]", item.kind === "subsystem" && "bg-violet-300/[0.018]")} style={{ top: absoluteIndex * ROW_HEIGHT, height: ROW_HEIGHT }}>
-                      <span className="truncate font-mono text-[10px] text-cyan-300/60" title={item.code}>{item.code || "-"}</span>
-                      <span className="flex min-w-0 items-center pr-4" style={{ paddingLeft: Math.min(depth, 7) * 18 }}>
-                        <button type="button" onClick={(event) => { event.stopPropagation(); if (item.hasChildren) toggleNode(item.key); }} className={cn("mr-2 grid size-6 shrink-0 place-items-center rounded-md text-slate-600", item.hasChildren && "hover:bg-white/[0.04] hover:text-cyan-200")}>
-                          {item.hasChildren ? (expanded.has(item.key) || deferredSearch ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />) : <span className="size-1 rounded-full bg-slate-700" />}
-                        </button>
-                        <span className={cn("truncate", item.kind === "root" ? "font-semibold text-cyan-100" : item.kind === "subsystem" ? "font-semibold text-violet-100" : item.kind === "module" ? "font-medium text-slate-200" : "text-slate-400")} title={item.name}>{item.name}</span>
-                        {item.note ? <span className="ml-2 size-1.5 shrink-0 rounded-full bg-amber-300/70" title={item.note} /> : null}
-                      </span>
-                      <span><span className="rounded-lg border border-white/[0.06] bg-white/[0.025] px-2 py-1 text-[9px] text-slate-500">{kindLabel(item.kind)}</span></span>
-                      <span className="truncate text-slate-500" title={item.ownerDepartmentName ?? ""}>{item.ownerDepartmentName || "-"}</span>
-                      <span className="font-semibold text-cyan-200/75">{item.issueTotal > 0 && item.sourceType === "item" ? <Link href={`/issues?moduleId=${encodeURIComponent(item.sourceId)}`} onClick={(event) => event.stopPropagation()} className="inline-flex items-center gap-1">{item.issueTotal}<ArrowUpRight className="size-3" /></Link> : "0"}</span>
-                      <span className="font-medium text-emerald-300/70">{item.handedOver || 0}</span>
-                      <span className={cn("font-medium", item.remaining > 0 ? "text-amber-200/80" : "text-slate-600")}>{item.remaining || 0}</span>
-                      <span className="flex min-w-[120px] items-center gap-2.5"><span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.05]"><span className={cn("block h-full rounded-full", progressTone(item.progress))} style={{ width: `${Math.min(100, item.progress)}%` }} /></span><span className="w-8 text-right text-[10px] text-slate-500">{item.progress}%</span></span>
-                      <span onClick={(event) => event.stopPropagation()}>
-                        {editableStatus ? (
-                          <ThemedSelect ariaLabel={`Trạng thái ${item.name}`} value={item.moduleStatusCode ?? ""} onChange={(value) => void updateModuleStatus(item, value)} disabled={statusSavingKey === item.key} buttonClassName="h-8" options={[{ value: "", label: "Chưa cập nhật" }, ...data.filters.moduleStatuses]} />
-                        ) : (
-                          <span className={cn("rounded-lg border px-2 py-1 text-[9px]", item.moduleStatusLabel ? "border-cyan-300/10 bg-cyan-300/[0.045] text-cyan-100/65" : "border-white/[0.05] bg-white/[0.02] text-slate-700")}>{item.moduleStatusLabel || "-"}</span>
-                        )}
-                      </span>
-                      <span className="flex items-center gap-1.5 text-[10px]">{item.kind === "function" ? <><CheckCircle2 className="size-3.5 text-emerald-300/60" /><span className="text-emerald-200/55">Function</span></> : <><Network className="size-3.5 text-cyan-300/55" /><span className="text-slate-500">{formatNumber(item.detailCount)}</span></>}</span>
+                    <div
+                      key={id}
+                      draggable
+                      onDragStart={(event) => { setDraggedColumn(id); event.dataTransfer.effectAllowed = "move"; }}
+                      onDragEnd={() => { setDraggedColumn(null); setDragOverColumn(null); }}
+                      onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDragOverColumn(id); }}
+                      onDrop={(event) => { event.preventDefault(); dropColumn(id); }}
+                      className={cn("group relative flex cursor-grab items-center gap-1.5 py-3 pr-4 active:cursor-grabbing", spec.align === "center" && "justify-center", dragOverColumn === id && draggedColumn !== id && "bg-cyan-300/[0.08] text-cyan-100")}
+                      title="Kéo để đổi vị trí cột"
+                    >
+                      <GripVertical className="size-3 shrink-0 text-slate-700" />
+                      <span>{spec.label}</span>
+                      <span onMouseDown={(event) => startResize(id, event)} className="absolute right-0 top-1/2 h-6 w-2 -translate-y-1/2 cursor-col-resize rounded-full border-r border-cyan-300/0 transition group-hover:border-cyan-300/35" />
                     </div>
                   );
                 })}
               </div>
+              {flatRows.length ? flatRows.map(({ item, depth }) => (
+                <div
+                  key={item.key}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedNode(item)}
+                  onKeyDown={(event) => { if (event.key === "Enter") setSelectedNode(item); }}
+                  className={cn("grid min-h-[56px] items-start border-b border-white/[0.035] px-3 py-3 text-left text-xs transition hover:bg-white/[0.025]", item.kind === "root" && "bg-cyan-300/[0.025]", item.kind === "subsystem" && "bg-violet-300/[0.018]")}
+                  style={{ gridTemplateColumns }}
+                >
+                  {columnOrder.map((id) => {
+                    const spec = columnSpec(id);
+                    return <div key={id} className={cn("min-w-0 pr-3", spec.align === "center" && "text-center")}>{renderCell(item, depth, id)}</div>;
+                  })}
+                </div>
+              )) : <div className="grid min-h-[240px] place-items-center text-xs text-slate-600">Không có dòng PLHĐ phù hợp bộ lọc.</div>}
             </div>
-            {flatRows.length === 0 ? <div className="grid min-h-[240px] place-items-center text-xs text-slate-600">Không có dòng PLHĐ phù hợp bộ lọc.</div> : null}
           </div>
         )}
 
         <div className="flex flex-col gap-2 border-t border-white/[0.05] px-4 py-3 text-[9px] text-slate-700 md:flex-row md:items-center md:justify-between">
           <span>{data.source === "database" ? "Supabase • project_id scoped" : "Demo Mode"} • Generated {new Date(data.generatedAt).toLocaleTimeString("vi-VN")}</span>
-          <span>V2.2.0 • Single PLHĐ Function Tree</span>
+          <span>V2.2.1 • PLHĐ Grid UX & Jira Code Display</span>
         </div>
       </div>
 

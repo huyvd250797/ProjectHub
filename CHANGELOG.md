@@ -1,5 +1,23 @@
 # Changelog
 
+## V2.2.1 — PLHĐ Grid UX & Jira Code Display
+
+### Fixed
+
+- Đổi tiêu đề PLHĐ từ “Cây PLHĐ duy nhất” sang “Cấu trúc PLHĐ”.
+- Lưới PLHĐ không còn ép dòng cố định; nội dung dài được xuống hàng để đọc đủ.
+- Combobox trạng thái trên Phân hệ/Module được thu gọn để không đè sát cột Chi tiết.
+- Cột Jira trong ISSUE hiển thị mã ticket rút từ URL `/browse/...` thay vì nhãn `Jira`.
+
+### Added
+
+- Kéo thả header để đổi vị trí cột PLHĐ.
+- Kéo mép header để resize độ rộng cột PLHĐ, lưu trong `localStorage`.
+
+### Database
+
+- Không có migration mới.
+
 ## V2.2.0 — PLHĐ Function Tree & Project Delete
 
 ### Added

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 const ALL_COLUMNS: IssueColumnId[] = ["issueNo","content","status","customerStatus","priority","module","department","assignee","dueDate","jira"];
-const DEFAULT_WIDTHS: Record<IssueColumnId, number> = { issueNo: 82, content: 420, status: 150, customerStatus: 130, priority: 96, module: 190, department: 170, assignee: 160, dueDate: 118, jira: 84 };
+const DEFAULT_WIDTHS: Record<IssueColumnId, number> = { issueNo: 82, content: 420, status: 150, customerStatus: 130, priority: 96, module: 190, department: 170, assignee: 160, dueDate: 118, jira: 140 };
 const TAG_GROUPS: IssueTagGroup[] = ["status", "customerStatus", "priority", "assignee"];
 const COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
