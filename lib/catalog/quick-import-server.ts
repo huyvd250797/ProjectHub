@@ -60,6 +60,12 @@ type ParsedQuickWorkbook = {
   };
 };
 
+type ParsedContractTree = {
+  items: ParsedContractItem[];
+  embeddedDetails: ParsedContractDetail[];
+  mappedEmbeddedDetails: number;
+};
+
 function text(value: unknown) {
   return value === null || value === undefined ? "" : String(value).trim();
 }
@@ -336,7 +342,7 @@ function parseContractItems(
   reference: QuickCatalogReference,
   includeIncomingDepartments: boolean,
   warnings: string[],
-) {
+): ParsedContractTree {
   const columns = resolveColumns(rows, "contractItems");
   const dataRows = rows.slice(columns.start).filter(({ row }) => text(cellAt(row, columns.name)));
   const departmentByName = new Map(reference.departments.map((item) => [item.normalizedName, item.importKey]));
@@ -346,9 +352,14 @@ function parseContractItems(
 
   const occurrence = new Map<string, number>();
   const usedExisting = new Set<string>();
+  const usedExistingDetails = new Set<string>();
   const items: ParsedContractItem[] = [];
+  const embeddedDetails: ParsedContractDetail[] = [];
+  const embeddedDetailParentAtLevel = new Map<number, string>();
   let currentRoot: string | null = null;
   let currentSubsystem: string | null = null;
+  let currentModule: string | null = null;
+  let mappedEmbeddedDetails = 0;
 
   dataRows.forEach((entry, index) => {
     const name = text(cellAt(entry.row, columns.name));
@@ -363,6 +374,29 @@ function parseContractItems(
           : "module");
 
     const code = nullableText(cellAt(entry.row, columns.code));
+    if (inferredType === "other") {
+      const detailLevel = 3;
+      const parentKey = embeddedDetailParentAtLevel.get(detailLevel - 1) ?? null;
+      const existing = matchExistingDetail(reference, usedExistingDetails, code ?? "", name, detailLevel);
+      const pathSignature = [currentModule ?? parentKey ?? currentSubsystem ?? currentRoot ?? "root", code || "blank", normalizedName].join("|");
+      const importKey = existing?.importKey ?? stableKey("plhd-detail", pathSignature);
+      if (currentModule) mappedEmbeddedDetails += 1;
+      else warnings.push(`PLHĐ dòng ${entry.sourceRow}: dòng Other '${name}' chưa có Module cha trước đó để mapping chi tiết.`);
+      embeddedDetails.push({
+        importKey,
+        parentKey,
+        contractItemKey: currentModule,
+        code,
+        content: name,
+        nodeType: "other",
+        level: detailLevel,
+        sortOrder: embeddedDetails.length + 1,
+        note: nullableText(cellAt(entry.row, columns.classification)),
+      });
+      embeddedDetailParentAtLevel.set(detailLevel, importKey);
+      return;
+    }
+
     const existing = matchExistingContractItem(reference, usedExisting, inferredType, code, normalizedName);
     const occurrenceBase = `${inferredType}|${normalizedName}`;
     const occurrenceNo = (occurrence.get(occurrenceBase) ?? 0) + 1;
@@ -373,12 +407,16 @@ function parseContractItems(
     if (inferredType === "root") {
       currentRoot = importKey;
       currentSubsystem = null;
+      currentModule = null;
     } else if (inferredType === "subsystem") {
       parentKey = currentRoot;
       currentSubsystem = importKey;
+      currentModule = null;
     } else {
       parentKey = currentSubsystem ?? currentRoot;
+      currentModule = importKey;
     }
+    embeddedDetailParentAtLevel.clear();
 
     const departmentName = text(cellAt(entry.row, columns.department));
     const departmentKey = departmentName ? departmentByName.get(normalizeImportName(departmentName)) ?? null : null;
@@ -405,7 +443,10 @@ function parseContractItems(
   if (items.length > 0 && !items.some((item) => item.itemType === "root")) {
     warnings.push("Không nhận diện được Nhóm/Root trong sheet PLHĐ. Các Module sẽ được import ở cấp gốc.");
   }
-  return items;
+  if (embeddedDetails.length > 0) {
+    warnings.push(`Đã nhận diện ${embeddedDetails.length} dòng Other trong sheet PLHĐ là chi tiết phụ lục hợp đồng.`);
+  }
+  return { items, embeddedDetails, mappedEmbeddedDetails };
 }
 
 const ROMAN_PATTERN = /^(?=[IVXLCDM]+$)M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/i;
@@ -563,7 +604,6 @@ export function parseQuickCatalogWorkbook(
   const sections = new Set(selectedSections);
   if (sections.has("departments") && !departmentSheet) errors.push("Không tìm thấy sheet 'Phòng ban'.");
   if (sections.has("contractItems") && !contractSheet) errors.push("Không tìm thấy sheet 'PLHĐ'.");
-  if (sections.has("contractDetails") && !detailSheet) errors.push("Không tìm thấy sheet 'PLHĐ chi tiết' hoặc 'PLHĐ - Chi tiết'.");
   if (sections.has("contractDetails") && !sections.has("contractItems")) {
     warnings.push("Đang import PLHĐ chi tiết mà không import PLHĐ. Hệ thống sẽ mapping Module từ danh mục Project hiện có khi có thể.");
   }
@@ -573,16 +613,21 @@ export function parseQuickCatalogWorkbook(
     : [];
   const contractItems = sections.has("contractItems")
     ? parseContractItems(contractRows, departments, reference, sections.has("departments"), warnings)
-    : [];
-  const detailResult = sections.has("contractDetails")
-    ? parseContractDetails(detailRows, contractItems, reference, warnings)
+    : { items: [] as ParsedContractItem[], embeddedDetails: [] as ParsedContractDetail[], mappedEmbeddedDetails: 0 };
+  const sheetDetailResult = sections.has("contractDetails") && detailSheet
+    ? parseContractDetails(detailRows, contractItems.items, reference, warnings)
     : { details: [] as ParsedContractDetail[], mappedBusinessRows: 0, groupRows: 0, unmappedBusinessRows: 0 };
+  const contractDetails = [
+    ...contractItems.embeddedDetails,
+    ...sheetDetailResult.details.map((item) => ({ ...item, sortOrder: contractItems.embeddedDetails.length + item.sortOrder })),
+  ];
 
   if (sections.has("departments") && departments.length === 0) errors.push("Sheet Phòng ban không có dữ liệu hợp lệ để import.");
-  if (sections.has("contractItems") && contractItems.length === 0) errors.push("Sheet PLHĐ không có dữ liệu hợp lệ để import.");
-  if (sections.has("contractDetails") && detailResult.details.length === 0) errors.push("Sheet PLHĐ chi tiết không có dữ liệu hợp lệ để import.");
-  if (sections.has("contractDetails") && detailResult.unmappedBusinessRows > 0) {
-    warnings.push(`${detailResult.unmappedBusinessRows} dòng nghiệp vụ PLHĐ chi tiết chưa tự mapping được Module. Dữ liệu vẫn được import và có thể rà soát mapping sau.`);
+  if (sections.has("contractItems") && contractItems.items.length === 0) errors.push("Sheet PLHĐ không có dữ liệu hợp lệ để import.");
+  if (sections.has("contractDetails") && !detailSheet && contractItems.embeddedDetails.length === 0) errors.push("Không tìm thấy sheet 'PLHĐ chi tiết' hoặc dòng Other trong sheet PLHĐ.");
+  if (sections.has("contractDetails") && contractDetails.length === 0) errors.push("Sheet PLHĐ chi tiết không có dữ liệu hợp lệ để import.");
+  if (sections.has("contractDetails") && sheetDetailResult.unmappedBusinessRows > 0) {
+    warnings.push(`${sheetDetailResult.unmappedBusinessRows} dòng nghiệp vụ PLHĐ chi tiết chưa tự mapping được Module. Dữ liệu vẫn được import và có thể rà soát mapping sau.`);
   }
 
   const basePayload: CanonicalProjectPayload = {
@@ -593,8 +638,8 @@ export function parseQuickCatalogWorkbook(
     stages: [],
     departments,
     people: [],
-    contractItems,
-    contractDetails: detailResult.details,
+    contractItems: contractItems.items,
+    contractDetails,
     releaseVersions: [],
     issues: [],
     remoteResources: [],
@@ -608,14 +653,14 @@ export function parseQuickCatalogWorkbook(
     subsystems: payload.contractItems.filter((item) => item.itemType === "subsystem").length,
     modules: payload.contractItems.filter((item) => item.itemType === "module").length,
     contractDetails: payload.contractDetails.length,
-    mappedDetailRows: sections.has("contractDetails") ? detailResult.mappedBusinessRows : 0,
-    groupDetailRows: sections.has("contractDetails") ? detailResult.groupRows : 0,
-    unmappedBusinessRows: sections.has("contractDetails") ? detailResult.unmappedBusinessRows : 0,
+    mappedDetailRows: sections.has("contractDetails") ? contractItems.mappedEmbeddedDetails + sheetDetailResult.mappedBusinessRows : 0,
+    groupDetailRows: sections.has("contractDetails") ? sheetDetailResult.groupRows : 0,
+    unmappedBusinessRows: sections.has("contractDetails") ? sheetDetailResult.unmappedBusinessRows : 0,
   };
 
   const itemNameByKey = new Map<string, string>();
   for (const item of reference.contractItems) itemNameByKey.set(item.importKey, item.name);
-  for (const item of contractItems) itemNameByKey.set(item.importKey, item.name);
+  for (const item of contractItems.items) itemNameByKey.set(item.importKey, item.name);
 
   return {
     payload,

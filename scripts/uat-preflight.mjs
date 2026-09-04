@@ -514,6 +514,11 @@ for (const token of ["selectedDepartments", "selectedModules", "toggleAllVisible
   catalogUiV190.includes(token) ? pass(`V1.9.0 Catalog bulk delete UI: ${token}`) : fail(`V1.9.0 Catalog bulk delete UI: ${token}`);
 }
 
+const quickImportServerV190 = fs.readFileSync(path.join(root, "lib/catalog/quick-import-server.ts"), "utf8");
+for (const token of ["ParsedContractTree", "embeddedDetails", "nodeType: \"other\"", "dòng Other trong sheet PLHĐ", "contractItems.items"]) {
+  quickImportServerV190.includes(token) ? pass(`V1.9.0 PLHĐ import tree parser: ${token}`) : fail(`V1.9.0 PLHĐ import tree parser: ${token}`);
+}
+
 const navigationV190 = fs.readFileSync(path.join(root, "lib/navigation.ts"), "utf8");
 for (const token of ["Portfolio", "/portfolio", "BriefcaseBusiness"]) {
   navigationV190.includes(token) ? pass(`V1.9.0 Portfolio navigation: ${token}`) : fail(`V1.9.0 Portfolio navigation: ${token}`);

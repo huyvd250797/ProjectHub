@@ -11,6 +11,7 @@
 - Phòng ban đang được dùng bởi ISSUE, People hoặc Module owner sẽ không bị xóa.
 - Module đang được dùng bởi ISSUE, Contract Detail hoặc Module con sẽ không bị xóa.
 - API trả rõ số dòng đã xóa và số dòng bị chặn.
+- Import PLHĐ giữ đầy đủ cây `subsystem → module → other`: `subsystem/module` ghi vào PLHĐ, còn `other` tự tách sang chi tiết phụ lục hợp đồng và gắn với Module hiện hành.
 
 Chạy schema đến V1.8.0 trước. V1.9.0 không cần bảng mới; có note tại `supabase/migrations/202609040001_v190_portfolio_catalog_delete_notes.sql` và UAT theo `docs/UAT_V190_PORTFOLIO_CATALOG_DELETE_CHECKLIST.md`.
 

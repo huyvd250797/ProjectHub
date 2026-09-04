@@ -15,6 +15,7 @@
 
 - Danh mục Phòng ban và Module bổ sung checkbox từng dòng và check all theo dữ liệu đang hiển thị.
 - Bổ sung bulk hard delete cho Project Catalog.
+- Import PLHĐ giữ đầy đủ cây `subsystem → module → other`; dòng `other` trong sheet PLHĐ được tách sang chi tiết PLHĐ, không ghi nhầm vào Danh mục Module.
 - Health endpoint thêm feature `portfolio-dashboard`, `catalog-hard-delete`, `catalog-bulk-delete`.
 
 ### Safety
