@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.9.0" ? pass("Package version", "1.9.0") : fail("Package version", `Expected 1.9.0, got ${pkg.version}`);
+pkg.version === "1.9.1" ? pass("Package version", "1.9.1") : fail("Package version", `Expected 1.9.1, got `);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -169,6 +169,8 @@ for (const rel of [
   "supabase/migrations/202609040001_v190_portfolio_catalog_delete_notes.sql",
   "docs/UAT_V190_PORTFOLIO_CATALOG_DELETE_CHECKLIST.md",
   "docs/V1.9.0-VALIDATION.md",
+  "docs/V1.9.1-SCOPE.md",
+  "docs/V1.9.1-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -514,12 +516,26 @@ for (const token of ["selectedDepartments", "selectedModules", "toggleAllVisible
   catalogUiV190.includes(token) ? pass(`V1.9.0 Catalog bulk delete UI: ${token}`) : fail(`V1.9.0 Catalog bulk delete UI: ${token}`);
 }
 
+const quickImportServerV191 = fs.readFileSync(path.join(root, "lib/catalog/quick-import-server.ts"), "utf8");
+for (const token of ["isFlatModuleList", "forceFlatModules", "Sheet PLHĐ đang được nhận diện là danh sách Module phẳng", "!sections.has(\"contractDetails\")"]) {
+  quickImportServerV191.includes(token) ? pass(`V1.9.1 Module import resync parser: ${token}`) : fail(`V1.9.1 Module import resync parser: ${token}`);
+}
+
+for (const token of ["Import Module", 'initialSections={tab === "departments" ? ["departments"] : ["contractItems"]}']) {
+  catalogUiV190.includes(token) ? pass(`V1.9.1 Module import default UI: ${token}`) : fail(`V1.9.1 Module import default UI: ${token}`);
+}
+
+const quickImportUiV191 = fs.readFileSync(path.join(root, "components/catalog/quick-import-modal.tsx"), "utf8");
+for (const token of ["danh sách Module phẳng", "import trực tiếp vào Danh mục Module"]) {
+  quickImportUiV191.includes(token) ? pass(`V1.9.1 Module import guidance: ${token}`) : fail(`V1.9.1 Module import guidance: ${token}`);
+}
+
 const navigationV190 = fs.readFileSync(path.join(root, "lib/navigation.ts"), "utf8");
 for (const token of ["Portfolio", "/portfolio", "BriefcaseBusiness"]) {
   navigationV190.includes(token) ? pass(`V1.9.0 Portfolio navigation: ${token}`) : fail(`V1.9.0 Portfolio navigation: ${token}`);
 }
 
-console.log("\nASC WORKING V1.9.0 - Cross-Project Portfolio Dashboard Preflight\n");
+console.log("\nASC WORKING V1.9.1 - Catalog Import Module Resync Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

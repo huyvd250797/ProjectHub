@@ -251,6 +251,17 @@ function cellAt(row: unknown[], index: number | undefined) {
   return index === undefined || index < 0 ? "" : row[index];
 }
 
+function isFlatModuleList(rows: Array<{ row: unknown[]; sourceRow: number }>, columns: ReturnType<typeof resolveColumns>) {
+  const first = rows[0]?.row ?? [];
+  const headerText = normalizeImportName(first.slice(0, 8).map(text).join(" | "));
+  const headerMentionsModule = /ten module|module name|^module(\s|\||$)/.test(headerText);
+  const hasExplicitHierarchyType = rows.slice(columns.start).some((entry) => {
+    const type = normalizeItemType(cellAt(entry.row, columns.type));
+    return type === "root" || type === "subsystem";
+  });
+  return headerMentionsModule && !hasExplicitHierarchyType;
+}
+
 function takeFirstUnused<T extends { importKey: string }>(candidates: T[], used: Set<string>) {
   const match = candidates.find((candidate) => !used.has(candidate.importKey));
   if (match) used.add(match.importKey);
@@ -335,10 +346,12 @@ function parseContractItems(
   departments: ParsedDepartment[],
   reference: QuickCatalogReference,
   includeIncomingDepartments: boolean,
+  forceFlatModules: boolean,
   warnings: string[],
 ) {
   const columns = resolveColumns(rows, "contractItems");
   const dataRows = rows.slice(columns.start).filter(({ row }) => text(cellAt(row, columns.name)));
+  const flatModuleList = forceFlatModules || isFlatModuleList(rows, columns);
   const departmentByName = new Map(reference.departments.map((item) => [item.normalizedName, item.importKey]));
   if (includeIncomingDepartments) {
     for (const item of departments) departmentByName.set(item.normalizedName, item.importKey);
@@ -356,6 +369,9 @@ function parseContractItems(
     const nextName = normalizeImportName(text(cellAt(dataRows[index + 1]?.row ?? [], columns.name)));
     const explicitType = normalizeItemType(cellAt(entry.row, columns.type));
     const inferredType: ParsedContractItem["itemType"] = explicitType
+      ?? (flatModuleList
+        ? "module"
+        : null)
       ?? (index === 0
         ? "root"
         : normalizedName.startsWith("phan he ") || (nextName && nextName === normalizedName)
@@ -403,7 +419,11 @@ function parseContractItems(
   });
 
   if (items.length > 0 && !items.some((item) => item.itemType === "root")) {
-    warnings.push("Không nhận diện được Nhóm/Root trong sheet PLHĐ. Các Module sẽ được import ở cấp gốc.");
+    warnings.push(
+      flatModuleList
+        ? "Sheet PLHĐ đang được nhận diện là danh sách Module phẳng. Các Module sẽ được import ở cấp gốc và hiển thị lại trong Danh mục Module."
+        : "Không nhận diện được Nhóm/Root trong sheet PLHĐ. Các Module sẽ được import ở cấp gốc.",
+    );
   }
   return items;
 }
@@ -572,7 +592,14 @@ export function parseQuickCatalogWorkbook(
     ? parseDepartments(departmentRows, warnings, reference)
     : [];
   const contractItems = sections.has("contractItems")
-    ? parseContractItems(contractRows, departments, reference, sections.has("departments"), warnings)
+    ? parseContractItems(
+      contractRows,
+      departments,
+      reference,
+      sections.has("departments"),
+      !sections.has("contractDetails"),
+      warnings,
+    )
     : [];
   const detailResult = sections.has("contractDetails")
     ? parseContractDetails(detailRows, contractItems, reference, warnings)

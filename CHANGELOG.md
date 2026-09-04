@@ -1,5 +1,17 @@
 # Changelog
 
+## V1.9.1 — Catalog Import Module Resync
+
+### Fixed
+
+- Import lại danh sách Module sau khi hard delete không còn bị suy luận dòng đầu thành `root` khi người dùng import từ Danh mục Module.
+- File Excel dạng danh sách Module phẳng được ghi lại với `item_type = module`, nên dữ liệu vừa import hiển thị lại trong Danh mục Module.
+
+### Changed
+
+- Nút import trong Danh mục Module dùng nhãn `Import Module` và mặc định chỉ chọn section `contractItems`.
+- Preflight có regression check cho flat module import.
+
 ## V1.9.0 — Cross-Project Portfolio Dashboard
 
 ### Added

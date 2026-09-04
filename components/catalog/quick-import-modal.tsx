@@ -260,7 +260,7 @@ export function QuickCatalogImportModal({
               <div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-violet-300/60">Cách đọc file hiện tại</div>
               <div className="mt-3 space-y-3 text-[10px] leading-5 text-slate-500">
                 <div><b className="text-slate-300">Phòng ban:</b> cột A là tên. Cột B nếu có sẽ hiểu là mã.</div>
-                <div><b className="text-slate-300">PLHĐ:</b> cột A là tên. Dòng đầu được nhận diện là Nhóm, các dòng bắt đầu “Phân hệ” là Phân hệ; còn lại là Module. Nếu hai dòng liên tiếp trùng tên, dòng trước được hiểu là Phân hệ.</div>
+                <div><b className="text-slate-300">PLHĐ / Module:</b> cột A là tên. Khi chỉ chọn PLHĐ / Module, hệ thống hiểu đây là danh sách Module phẳng và import trực tiếp vào Danh mục Module. Khi import kèm PLHĐ chi tiết, dữ liệu vẫn được nhận diện theo cây Nhóm / Phân hệ / Module.</div>
                 <div><b className="text-slate-300">PLHĐ chi tiết:</b> cột A là mã, cột B là nội dung. Mã A/B/C → Nhóm; I/II/III → Phân hệ; 1/2/3 → Module; 1.1/1,1... → cấp chi tiết. Dòng trống mã trở thành nghiệp vụ con.</div>
               </div>
 
