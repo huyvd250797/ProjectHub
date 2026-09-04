@@ -250,7 +250,7 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
             <p className="mt-1 text-[10px] text-slate-500">Phòng ban và Module được khai báo riêng theo từng Project, dùng chung cho ISSUE, PLHĐ, Analytics và báo cáo.</p>
           </div>
           <a href="/templates/ASC-WORKING-V1.3.2-Mau-Import-PhongBan-PLHD.xlsx" className="hidden h-9 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 text-[10px] font-medium text-slate-400 transition hover:border-cyan-300/15 hover:text-cyan-100 sm:flex" title="Tải mẫu Excel trước khi nhập dữ liệu"><Download className="size-3.5" /> Tải mẫu Excel</a>
-          {data?.canManage ? <ProjectQuickImportButton label={tab === "departments" ? "Import Phòng ban" : "Import Module"} initialSections={tab === "departments" ? ["departments"] : ["contractItems"]} onApplied={() => void load()} /> : null}
+          {data?.canManage ? <ProjectQuickImportButton label={tab === "departments" ? "Import Phòng ban" : "Import PLHĐ / Chi tiết"} initialSections={tab === "departments" ? ["departments"] : ["contractItems", "contractDetails"]} onApplied={() => void load()} /> : null}
           <button type="button" onClick={() => void load()} className="grid size-9 place-items-center rounded-xl border border-white/[0.07] text-slate-500 hover:text-cyan-200" title="Tải lại"><RefreshCw className={cn("size-4", loading && "animate-spin")} /></button>
           <button type="button" onClick={onClose} className="grid size-9 place-items-center rounded-xl border border-white/[0.07] text-slate-500 hover:text-white"><X className="size-4" /></button>
         </header>

@@ -1,15 +1,4 @@
-# ASC WORKING — V1.9.1
-
-## V1.9.1 có gì mới?
-
-Catalog Import Module Resync
-
-- Sửa bug import lại danh sách Module sau khi đã hard delete Module chưa sử dụng.
-- Khi mở từ **Danh mục Module**, nút import mặc định là **Import Module** và chỉ chọn nhóm `PLHĐ / Module`.
-- File Excel dạng danh sách Module phẳng sẽ được import với `item_type = module`, nên dữ liệu vừa import hiển thị lại ngay trong Danh mục Module.
-- Luồng import PLHĐ phân cấp ở trang Contract vẫn giữ cách nhận diện Nhóm / Phân hệ / Module khi import kèm PLHĐ chi tiết.
-
-Không cần migration schema mới. Điều kiện vẫn là database đã chạy đủ các migration đến V1.8.0/V1.9.0.
+# ASC WORKING — V1.9.0
 
 ## V1.9.0 có gì mới?
 
