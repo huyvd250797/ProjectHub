@@ -1,4 +1,17 @@
-# ASC WORKING — V1.9.0
+# ASC WORKING — V1.9.2
+
+## V1.9.2 có gì mới?
+
+Catalog Source of Truth
+
+- Danh mục PLHĐ là nguồn chuẩn cho lưới PLHĐ bên ngoài.
+- Lưới tổng quan PLHĐ chỉ hiển thị dữ liệu `root`, `subsystem`, `module` có trong danh mục PLHĐ.
+- Bổ sung tab **Chi tiết PLHĐ** trong Project Master Data để xem, sửa, thêm và xóa chi tiết phụ lục hợp đồng.
+- Import giữ đầy đủ dữ liệu: `subsystem/module` vào PLHĐ, `other` vào Chi tiết PLHĐ.
+- Xóa PLHĐ trong danh mục sẽ làm dòng đó biến mất khỏi lưới ngoài nếu không bị chặn bởi dữ liệu đang sử dụng.
+- Migration V1.9.2 chuyển dữ liệu `other` đã lỡ nằm trong `contract_items` sang `contract_detail_items` và cập nhật RPC contract overview.
+
+Chạy sau V1.9.0: `supabase/migrations/202609040002_v192_catalog_source_of_truth.sql`.
 
 ## V1.9.0 có gì mới?
 

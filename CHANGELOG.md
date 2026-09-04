@@ -1,5 +1,24 @@
 # Changelog
 
+## V1.9.2 — Catalog Source of Truth
+
+### Added
+
+- Tab **Chi tiết PLHĐ** trong Project Master Data để xem, sửa, thêm và xóa `contract_detail_items`.
+- Nút mở nhanh **Danh mục chi tiết PLHĐ** tại trang PLHĐ.
+- Migration data-fix `202609040002_v192_catalog_source_of_truth.sql`.
+
+### Fixed
+
+- Lưới PLHĐ bên ngoài không còn hiển thị dòng `other` như một dòng PLHĐ.
+- Danh mục PLHĐ và lưới PLHĐ dùng cùng nguồn `contract_items` cho `root/subsystem/module`.
+- Import `other` được đưa vào Chi tiết PLHĐ để danh mục và lưới ngoài đồng bộ.
+
+### Database
+
+- Chuyển dữ liệu cũ `contract_items.item_type = 'other'` sang `contract_detail_items`.
+- Cập nhật `get_project_contract` để overview chỉ trả `root/subsystem/module`.
+
 ## V1.9.0 — Cross-Project Portfolio Dashboard
 
 ### Added

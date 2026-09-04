@@ -49,7 +49,7 @@ export function AppShell({
           </main>
           <footer className="mx-auto flex w-full max-w-[1600px] flex-col gap-1 border-t border-white/[0.05] px-4 py-5 text-[10px] uppercase tracking-[0.14em] text-slate-700 md:flex-row md:items-center md:justify-between md:px-6">
             <span>© 2026 HuyVo. All rights reserved.</span>
-            <span>ASC WORKING • V1.9.0 • Cross-Project Portfolio Dashboard</span>
+            <span>ASC WORKING • V1.9.2 • Catalog Source of Truth</span>
           </footer>
         </div>
       </div>

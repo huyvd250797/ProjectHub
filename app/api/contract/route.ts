@@ -64,7 +64,7 @@ function normalizeContract(raw: Record<string, unknown>, projectId: string): Con
         progress: numberValue(row.progress),
         detailCount: numberValue(row.detailCount),
       } satisfies ContractOverviewItem;
-    }),
+    }).filter((item) => item.itemType === "root" || item.itemType === "subsystem" || item.itemType === "module"),
     details: detailRows.map((item) => {
       const row = item as Record<string, unknown>;
       return {

@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "1.9.0" ? pass("Package version", "1.9.0") : fail("Package version", `Expected 1.9.0, got ${pkg.version}`);
+pkg.version === "1.9.2" ? pass("Package version", "1.9.2") : fail("Package version", `Expected 1.9.2, got ${pkg.version}`);
 
 for (const rel of [
   "app/api/readiness/route.ts",
@@ -169,6 +169,9 @@ for (const rel of [
   "supabase/migrations/202609040001_v190_portfolio_catalog_delete_notes.sql",
   "docs/UAT_V190_PORTFOLIO_CATALOG_DELETE_CHECKLIST.md",
   "docs/V1.9.0-VALIDATION.md",
+  "supabase/migrations/202609040002_v192_catalog_source_of_truth.sql",
+  "docs/V1.9.2-SCOPE.md",
+  "docs/V1.9.2-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -315,7 +318,7 @@ for (const token of ["departments", "contract_items", "item_type", "normalized_n
 }
 
 const projectCatalogModal = fs.readFileSync(path.join(root, "components/catalog/project-master-data-modal.tsx"), "utf8");
-for (const token of ["Project Master Data", "Danh mục Phòng ban", "Module PLHĐ", "max-w-[1240px]", "asc-working:catalog-changed"]) {
+for (const token of ["Project Master Data", "Danh mục Phòng ban", "Chi tiết PLHĐ", "max-w-[1340px]", "asc-working:catalog-changed"]) {
   projectCatalogModal.includes(token) ? pass(`V1.3.1 Project Master Data UI: ${token}`) : fail(`V1.3.1 Project Master Data UI: ${token}`);
 }
 
@@ -519,12 +522,34 @@ for (const token of ["ParsedContractTree", "embeddedDetails", "nodeType: \"other
   quickImportServerV190.includes(token) ? pass(`V1.9.0 PLHĐ import tree parser: ${token}`) : fail(`V1.9.0 PLHĐ import tree parser: ${token}`);
 }
 
+for (const token of ["ProjectCatalogTab = \"departments\" | \"modules\" | \"details\"", "ProjectCatalogDetail", "contractItemOptions", "detailParentOptions"]) {
+  fs.readFileSync(path.join(root, "lib/catalog/types.ts"), "utf8").includes(token) ? pass(`V1.9.2 Catalog detail types: ${token}`) : fail(`V1.9.2 Catalog detail types: ${token}`);
+}
+
+for (const token of ["details:", "contract_detail_items", "entity === \"detail\"", "DETAIL_DELETE_FAILED", "item_type\", [\"root\", \"subsystem\", \"module\"]"]) {
+  catalogApiV190.includes(token) ? pass(`V1.9.2 Catalog source API: ${token}`) : fail(`V1.9.2 Catalog source API: ${token}`);
+}
+
+for (const token of ["Chi tiết PLHĐ", "DetailTable", "DetailForm", "Danh mục chi tiết PLHĐ", "data?.details.length"]) {
+  catalogUiV190.includes(token) ? pass(`V1.9.2 Catalog detail UI: ${token}`) : fail(`V1.9.2 Catalog detail UI: ${token}`);
+}
+
+const contractApiV192 = fs.readFileSync(path.join(root, "app/api/contract/route.ts"), "utf8");
+for (const token of ["item.itemType === \"root\"", "item.itemType === \"subsystem\"", "item.itemType === \"module\""]) {
+  contractApiV192.includes(token) ? pass(`V1.9.2 Contract overview source filter: ${token}`) : fail(`V1.9.2 Contract overview source filter: ${token}`);
+}
+
+const catalogMigrationV192 = fs.readFileSync(path.join(root, "supabase/migrations/202609040002_v192_catalog_source_of_truth.sql"), "utf8");
+for (const token of ["legacy_other", "contract_items.item_type = 'other'", "contract_detail_items", "get_project_contract", "root','subsystem','module"]) {
+  catalogMigrationV192.includes(token) ? pass(`V1.9.2 Catalog source migration: ${token}`) : fail(`V1.9.2 Catalog source migration: ${token}`);
+}
+
 const navigationV190 = fs.readFileSync(path.join(root, "lib/navigation.ts"), "utf8");
 for (const token of ["Portfolio", "/portfolio", "BriefcaseBusiness"]) {
   navigationV190.includes(token) ? pass(`V1.9.0 Portfolio navigation: ${token}`) : fail(`V1.9.0 Portfolio navigation: ${token}`);
 }
 
-console.log("\nASC WORKING V1.9.0 - Cross-Project Portfolio Dashboard Preflight\n");
+console.log("\nASC WORKING V1.9.2 - Catalog Source of Truth Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

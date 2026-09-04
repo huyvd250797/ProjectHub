@@ -1,4 +1,4 @@
-export type ProjectCatalogTab = "departments" | "modules";
+export type ProjectCatalogTab = "departments" | "modules" | "details";
 
 export type ProjectCatalogDepartment = {
   id: string;
@@ -14,12 +14,28 @@ export type ProjectCatalogModule = {
   parentName: string | null;
   code: string | null;
   name: string;
+  itemType: "root" | "subsystem" | "module";
   ownerDepartmentId: string | null;
   ownerDepartmentName: string | null;
   moduleStatusCode: string | null;
   moduleStatusLabel: string | null;
   classification: string | null;
   sortOrder: number;
+  updatedAt: string | null;
+};
+
+export type ProjectCatalogDetail = {
+  id: string;
+  parentId: string | null;
+  parentContent: string | null;
+  contractItemId: string | null;
+  contractItemName: string | null;
+  code: string | null;
+  content: string;
+  nodeType: string | null;
+  level: number;
+  sortOrder: number;
+  note: string | null;
   updatedAt: string | null;
 };
 
@@ -34,7 +50,10 @@ export type ProjectCatalogData = {
   role: "admin" | "pm" | "member" | "viewer";
   departments: ProjectCatalogDepartment[];
   modules: ProjectCatalogModule[];
+  details: ProjectCatalogDetail[];
   parentOptions: ProjectCatalogOption[];
+  contractItemOptions: ProjectCatalogOption[];
+  detailParentOptions: ProjectCatalogOption[];
   moduleStatusOptions: ProjectCatalogOption[];
 };
 
