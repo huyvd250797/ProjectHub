@@ -1,5 +1,25 @@
 # Changelog
 
+## V1.8.0 — Smart Reminders & Alerts
+
+### Added
+
+- Tab Smart Alerts trong module Plan để gom cảnh báo và reminder cần xử lý.
+- Tự phát hiện stage quá hạn, milestone sắp hạn/quá hạn, task sắp hạn/quá hạn và task bị chặn.
+- Plan Reminders cho `manual`, `stage`, `milestone`, `task`, `issue`.
+- API CRUD mới cho `/api/plan/reminders`.
+- Thao tác nhanh Done và Snooze cho reminder.
+- Dashboard metrics mới: Smart Alerts, reminder mở, nhắc hôm nay, reminder quá hạn.
+- Export CSV bổ sung Smart Alerts và Plan Reminders.
+- Demo Mode có dữ liệu reminder mẫu.
+
+### Database
+
+- Migration mới: `202609030004_v180_smart_reminders_alerts.sql`.
+- Bảng mới: `project_plan_reminders`.
+- RLS theo Project member; ghi dữ liệu dành cho MASTER/Admin/PM.
+- Trigger validate entity cùng Project, tự quản lý `completed_at`, `snoozed_until`, Activity Center và Notification Center.
+
 ## V1.7.0 — Plan Execution & Tracking
 
 ### Added

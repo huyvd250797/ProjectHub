@@ -30,14 +30,14 @@
 - ✅ V1.6.0 — Master Plan & Project Stages
 - ✅ V1.6.1 — Editable Stage Date Ranges
 - ✅ V1.7.0 — Plan Execution & Tracking
+- ✅ V1.8.0 — Smart Reminders & Alerts
 
 ## Current
-- **V1.7.0 — Plan Execution & Tracking**
+- **V1.8.0 — Smart Reminders & Alerts**
 
 ## Deferred by product decision
 - Jira Integration / Sync
 
 ## Candidate next
-- V1.8.0 — Smart Reminders & Follow-up
 - V1.9.0 — Cross-Project Portfolio Dashboard
 - V2.0.0 — Project Templates & Faster Project Setup

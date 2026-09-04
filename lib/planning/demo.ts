@@ -1,5 +1,5 @@
-import { buildPlanSummary, calculateSequentialSchedule, formatDateOnly } from "@/lib/planning/schedule";
-import type { MasterPlan, MilestoneChecklistItem, ProjectMilestone, ProjectPlanData, ProjectPlanStage, ProjectPlanTask } from "@/lib/planning/types";
+import { buildPlanSummary, buildSmartPlanAlerts, calculateSequentialSchedule, formatDateOnly } from "@/lib/planning/schedule";
+import type { MasterPlan, MilestoneChecklistItem, ProjectMilestone, ProjectPlanData, ProjectPlanReminder, ProjectPlanStage, ProjectPlanTask } from "@/lib/planning/types";
 
 function offsetDate(days: number) {
   const date = new Date();
@@ -54,6 +54,13 @@ export function createDemoPlan(projectId: string, projectCode = "DEMO"): Project
     { id: "demo-checklist-3", milestoneId: milestones[3].id, milestoneTitle: milestones[3].title, title: "Biên bản Go-live được duyệt", isDone: false, sortOrder: 10, completedAt: null, createdAt: now, updatedAt: now },
   ];
 
+  const reminders: ProjectPlanReminder[] = [
+    { id: "demo-reminder-1", title: "Nhắc xử lý blocker tích hợp", description: "Gọi nhanh team kỹ thuật để chốt hướng xử lý trước UAT.", entityType: "task", entityId: "demo-task-4", entityTitle: "Xử lý blocker tích hợp", remindAt: new Date().toISOString(), status: "open", priority: "critical", snoozedUntil: null, completedAt: null, ownerId: "demo-person-1", ownerName: "Võ Đức Huy", createdAt: now, updatedAt: now },
+    { id: "demo-reminder-2", title: "Chuẩn bị biên bản sẵn sàng UAT", description: "Rà checklist còn mở và hẹn xác nhận với khách hàng.", entityType: "milestone", entityId: "demo-milestone-3", entityTitle: "Sẵn sàng UAT", remindAt: `${offsetDate(2)}T02:00:00.000Z`, status: "open", priority: "high", snoozedUntil: null, completedAt: null, ownerId: "demo-person-1", ownerName: "Võ Đức Huy", createdAt: now, updatedAt: now },
+    { id: "demo-reminder-3", title: "Theo dõi kế hoạch đào tạo", description: "Kiểm tra lịch đào tạo với nhóm key-user.", entityType: "stage", entityId: stages[3].id, entityTitle: stages[3].name, remindAt: `${offsetDate(8)}T02:00:00.000Z`, status: "snoozed", priority: "medium", snoozedUntil: `${offsetDate(6)}T02:00:00.000Z`, completedAt: null, ownerId: "demo-person-3", ownerName: "Lê Minh Anh", createdAt: now, updatedAt: now },
+  ];
+  const smartAlerts = buildSmartPlanAlerts(stages, milestones, tasks, reminders);
+
   return {
     source: "demo",
     projectId,
@@ -65,12 +72,14 @@ export function createDemoPlan(projectId: string, projectCode = "DEMO"): Project
     milestones,
     tasks,
     checklistItems,
+    reminders,
+    smartAlerts,
     people: [
       { value: "demo-person-1", label: "Võ Đức Huy", description: "PM • ASC" },
       { value: "demo-person-2", label: "Nguyễn Đức Huy", description: "Business Analyst • ASC" },
       { value: "demo-person-3", label: "Lê Minh Anh", description: "Consultant • ASC" },
     ],
-    summary: buildPlanSummary(masterPlan, stages, milestones, tasks, checklistItems),
+    summary: buildPlanSummary(masterPlan, stages, milestones, tasks, checklistItems, reminders, undefined, smartAlerts),
     generatedAt: now,
   };
 }

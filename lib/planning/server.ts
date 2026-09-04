@@ -1,15 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { buildPlanSummary, countScheduleDays } from "@/lib/planning/schedule";
+import { buildPlanSummary, buildSmartPlanAlerts, countScheduleDays } from "@/lib/planning/schedule";
 import type {
   MasterPlan,
   MasterPlanStatus,
   MilestoneChecklistItem,
   MilestoneStatus,
+  PlanReminderEntityType,
+  PlanReminderStatus,
   PlanTaskPriority,
   PlanTaskStatus,
   PlanScheduleMode,
   ProjectMilestone,
   ProjectPlanData,
+  ProjectPlanReminder,
   ProjectPlanTask,
   ProjectPlanStage,
   ProjectStageStatus,
@@ -58,6 +61,14 @@ function taskStatus(value: unknown): PlanTaskStatus {
 
 function taskPriority(value: unknown): PlanTaskPriority {
   return value === "low" || value === "high" || value === "critical" ? value : "medium";
+}
+
+function reminderEntityType(value: unknown): PlanReminderEntityType {
+  return value === "stage" || value === "milestone" || value === "task" || value === "issue" ? value : "manual";
+}
+
+function reminderStatus(value: unknown): PlanReminderStatus {
+  return value === "snoozed" || value === "done" || value === "cancelled" ? value : "open";
 }
 
 export function normalizeMasterPlan(raw: Record<string, unknown>): MasterPlan {
@@ -153,8 +164,29 @@ export function normalizeChecklistItem(raw: Record<string, unknown>): MilestoneC
   };
 }
 
+export function normalizePlanReminder(raw: Record<string, unknown>): ProjectPlanReminder {
+  const owner = relation(raw.owner);
+  return {
+    id: String(raw.id ?? ""),
+    title: String(raw.title ?? ""),
+    description: nullableText(raw.description),
+    entityType: reminderEntityType(raw.entity_type),
+    entityId: nullableText(raw.entity_id),
+    entityTitle: nullableText(raw.entity_title),
+    remindAt: String(raw.remind_at ?? ""),
+    status: reminderStatus(raw.status),
+    priority: taskPriority(raw.priority),
+    snoozedUntil: nullableText(raw.snoozed_until),
+    completedAt: nullableText(raw.completed_at),
+    ownerId: nullableText(raw.owner_person_id),
+    ownerName: nullableText(owner?.full_name),
+    createdAt: String(raw.created_at ?? ""),
+    updatedAt: String(raw.updated_at ?? ""),
+  };
+}
+
 export function isPlanningMigrationMissing(message: string) {
-  return /project_master_plans|project_milestones|project_plan_tasks|project_milestone_checklist_items|duration_days|owner_person_id|date_mode|recalculate_project_plan_v16[01]|schema cache|does not exist/i.test(message);
+  return /project_master_plans|project_milestones|project_plan_tasks|project_milestone_checklist_items|project_plan_reminders|duration_days|owner_person_id|date_mode|recalculate_project_plan_v16[01]|schema cache|does not exist/i.test(message);
 }
 
 export async function loadProjectPlan(
@@ -162,7 +194,7 @@ export async function loadProjectPlan(
   projectId: string,
   role: ProjectRole,
 ): Promise<ProjectPlanData> {
-  const [projectResult, masterResult, stageResult, milestoneResult, taskResult, checklistResult, peopleResult] = await Promise.all([
+  const [projectResult, masterResult, stageResult, milestoneResult, taskResult, checklistResult, reminderResult, peopleResult] = await Promise.all([
     supabase.from("projects").select("code").eq("id", projectId).maybeSingle(),
     supabase
       .from("project_master_plans")
@@ -194,6 +226,11 @@ export async function loadProjectPlan(
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true }),
     supabase
+      .from("project_plan_reminders")
+      .select("id,title,description,entity_type,entity_id,entity_title,remind_at,status,priority,snoozed_until,completed_at,owner_person_id,created_at,updated_at,owner:people!project_plan_reminders_owner_person_id_fkey(id,full_name)")
+      .eq("project_id", projectId)
+      .order("remind_at", { ascending: true }),
+    supabase
       .from("people")
       .select("id,full_name,title,project_role,email")
       .eq("project_id", projectId)
@@ -202,7 +239,7 @@ export async function loadProjectPlan(
       .order("full_name", { ascending: true }),
   ]);
 
-  const failure = [projectResult, masterResult, stageResult, milestoneResult, peopleResult].find((result) => result.error)?.error;
+  const failure = [projectResult, masterResult, stageResult, milestoneResult, taskResult, checklistResult, reminderResult, peopleResult].find((result) => result.error)?.error;
   if (failure) throw new Error(failure.message);
   if (!projectResult.data) throw new Error("Project không tồn tại hoặc bạn không có quyền truy cập.");
 
@@ -211,6 +248,8 @@ export async function loadProjectPlan(
   const milestones = ((milestoneResult.data ?? []) as unknown as Array<Record<string, unknown>>).map(normalizeMilestone);
   const tasks = ((taskResult.data ?? []) as unknown as Array<Record<string, unknown>>).map(normalizePlanTask);
   const checklistItems = ((checklistResult.data ?? []) as unknown as Array<Record<string, unknown>>).map(normalizeChecklistItem);
+  const reminders = ((reminderResult.data ?? []) as unknown as Array<Record<string, unknown>>).map(normalizePlanReminder);
+  const smartAlerts = buildSmartPlanAlerts(stages, milestones, tasks, reminders);
 
   return {
     source: "database",
@@ -223,6 +262,8 @@ export async function loadProjectPlan(
     milestones,
     tasks,
     checklistItems,
+    reminders,
+    smartAlerts,
     people: ((peopleResult.data ?? []) as unknown as Array<Record<string, unknown>>).map((person) => ({
       value: String(person.id),
       label: String(person.full_name ?? "Thành viên"),
@@ -231,7 +272,7 @@ export async function loadProjectPlan(
         .map(String)
         .join(" • ") || null,
     })),
-    summary: buildPlanSummary(masterPlan, stages, milestones, tasks, checklistItems),
+    summary: buildPlanSummary(masterPlan, stages, milestones, tasks, checklistItems, reminders, undefined, smartAlerts),
     generatedAt: new Date().toISOString(),
   };
 }
@@ -311,6 +352,39 @@ export async function planningMilestoneExists(supabase: SupabaseClient, projectI
     .eq("project_id", projectId)
     .maybeSingle();
   return Boolean(data);
+}
+
+export async function planningIssueExists(supabase: SupabaseClient, projectId: string, issueId: string | null) {
+  if (!issueId) return false;
+  const { data } = await supabase
+    .from("issues")
+    .select("id")
+    .eq("id", issueId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+  return Boolean(data);
+}
+
+export async function planningEntityExists(
+  supabase: SupabaseClient,
+  projectId: string,
+  entityType: PlanReminderEntityType,
+  entityId: string | null,
+) {
+  if (entityType === "manual") return entityId === null;
+  if (!entityId) return false;
+  if (entityType === "stage") return planningStageExists(supabase, projectId, entityId);
+  if (entityType === "milestone") return planningMilestoneExists(supabase, projectId, entityId);
+  if (entityType === "task") {
+    const { data } = await supabase
+      .from("project_plan_tasks")
+      .select("id")
+      .eq("id", entityId)
+      .eq("project_id", projectId)
+      .maybeSingle();
+    return Boolean(data);
+  }
+  return planningIssueExists(supabase, projectId, entityId);
 }
 
 export async function planningScheduleMode(supabase: SupabaseClient, projectId: string): Promise<PlanScheduleMode> {

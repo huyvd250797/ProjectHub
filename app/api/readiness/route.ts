@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "1.7.0",
+        version: "1.8.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "1.7.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "1.8.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -177,15 +177,17 @@ export async function GET(request: NextRequest) {
     supabase.from("project_milestones").select("id,due_date,status,stage_id", { count: "exact", head: true }).eq("project_id", projectId),
     supabase.from("project_plan_tasks").select("id,status,priority,due_date,stage_id,owner_person_id", { count: "exact", head: true }).eq("project_id", projectId),
     supabase.from("project_milestone_checklist_items").select("id,milestone_id,is_done", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("project_plan_reminders").select("id,status,priority,remind_at,entity_type,entity_id,owner_person_id", { count: "exact", head: true }).eq("project_id", projectId),
   ]));
   const planningSchemaError = planningSchema.error || planningSchema.value?.find((result) => result.error)?.error;
   const planTasks = !planningSchemaError && planningSchema.value?.[3] ? countValue(planningSchema.value[3].count) : 0;
   const checklistItems = !planningSchemaError && planningSchema.value?.[4] ? countValue(planningSchema.value[4].count) : 0;
+  const planReminders = !planningSchemaError && planningSchema.value?.[5] ? countValue(planningSchema.value[5].count) : 0;
   checks.push(check(
     "master_plan",
-    "Plan Execution & Tracking",
+    "Smart Reminders & Alerts",
     planningSchemaError ? "fail" : "pass",
-    planningSchemaError ? "Không đọc được dữ liệu kế hoạch; chạy các migration đến V1.7.0." : `Master Plan, stage, milestone, ${planTasks} task và ${checklistItems} checklist đã sẵn sàng.`,
+    planningSchemaError ? "Không đọc được dữ liệu kế hoạch; chạy các migration đến V1.8.0." : `Master Plan, stage, milestone, ${planTasks} task, ${checklistItems} checklist và ${planReminders} reminder đã sẵn sàng.`,
     planningSchema.durationMs,
   ));
 
@@ -298,12 +300,12 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "1.7.0",
+      version: "1.8.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,
       checks,
-      metrics: { issues, modules, departments, resources, missingAssignee, missingModule, missingDepartment, overdue, planTasks, checklistItems },
+      metrics: { issues, modules, departments, resources, missingAssignee, missingModule, missingDepartment, overdue, planTasks, checklistItems, planReminders },
     },
   };
 

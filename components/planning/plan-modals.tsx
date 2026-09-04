@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, CalendarRange, Check, CheckSquare2, ClipboardList, Flag, Layers3, LoaderCircle, Save, Target, X } from "lucide-react";
+import { BellRing, CalendarClock, CalendarRange, Check, CheckSquare2, ClipboardList, Flag, Layers3, LoaderCircle, Save, Target, X } from "lucide-react";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { addScheduleDuration, countScheduleDays } from "@/lib/planning/schedule";
@@ -11,10 +11,13 @@ import type {
   MilestoneStatus,
   PlanTaskPriority,
   PlanTaskStatus,
+  PlanReminderEntityType,
+  PlanReminderStatus,
   PlanPerson,
   PlanScheduleMode,
   PlanningMutationResponse,
   ProjectMilestone,
+  ProjectPlanReminder,
   ProjectPlanTask,
   ProjectPlanStage,
   ProjectStageDateMode,
@@ -66,6 +69,21 @@ const taskPriorityOptions = [
   { value: "critical", label: "Khẩn cấp" },
 ];
 
+const reminderStatusOptions = [
+  { value: "open", label: "Đang mở" },
+  { value: "snoozed", label: "Tạm hoãn" },
+  { value: "done", label: "Đã xử lý" },
+  { value: "cancelled", label: "Đã hủy" },
+];
+
+const reminderEntityOptions = [
+  { value: "manual", label: "Reminder thủ công", description: "Không liên kết dữ liệu khác" },
+  { value: "stage", label: "Project Stage", description: "Nhắc theo giai đoạn dự án" },
+  { value: "milestone", label: "Milestone", description: "Nhắc theo mốc bàn giao/phê duyệt" },
+  { value: "task", label: "Execution Task", description: "Nhắc theo đầu việc triển khai" },
+  { value: "issue", label: "ISSUE", description: "Nhập UUID ISSUE cần theo dõi" },
+];
+
 const stageColors = ["#22D3EE", "#8B5CF6", "#F59E0B", "#10B981", "#F43F5E", "#3B82F6", "#EC4899", "#84CC16"];
 
 function FieldLabel({ children, required = false }: { children: ReactNode; required?: boolean }) {
@@ -74,6 +92,22 @@ function FieldLabel({ children, required = false }: { children: ReactNode; requi
 
 function FieldError({ message }: { message?: string }) {
   return message ? <div className="mt-1.5 text-[10px] text-rose-300">{message}</div> : null;
+}
+
+function toDateTimeLocal(value: string | null | undefined) {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  const offset = parsed.getTimezoneOffset();
+  const local = new Date(parsed.getTime() - offset * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+function defaultDateTimeLocal() {
+  const next = new Date();
+  next.setMinutes(0, 0, 0);
+  next.setHours(next.getHours() + 2);
+  return toDateTimeLocal(next.toISOString());
 }
 
 function ModalShell({
@@ -386,6 +420,82 @@ export function PlanTaskModal({
   );
 }
 
+export function PlanReminderModal({
+  projectId,
+  reminder,
+  defaultEntityType = "manual",
+  defaultEntityId = "",
+  stages,
+  milestones,
+  tasks,
+  people,
+  onClose,
+  onSaved,
+}: {
+  projectId: string;
+  reminder: ProjectPlanReminder | null;
+  defaultEntityType?: PlanReminderEntityType;
+  defaultEntityId?: string;
+  stages: ProjectPlanStage[];
+  milestones: ProjectMilestone[];
+  tasks: ProjectPlanTask[];
+  people: PlanPerson[];
+  onClose: () => void;
+  onSaved: (message: string) => void;
+}) {
+  const [title, setTitle] = useState(reminder?.title ?? "");
+  const [description, setDescription] = useState(reminder?.description ?? "");
+  const [entityType, setEntityType] = useState<PlanReminderEntityType>(reminder?.entityType ?? defaultEntityType);
+  const [entityId, setEntityId] = useState(reminder?.entityId ?? defaultEntityId);
+  const [remindAt, setRemindAt] = useState(toDateTimeLocal(reminder?.remindAt) || defaultDateTimeLocal());
+  const [status, setStatus] = useState<PlanReminderStatus>(reminder?.status ?? "open");
+  const [priority, setPriority] = useState<PlanTaskPriority>(reminder?.priority ?? "medium");
+  const [snoozedUntil, setSnoozedUntil] = useState(toDateTimeLocal(reminder?.snoozedUntil));
+  const [ownerId, setOwnerId] = useState(reminder?.ownerId ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const linkedOptions = useMemo(() => {
+    if (entityType === "stage") return stages.map((stage) => ({ value: stage.id, label: stage.name, description: `${stage.code} • ${stage.startDate ?? "?"} → ${stage.endDate ?? "?"}` }));
+    if (entityType === "milestone") return milestones.map((milestone) => ({ value: milestone.id, label: milestone.title, description: milestone.dueDate }));
+    if (entityType === "task") return tasks.map((task) => ({ value: task.id, label: task.title, description: `${task.stageName || "Task độc lập"} • ${task.dueDate || "chưa có deadline"}` }));
+    return [];
+  }, [entityType, milestones, stages, tasks]);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true); setError(""); setFieldErrors({});
+    try {
+      const result = await readMutation(await fetch(reminder ? `/api/plan/reminders/${reminder.id}` : "/api/plan/reminders", {
+        method: reminder ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId, title, description, entityType, entityId, remindAt, status, priority, snoozedUntil, ownerId }),
+      }));
+      onSaved(result.message);
+    } catch (reason) {
+      const parsed = mutationError(reason); setError(parsed.message); setFieldErrors(parsed.fieldErrors);
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <ModalShell eyebrow="Smart Reminders" title={reminder ? "Cập nhật reminder" : "Thêm reminder"} description="Tạo nhắc việc cho Master Plan, stage, milestone, task hoặc ISSUE liên quan đến kế hoạch." icon={<BellRing className="size-5" />} saving={saving} onClose={onClose} onSubmit={submit}>
+      {error ? <div className="mb-5 rounded-xl border border-rose-300/15 bg-rose-300/[0.05] px-4 py-3 text-xs text-rose-200">{error}</div> : null}
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div className="md:col-span-2"><FieldLabel required>Tên reminder</FieldLabel><input className="field" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Ví dụ: Nhắc xác nhận biên bản UAT" /><FieldError message={fieldErrors.title} /></div>
+        <div className="md:col-span-2"><FieldLabel>Mô tả / việc cần làm</FieldLabel><textarea className="field min-h-24 resize-y py-3" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Ghi rõ hành động cần xử lý khi reminder đến hạn..." /><FieldError message={fieldErrors.description} /></div>
+        <div><FieldLabel required>Loại liên kết</FieldLabel><ThemedSelect value={entityType} onChange={(value) => { setEntityType(value as PlanReminderEntityType); setEntityId(""); }} options={reminderEntityOptions} ariaLabel="Loại liên kết reminder" /><FieldError message={fieldErrors.entityType} /></div>
+        <div><FieldLabel required={entityType !== "manual"}>Đối tượng liên kết</FieldLabel>{entityType === "manual" ? <input className="field disabled:cursor-not-allowed disabled:opacity-55" value="Không liên kết" disabled /> : entityType === "issue" ? <input className="field" value={entityId} onChange={(event) => setEntityId(event.target.value)} placeholder="UUID ISSUE" /> : <ThemedSelect value={entityId} onChange={setEntityId} options={linkedOptions} ariaLabel="Đối tượng liên kết reminder" placeholder="Chọn đối tượng" />}<FieldError message={fieldErrors.entityId} /></div>
+        <div><FieldLabel required>Thời điểm nhắc</FieldLabel><input type="datetime-local" className="field" value={remindAt} onChange={(event) => setRemindAt(event.target.value)} /><FieldError message={fieldErrors.remindAt} /></div>
+        <div><FieldLabel required>Ưu tiên</FieldLabel><ThemedSelect value={priority} onChange={(value) => setPriority(value as PlanTaskPriority)} options={taskPriorityOptions} ariaLabel="Mức ưu tiên reminder" /><FieldError message={fieldErrors.priority} /></div>
+        <div><FieldLabel required>Trạng thái</FieldLabel><ThemedSelect value={status} onChange={(value) => setStatus(value as PlanReminderStatus)} options={reminderStatusOptions} ariaLabel="Trạng thái reminder" /><FieldError message={fieldErrors.status} /></div>
+        <div><FieldLabel required={status === "snoozed"}>Snooze đến</FieldLabel><input type="datetime-local" disabled={status !== "snoozed"} className="field disabled:cursor-not-allowed disabled:opacity-55" value={snoozedUntil} onChange={(event) => setSnoozedUntil(event.target.value)} /><FieldError message={fieldErrors.snoozedUntil} /></div>
+        <div className="md:col-span-2"><FieldLabel>Người phụ trách</FieldLabel><ThemedSelect value={ownerId} onChange={setOwnerId} options={[{ value: "", label: "Chưa phân công" }, ...people]} ariaLabel="Người phụ trách reminder" placeholder="Chưa phân công" /><FieldError message={fieldErrors.ownerId} /></div>
+      </div>
+      <div className="mt-5 flex items-start gap-3 rounded-xl border border-cyan-300/10 bg-cyan-300/[0.035] p-4 text-[10px] leading-5 text-slate-500"><BellRing className="mt-0.5 size-4 shrink-0 text-cyan-300/70" /><span>Reminder mở hoặc tạm hoãn sẽ xuất hiện trong Smart Alerts khi đến hạn. Nếu có người phụ trách có tài khoản đăng nhập, Notification Center cũng nhận nhắc việc tự động.</span></div>
+    </ModalShell>
+  );
+}
+
 export function MilestoneChecklistModal({
   projectId,
   item,
@@ -431,7 +541,7 @@ export function MilestoneChecklistModal({
         <div><FieldLabel required>Milestone</FieldLabel><ThemedSelect value={selectedMilestoneId} onChange={setSelectedMilestoneId} options={milestones.map((milestone) => ({ value: milestone.id, label: milestone.title, description: milestone.dueDate }))} ariaLabel="Milestone của checklist" /><FieldError message={fieldErrors.milestoneId} /></div>
         <div><FieldLabel>Trạng thái</FieldLabel><button type="button" onClick={() => setIsDone((value) => !value)} className="flex h-10 w-full items-center justify-between rounded-xl border border-white/[0.08] bg-black/10 px-3 text-left text-xs text-slate-300"><span>{isDone ? "Đã hoàn tất" : "Chưa hoàn tất"}</span><Check className={isDone ? "size-4 text-emerald-300" : "size-4 text-slate-700"} /></button></div>
       </div>
-      <div className="mt-5 flex items-start gap-3 rounded-xl border border-amber-300/10 bg-amber-300/[0.035] p-4 text-[10px] leading-5 text-slate-500"><CheckSquare2 className="mt-0.5 size-4 shrink-0 text-amber-300/70" /><span>Khi toàn bộ checklist xong, milestone có đủ căn cứ để chuyển sang Hoàn tất. Bản V1.7.0 chưa tự ép trạng thái milestone để bạn vẫn kiểm soát mốc nghiệm thu.</span></div>
+      <div className="mt-5 flex items-start gap-3 rounded-xl border border-amber-300/10 bg-amber-300/[0.035] p-4 text-[10px] leading-5 text-slate-500"><CheckSquare2 className="mt-0.5 size-4 shrink-0 text-amber-300/70" /><span>Khi toàn bộ checklist xong, milestone có đủ căn cứ để chuyển sang Hoàn tất. Hệ thống chưa tự ép trạng thái milestone để bạn vẫn kiểm soát mốc nghiệm thu.</span></div>
     </ModalShell>
   );
 }

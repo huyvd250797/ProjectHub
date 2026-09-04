@@ -1,4 +1,18 @@
-# ASC WORKING — V1.7.0
+# ASC WORKING — V1.8.0
+
+## V1.8.0 có gì mới?
+
+- Module Plan có tab **Smart Alerts** để gom các việc cần chú ý ngay.
+- Tự phát hiện stage quá hạn, milestone sắp hạn/quá hạn, task sắp hạn/quá hạn và task bị chặn.
+- Thêm **Plan Reminders** cho Master Plan, Project Stage, Milestone, Execution Task hoặc ISSUE liên quan.
+- Reminder có trạng thái `open`, `snoozed`, `done`, `cancelled`, mức ưu tiên và người phụ trách.
+- Có thao tác nhanh **Done** và **Snooze** ngay trong màn Smart Alerts.
+- Reminder đến hạn được ghi Activity Center và đẩy vào Notification Center theo người phụ trách.
+- Dashboard Plan bổ sung số Smart Alerts, reminder mở, reminder hôm nay và reminder quá hạn.
+- Export CSV bổ sung Smart Alerts và Plan Reminders.
+- Demo Mode có dữ liệu reminder/cảnh báo mẫu.
+
+Chạy các migration đến V1.7.0 trước, sau đó chạy `supabase/migrations/202609030004_v180_smart_reminders_alerts.sql` và UAT theo `docs/UAT_V180_SMART_REMINDERS_ALERTS_CHECKLIST.md`.
 
 ## V1.7.0 có gì mới?
 

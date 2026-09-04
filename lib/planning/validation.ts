@@ -4,6 +4,9 @@ import type {
   MilestoneChecklistInput,
   MilestoneInput,
   MilestoneStatus,
+  PlanReminderEntityType,
+  PlanReminderInput,
+  PlanReminderStatus,
   PlanTaskInput,
   PlanTaskPriority,
   PlanTaskStatus,
@@ -37,6 +40,11 @@ function validDate(value: string) {
   if (!DATE_PATTERN.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00.000Z`);
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+function validDateTime(value: string) {
+  const parsed = new Date(value);
+  return Boolean(value) && !Number.isNaN(parsed.getTime());
 }
 
 function optionalUuid(value: unknown) {
@@ -188,4 +196,36 @@ export function parseMilestoneChecklistInput(value: unknown): ParseResult<Milest
   return Object.keys(errors).length
     ? { ok: false, errors }
     : { ok: true, input: { projectId, milestoneId, title, isDone, sortOrder } };
+}
+
+export function parsePlanReminderInput(value: unknown): ParseResult<PlanReminderInput> {
+  const body = record(value);
+  const errors: Record<string, string> = {};
+  const projectId = requiredText(body.projectId);
+  const title = requiredText(body.title);
+  const description = nullableText(body.description);
+  const entityType = requiredText(body.entityType || "manual") as PlanReminderEntityType;
+  const entityId = optionalUuid(body.entityId);
+  const remindAt = requiredText(body.remindAt);
+  const status = requiredText(body.status || "open") as PlanReminderStatus;
+  const priority = requiredText(body.priority || "medium") as PlanTaskPriority;
+  const snoozedUntil = nullableText(body.snoozedUntil);
+  const ownerId = optionalUuid(body.ownerId);
+
+  if (!UUID_PATTERN.test(projectId)) errors.projectId = "Project không hợp lệ.";
+  if (title.length < 2 || title.length > 180) errors.title = "Tên reminder cần từ 2 đến 180 ký tự.";
+  if (description && description.length > 1_500) errors.description = "Mô tả tối đa 1.500 ký tự.";
+  if (!(["manual", "stage", "milestone", "task", "issue"] as string[]).includes(entityType)) errors.entityType = "Loại liên kết reminder không hợp lệ.";
+  if (entityType === "manual" && entityId) errors.entityId = "Reminder thủ công không cần entityId.";
+  if (entityType !== "manual" && (!entityId || !UUID_PATTERN.test(entityId))) errors.entityId = "Đối tượng liên kết không hợp lệ.";
+  if (!validDateTime(remindAt)) errors.remindAt = "Thời điểm nhắc không hợp lệ.";
+  if (!(["open", "snoozed", "done", "cancelled"] as string[]).includes(status)) errors.status = "Trạng thái reminder không hợp lệ.";
+  if (!(["low", "medium", "high", "critical"] as string[]).includes(priority)) errors.priority = "Mức ưu tiên reminder không hợp lệ.";
+  if (snoozedUntil && !validDateTime(snoozedUntil)) errors.snoozedUntil = "Thời điểm snooze không hợp lệ.";
+  if (status === "snoozed" && !snoozedUntil) errors.snoozedUntil = "Cần chọn thời điểm snooze.";
+  if (ownerId && !UUID_PATTERN.test(ownerId)) errors.ownerId = "Người phụ trách không hợp lệ.";
+
+  return Object.keys(errors).length
+    ? { ok: false, errors }
+    : { ok: true, input: { projectId, title, description, entityType, entityId: entityType === "manual" ? null : entityId, remindAt: new Date(remindAt).toISOString(), status, priority, snoozedUntil: snoozedUntil ? new Date(snoozedUntil).toISOString() : null, ownerId } };
 }

@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
+  BellRing,
   CalendarCheck,
   CalendarClock,
   CalendarDays,
@@ -31,7 +32,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { useProject } from "@/components/project-context";
-import { MasterPlanModal, MilestoneChecklistModal, MilestoneModal, PlanTaskModal, StageModal } from "@/components/planning/plan-modals";
+import { MasterPlanModal, MilestoneChecklistModal, MilestoneModal, PlanReminderModal, PlanTaskModal, StageModal } from "@/components/planning/plan-modals";
 import { PlanTimeline } from "@/components/planning/plan-timeline";
 import { nextScheduleDate, normalizeScheduleStart, parseDateOnly } from "@/lib/planning/schedule";
 import type {
@@ -39,13 +40,15 @@ import type {
   ProjectMilestone,
   ProjectPlanApiResponse,
   ProjectPlanData,
+  ProjectPlanReminder,
   ProjectPlanStage,
   ProjectPlanTask,
+  SmartPlanAlert,
   MilestoneChecklistItem,
 } from "@/lib/planning/types";
 import { cn } from "@/lib/utils";
 
-type ViewMode = "overview" | "timeline" | "stages" | "tasks" | "milestones";
+type ViewMode = "overview" | "timeline" | "stages" | "tasks" | "alerts" | "milestones";
 
 const planStatusMeta = {
   draft: { label: "Bản nháp", tone: "border-slate-300/15 bg-slate-300/[0.05] text-slate-300" },
@@ -82,6 +85,19 @@ const taskPriorityMeta = {
   critical: { label: "Khẩn cấp", tone: "border-rose-300/16 bg-rose-300/[0.06] text-rose-200" },
 } as const;
 
+const reminderStatusMeta = {
+  open: { label: "Đang mở", tone: "border-cyan-300/16 bg-cyan-300/[0.06] text-cyan-200" },
+  snoozed: { label: "Tạm hoãn", tone: "border-violet-300/16 bg-violet-300/[0.06] text-violet-200" },
+  done: { label: "Đã xử lý", tone: "border-emerald-300/16 bg-emerald-300/[0.06] text-emerald-200" },
+  cancelled: { label: "Đã hủy", tone: "border-slate-300/12 bg-slate-300/[0.04] text-slate-400" },
+} as const;
+
+const alertSeverityMeta = {
+  info: { label: "Thông tin", tone: "border-cyan-300/14 bg-cyan-300/[0.05] text-cyan-200", icon: BellRing },
+  warning: { label: "Cần chú ý", tone: "border-amber-300/16 bg-amber-300/[0.06] text-amber-200", icon: AlertTriangle },
+  critical: { label: "Khẩn cấp", tone: "border-rose-300/18 bg-rose-300/[0.07] text-rose-200", icon: AlertTriangle },
+} as const;
+
 const healthMeta = {
   no_plan: { label: "CHƯA THIẾT LẬP", tone: "border-white/[0.08] bg-white/[0.025] text-slate-400", note: "Cần khởi tạo Master Plan" },
   on_track: { label: "ON TRACK", tone: "border-emerald-300/20 bg-emerald-300/[0.07] text-emerald-200", note: "Tiến độ trong giới hạn kế hoạch" },
@@ -93,6 +109,13 @@ const healthMeta = {
 function displayDate(value: string | null | undefined, short = false) {
   if (!value) return "—";
   return new Intl.DateTimeFormat("vi-VN", short ? { day: "2-digit", month: "2-digit", timeZone: "UTC" } : { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" }).format(parseDateOnly(value));
+}
+
+function displayDateTime(value: string | null | undefined) {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(parsed);
 }
 
 function number(value: number) {
@@ -128,6 +151,14 @@ function exportPlan(data: ProjectPlanData) {
     ["MILESTONE CHECKLIST"],
     ["Milestone", "Checklist", "Hoàn tất"],
     ...data.checklistItems.map((item) => [item.milestoneTitle ?? "", item.title, item.isDone ? "Done" : "Open"]),
+    [],
+    ["SMART ALERTS"],
+    ["Mức độ", "Loại", "Tiêu đề", "Ngày", "Phụ trách", "Tóm tắt"],
+    ...data.smartAlerts.map((alert) => [alertSeverityMeta[alert.severity].label, alert.type, alert.title, alert.dueDate ?? "", alert.ownerName ?? "", alert.summary]),
+    [],
+    ["PLAN REMINDERS"],
+    ["Tên reminder", "Liên kết", "Thời điểm", "Trạng thái", "Ưu tiên", "Phụ trách", "Mô tả"],
+    ...data.reminders.map((reminder) => [reminder.title, reminder.entityTitle ?? reminder.entityType, reminder.remindAt, reminderStatusMeta[reminder.status].label, taskPriorityMeta[reminder.priority].label, reminder.ownerName ?? "", reminder.description ?? ""]),
   ];
   const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
@@ -233,6 +264,60 @@ function MilestoneChecklistBlock({
   );
 }
 
+function SmartAlertsPanel({
+  alerts,
+  reminders,
+  canEdit,
+  action,
+  onAddReminder,
+  onEditReminder,
+  onDoneReminder,
+  onSnoozeReminder,
+  onDeleteReminder,
+}: {
+  alerts: SmartPlanAlert[];
+  reminders: ProjectPlanReminder[];
+  canEdit: boolean;
+  action: string;
+  onAddReminder: () => void;
+  onEditReminder: (reminder: ProjectPlanReminder) => void;
+  onDoneReminder: (reminder: ProjectPlanReminder) => void;
+  onSnoozeReminder: (reminder: ProjectPlanReminder) => void;
+  onDeleteReminder: (reminder: ProjectPlanReminder) => void;
+}) {
+  const activeReminders = reminders.filter((reminder) => reminder.status === "open" || reminder.status === "snoozed");
+  return (
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.1fr_.9fr]">
+      <div className="tech-panel overflow-hidden rounded-2xl">
+        <div className="flex flex-col gap-3 border-b border-white/[0.07] p-4 md:flex-row md:items-center md:justify-between">
+          <div><div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Smart Alerts</div><h2 className="mt-1.5 text-sm font-semibold text-white">Việc cần chú ý ngay</h2><p className="mt-1 text-[10px] text-slate-600">Tự động phát hiện stage, milestone, task và reminder có nguy cơ ảnh hưởng timeline.</p></div>
+          {canEdit ? <button type="button" onClick={onAddReminder} className="flex h-9 items-center gap-2 rounded-xl border border-cyan-300/18 bg-cyan-300/[0.075] px-3 text-[10px] text-cyan-100"><BellRing className="size-3.5" /> Thêm reminder</button> : null}
+        </div>
+        <div>
+          {alerts.map((alert) => {
+            const meta = alertSeverityMeta[alert.severity];
+            const Icon = meta.icon;
+            return <div key={alert.id} className="flex flex-col gap-3 border-b border-white/[0.045] px-4 py-4 hover:bg-white/[0.018] md:flex-row md:items-start"><div className={cn("grid size-10 shrink-0 place-items-center rounded-xl border", meta.tone)}><Icon className="size-4" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-medium text-slate-300">{alert.title}</span><span className={cn("rounded-md border px-2 py-1 text-[8px]", meta.tone)}>{meta.label}</span></div><div className="mt-1 text-[10px] leading-4 text-slate-600">{alert.summary}</div><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[9px] text-slate-600"><span className="flex items-center gap-1.5"><CalendarDays className="size-3" /> {displayDate(alert.dueDate)}</span><span className="flex items-center gap-1.5"><UserRound className="size-3" /> {alert.ownerName || "Chưa phân công"}</span><span>{alert.entityType.toUpperCase()}</span></div></div></div>;
+          })}
+          {!alerts.length ? <div className="grid min-h-72 place-items-center px-6 text-center"><div><CheckCircle2 className="mx-auto size-8 text-emerald-300/45" /><div className="mt-3 text-sm font-medium text-slate-300">Không có cảnh báo mở</div><div className="mt-1 text-xs text-slate-600">Kế hoạch chưa có task/milestone/reminder cần chú ý trong hôm nay.</div></div></div> : null}
+        </div>
+      </div>
+
+      <div className="tech-panel overflow-hidden rounded-2xl">
+        <div className="flex items-center justify-between border-b border-white/[0.07] p-4"><div><div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Plan Reminders</div><h2 className="mt-1.5 text-sm font-semibold text-white">Danh sách nhắc việc</h2></div><BellRing className="size-5 text-cyan-300/60" /></div>
+        <div>
+          {activeReminders.map((reminder) => {
+            const status = reminderStatusMeta[reminder.status];
+            const priority = taskPriorityMeta[reminder.priority];
+            return <div key={reminder.id} className="border-b border-white/[0.045] px-4 py-4 hover:bg-white/[0.018]"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-medium text-slate-300">{reminder.title}</span><span className={cn("rounded-md border px-2 py-1 text-[8px]", status.tone)}>{status.label}</span><span className={cn("rounded-md border px-2 py-1 text-[8px]", priority.tone)}>{priority.label}</span></div>{reminder.description ? <div className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-600">{reminder.description}</div> : null}<div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-slate-600"><span>{reminder.entityTitle || "Reminder thủ công"}</span><span>{displayDateTime(reminder.status === "snoozed" ? reminder.snoozedUntil : reminder.remindAt)}</span><span>{reminder.ownerName || "Chưa phân công"}</span></div></div></div>{canEdit ? <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={action === `done-reminder-${reminder.id}`} onClick={() => onDoneReminder(reminder)} className="flex h-8 items-center gap-1.5 rounded-lg border border-emerald-300/12 bg-emerald-300/[0.04] px-2.5 text-[9px] text-emerald-200 hover:bg-emerald-300/[0.08]">{action === `done-reminder-${reminder.id}` ? <LoaderCircle className="size-3 animate-spin" /> : <CheckCircle2 className="size-3" />} Done</button><button type="button" disabled={action === `snooze-reminder-${reminder.id}`} onClick={() => onSnoozeReminder(reminder)} className="flex h-8 items-center gap-1.5 rounded-lg border border-violet-300/12 bg-violet-300/[0.04] px-2.5 text-[9px] text-violet-200 hover:bg-violet-300/[0.08]">{action === `snooze-reminder-${reminder.id}` ? <LoaderCircle className="size-3 animate-spin" /> : <Clock3 className="size-3" />} Snooze</button><button type="button" onClick={() => onEditReminder(reminder)} className="grid size-8 place-items-center rounded-lg border border-white/[0.07] text-slate-500 hover:text-cyan-200"><Edit3 className="size-3.5" /></button><button type="button" disabled={action === `delete-reminder-${reminder.id}`} onClick={() => onDeleteReminder(reminder)} className="grid size-8 place-items-center rounded-lg border border-rose-300/10 text-slate-600 hover:text-rose-200">{action === `delete-reminder-${reminder.id}` ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}</button></div> : null}</div>;
+          })}
+          {!activeReminders.length ? <div className="grid min-h-72 place-items-center px-6 text-center"><div><BellRing className="mx-auto size-7 text-slate-700" /><div className="mt-3 text-sm font-medium text-slate-300">Chưa có reminder mở</div><div className="mt-1 text-xs text-slate-600">Thêm reminder để theo dõi việc cần nhắc theo ngày giờ.</div>{canEdit ? <button type="button" onClick={onAddReminder} className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl border border-cyan-300/18 bg-cyan-300/[0.07] px-3 text-[10px] text-cyan-100"><Plus className="size-3.5" /> Thêm reminder đầu tiên</button> : null}</div></div> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PlanWorkspace() {
   const { selectedProject } = useProject();
   const [view, setView] = useState<ViewMode>("overview");
@@ -246,6 +331,7 @@ export function PlanWorkspace() {
   const [milestoneEditor, setMilestoneEditor] = useState<ProjectMilestone | null | undefined>(undefined);
   const [taskEditor, setTaskEditor] = useState<ProjectPlanTask | null | undefined>(undefined);
   const [checklistEditor, setChecklistEditor] = useState<{ item: MilestoneChecklistItem | null; milestoneId: string } | null>(null);
+  const [reminderEditor, setReminderEditor] = useState<ProjectPlanReminder | null | undefined>(undefined);
 
   const loadPlan = useCallback(async () => {
     setLoading(true); setError("");
@@ -263,7 +349,7 @@ export function PlanWorkspace() {
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       setView("overview"); setNotice(""); setMasterOpen(false); setStageEditor(undefined); setMilestoneEditor(undefined);
-      setTaskEditor(undefined); setChecklistEditor(null);
+      setTaskEditor(undefined); setChecklistEditor(null); setReminderEditor(undefined);
       void loadPlan();
     });
     return () => window.cancelAnimationFrame(frame);
@@ -309,7 +395,7 @@ export function PlanWorkspace() {
   }
 
   function saved(message: string) {
-    setMasterOpen(false); setStageEditor(undefined); setMilestoneEditor(undefined); setTaskEditor(undefined); setChecklistEditor(null); setNotice(message); void loadPlan();
+    setMasterOpen(false); setStageEditor(undefined); setMilestoneEditor(undefined); setTaskEditor(undefined); setChecklistEditor(null); setReminderEditor(undefined); setNotice(message); void loadPlan();
   }
 
   async function recalculate() {
@@ -369,6 +455,30 @@ export function PlanWorkspace() {
     await mutation(`/api/plan/checklist/${item.id}?projectId=${encodeURIComponent(selectedProject.id)}`, { method: "DELETE" }, `delete-checklist-${item.id}`);
   }
 
+  async function updateReminder(reminder: ProjectPlanReminder, status: ProjectPlanReminder["status"], key: string, snoozedUntil: string | null = null) {
+    await mutation(`/api/plan/reminders/${reminder.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId: selectedProject.id, title: reminder.title, description: reminder.description, entityType: reminder.entityType, entityId: reminder.entityId, remindAt: reminder.remindAt, status, priority: reminder.priority, snoozedUntil, ownerId: reminder.ownerId }),
+    }, key);
+  }
+
+  async function completeReminder(reminder: ProjectPlanReminder) {
+    await updateReminder(reminder, "done", `done-reminder-${reminder.id}`);
+  }
+
+  async function snoozeReminder(reminder: ProjectPlanReminder) {
+    const snoozed = new Date();
+    snoozed.setDate(snoozed.getDate() + 1);
+    snoozed.setHours(9, 0, 0, 0);
+    await updateReminder(reminder, "snoozed", `snooze-reminder-${reminder.id}`, snoozed.toISOString());
+  }
+
+  async function deleteReminder(reminder: ProjectPlanReminder) {
+    if (!window.confirm(`Xóa reminder “${reminder.title}”?`)) return;
+    await mutation(`/api/plan/reminders/${reminder.id}?projectId=${encodeURIComponent(selectedProject.id)}`, { method: "DELETE" }, `delete-reminder-${reminder.id}`);
+  }
+
   return (
     <>
       <PageHeader
@@ -385,7 +495,7 @@ export function PlanWorkspace() {
 
       {error ? <div className="mb-4 rounded-xl border border-rose-300/15 bg-rose-300/[0.05] px-4 py-3 text-xs text-rose-200">{error}</div> : null}
       {notice ? <div className="mb-4 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.05] px-4 py-3 text-xs text-emerald-200">{notice}</div> : null}
-      {data?.source === "demo" ? <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-300/15 bg-amber-300/[0.045] px-4 py-3 text-xs leading-5 text-amber-100/80"><Sparkles className="mt-0.5 size-4 shrink-0" /><span>Demo Mode đang hiển thị một kế hoạch mẫu hoàn chỉnh. Kết nối Supabase và chạy các migration Kế hoạch đến V1.7.0 để tạo dữ liệu thật.</span></div> : null}
+      {data?.source === "demo" ? <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-300/15 bg-amber-300/[0.045] px-4 py-3 text-xs leading-5 text-amber-100/80"><Sparkles className="mt-0.5 size-4 shrink-0" /><span>Demo Mode đang hiển thị một kế hoạch mẫu hoàn chỉnh. Kết nối Supabase và chạy các migration Kế hoạch đến V1.8.0 để tạo dữ liệu thật.</span></div> : null}
 
       {loading ? <div className="grid min-h-[460px] place-items-center"><div className="text-center"><LoaderCircle className="mx-auto size-7 animate-spin text-cyan-300" /><div className="mt-3 text-xs text-slate-600">Đang tải Master Plan...</div></div></div> : null}
 
@@ -398,6 +508,7 @@ export function PlanWorkspace() {
                 ["timeline", "Timeline", CalendarDays, null],
                 ["stages", "Project Stages", Layers3, data.stages.length],
                 ["tasks", "Execution Tasks", ClipboardList, data.tasks.length],
+                ["alerts", "Smart Alerts", BellRing, data.summary.smartAlertCount],
                 ["milestones", "Milestones", Flag, data.milestones.length],
               ] as const).map(([value, label, Icon, count]) => <button key={value} type="button" onClick={() => setView(value)} className={cn("flex h-9 shrink-0 items-center gap-2 rounded-xl border px-3 text-[10px] transition", view === value ? "border-cyan-300/16 bg-cyan-300/[0.075] text-cyan-100" : "border-transparent text-slate-500 hover:bg-white/[0.03] hover:text-slate-300")}><Icon className="size-3.5" /> {label}{count !== null ? <span className="rounded-md bg-white/[0.05] px-1.5 py-0.5 text-[8px]">{count}</span> : null}</button>)}
             </div>
@@ -422,6 +533,13 @@ export function PlanWorkspace() {
                     <MetricCard label="Task Done" value={`${data.summary.completedTasks}/${data.summary.taskCount}`} note={data.summary.dueSoonTasks ? `${data.summary.dueSoonTasks} task đến hạn trong 7 ngày` : "Không có task sắp hạn"} icon={CheckSquare2} tone="emerald" />
                     <MetricCard label="Task Rủi ro" value={`${data.summary.overdueTasks + data.summary.blockedTasks}`} note={`${data.summary.overdueTasks} quá hạn • ${data.summary.blockedTasks} bị chặn`} icon={AlertTriangle} tone={data.summary.overdueTasks || data.summary.blockedTasks ? "rose" : "emerald"} />
                     <MetricCard label="Checklist" value={`${data.summary.completedChecklistItems}/${data.summary.checklistCount}`} note="Điều kiện nghiệm thu milestone" icon={CheckCircle2} tone="amber" />
+                  </section>
+
+                  <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                    <MetricCard label="Smart Alerts" value={`${data.summary.smartAlertCount}`} note={data.summary.smartAlertCount ? "Cần xử lý trong Plan" : "Không có cảnh báo mở"} icon={BellRing} tone={data.summary.smartAlertCount ? "rose" : "emerald"} />
+                    <MetricCard label="Reminder mở" value={`${data.summary.openReminders}/${data.summary.reminderCount}`} note="Nhắc việc đang chờ xử lý" icon={CalendarClock} tone="cyan" />
+                    <MetricCard label="Nhắc hôm nay" value={`${data.summary.dueTodayReminders}`} note="Reminder đến hạn trong ngày" icon={CalendarCheck} tone={data.summary.dueTodayReminders ? "amber" : "emerald"} />
+                    <MetricCard label="Reminder quá hạn" value={`${data.summary.overdueReminders}`} note="Cần đóng hoặc snooze lại" icon={AlertTriangle} tone={data.summary.overdueReminders ? "rose" : "emerald"} />
                   </section>
 
                   <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.25fr_.75fr]">
@@ -475,6 +593,20 @@ export function PlanWorkspace() {
             </div>
           ) : null}
 
+          {view === "alerts" ? (
+            <SmartAlertsPanel
+              alerts={data.smartAlerts}
+              reminders={data.reminders}
+              canEdit={data.canEdit}
+              action={action}
+              onAddReminder={() => setReminderEditor(null)}
+              onEditReminder={setReminderEditor}
+              onDoneReminder={(item) => void completeReminder(item)}
+              onSnoozeReminder={(item) => void snoozeReminder(item)}
+              onDeleteReminder={(item) => void deleteReminder(item)}
+            />
+          ) : null}
+
           {view === "milestones" ? (
             <div className="tech-panel overflow-hidden rounded-2xl">
               <div className="flex flex-col gap-3 border-b border-white/[0.07] p-4 md:flex-row md:items-center md:justify-between"><div><div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Milestones</div><h2 className="mt-1.5 text-sm font-semibold text-white">Mốc bàn giao & phê duyệt</h2><p className="mt-1 text-[10px] text-slate-600">Theo dõi các quyết định và đầu ra quan trọng của dự án.</p></div>{data.canEdit ? <button type="button" onClick={() => setMilestoneEditor(null)} className="flex h-9 items-center gap-2 rounded-xl border border-amber-300/18 bg-amber-300/[0.06] px-3 text-[10px] text-amber-100"><Plus className="size-3.5" /> Thêm milestone</button> : null}</div>
@@ -489,6 +621,7 @@ export function PlanWorkspace() {
       {milestoneEditor !== undefined && data ? <MilestoneModal projectId={selectedProject.id} milestone={milestoneEditor} defaultDate={data.masterPlan?.targetEndDate ?? data.summary.forecastEndDate ?? new Date().toISOString().slice(0, 10)} stages={data.stages} people={data.people} onClose={() => setMilestoneEditor(undefined)} onSaved={saved} /> : null}
       {taskEditor !== undefined && data ? <PlanTaskModal projectId={selectedProject.id} task={taskEditor} defaultStageId={defaultTaskStage?.id ?? ""} defaultDueDate={defaultTaskStage?.endDate ?? data.summary.forecastEndDate ?? ""} stages={data.stages} people={data.people} onClose={() => setTaskEditor(undefined)} onSaved={saved} /> : null}
       {checklistEditor && data ? <MilestoneChecklistModal projectId={selectedProject.id} item={checklistEditor.item} milestoneId={checklistEditor.milestoneId} milestones={data.milestones} onClose={() => setChecklistEditor(null)} onSaved={saved} /> : null}
+      {reminderEditor !== undefined && data ? <PlanReminderModal projectId={selectedProject.id} reminder={reminderEditor} stages={data.stages} milestones={data.milestones} tasks={data.tasks} people={data.people} onClose={() => setReminderEditor(undefined)} onSaved={saved} /> : null}
     </>
   );
 }

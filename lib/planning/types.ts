@@ -9,6 +9,18 @@ export type MilestoneStatus = "pending" | "at_risk" | "completed" | "missed";
 export type PlanTaskStatus = "todo" | "doing" | "blocked" | "done";
 export type PlanTaskPriority = "low" | "medium" | "high" | "critical";
 export type PlanHealth = "no_plan" | "on_track" | "at_risk" | "late" | "completed";
+export type PlanReminderEntityType = "manual" | "stage" | "milestone" | "task" | "issue";
+export type PlanReminderStatus = "open" | "snoozed" | "done" | "cancelled";
+export type SmartPlanAlertSeverity = "info" | "warning" | "critical";
+export type SmartPlanAlertType =
+  | "stage_overdue"
+  | "milestone_due_soon"
+  | "milestone_overdue"
+  | "task_due_soon"
+  | "task_overdue"
+  | "task_blocked"
+  | "reminder_due_today"
+  | "reminder_overdue";
 
 export type PlanPerson = {
   value: string;
@@ -93,6 +105,36 @@ export type MilestoneChecklistItem = {
   updatedAt: string;
 };
 
+export type ProjectPlanReminder = {
+  id: string;
+  title: string;
+  description: string | null;
+  entityType: PlanReminderEntityType;
+  entityId: string | null;
+  entityTitle: string | null;
+  remindAt: string;
+  status: PlanReminderStatus;
+  priority: PlanTaskPriority;
+  snoozedUntil: string | null;
+  completedAt: string | null;
+  ownerId: string | null;
+  ownerName: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SmartPlanAlert = {
+  id: string;
+  type: SmartPlanAlertType;
+  severity: SmartPlanAlertSeverity;
+  title: string;
+  summary: string;
+  dueDate: string | null;
+  entityType: PlanReminderEntityType;
+  entityId: string | null;
+  ownerName: string | null;
+};
+
 export type PlanSummary = {
   totalDurationDays: number;
   forecastEndDate: string | null;
@@ -112,6 +154,11 @@ export type PlanSummary = {
   nextTask: ProjectPlanTask | null;
   checklistCount: number;
   completedChecklistItems: number;
+  reminderCount: number;
+  openReminders: number;
+  dueTodayReminders: number;
+  overdueReminders: number;
+  smartAlertCount: number;
   executionProgress: number;
   health: PlanHealth;
 };
@@ -127,6 +174,8 @@ export type ProjectPlanData = {
   milestones: ProjectMilestone[];
   tasks: ProjectPlanTask[];
   checklistItems: MilestoneChecklistItem[];
+  reminders: ProjectPlanReminder[];
+  smartAlerts: SmartPlanAlert[];
   people: PlanPerson[];
   summary: PlanSummary;
   generatedAt: string;
@@ -198,4 +247,17 @@ export type MilestoneChecklistInput = {
   title: string;
   isDone: boolean;
   sortOrder: number | null;
+};
+
+export type PlanReminderInput = {
+  projectId: string;
+  title: string;
+  description: string | null;
+  entityType: PlanReminderEntityType;
+  entityId: string | null;
+  remindAt: string;
+  status: PlanReminderStatus;
+  priority: PlanTaskPriority;
+  snoozedUntil: string | null;
+  ownerId: string | null;
 };
