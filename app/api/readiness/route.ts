@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "2.2.2",
+        version: "2.4.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "2.2.2", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "2.4.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -215,6 +215,23 @@ export async function GET(request: NextRequest) {
     Math.max(planningSchema.durationMs, projectProfile.durationMs),
   ));
 
+  const workloadSchema = await timed(async () => Promise.all([
+    supabase.from("people").select("id,project_role,department_id", { count: "exact", head: true }).eq("project_id", projectId).eq("person_type", "asc").eq("is_active", true),
+    supabase.from("issues").select("id,assignee_person_id,status_code,due_date", { count: "exact", head: true }).eq("project_id", projectId).is("archived_at", null),
+    supabase.from("project_plan_tasks").select("id,status,priority,due_date,owner_person_id", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("project_plan_reminders").select("id,status,remind_at,owner_person_id", { count: "exact", head: true }).eq("project_id", projectId),
+  ]));
+  const workloadSchemaError = workloadSchema.error || workloadSchema.value?.find((result) => result.error)?.error;
+  checks.push(check(
+    "workload_capacity",
+    "Workload & Capacity Planning",
+    workloadSchemaError ? "fail" : "pass",
+    workloadSchemaError
+      ? "Không đọc được nguồn dữ liệu capacity; kiểm tra people, issues và plan execution schema."
+      : "Workload có đủ nguồn để tính capacity score, quá tải và gợi ý phân công.",
+    workloadSchema.durationMs,
+  ));
+
   const notificationsSchema = await timed(async () => Promise.all([
     supabase.from("activity_events").select("id", { count: "exact", head: true }).eq("project_id", projectId),
     supabase.from("notifications").select("id", { count: "exact", head: true }).eq("project_id", projectId).eq("user_id", user.id),
@@ -324,7 +341,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "2.2.2",
+      version: "2.4.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

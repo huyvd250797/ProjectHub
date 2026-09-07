@@ -1,22 +1,23 @@
 # Changelog
 
-## V2.2.2 — Global Data Grid UX
+## V2.4.0 — Workload & Capacity Planning
 
 ### Added
 
-- Global Grid Enhancer cho các bảng dữ liệu chuẩn trong app.
-- Kéo thả header để đổi vị trí cột theo từng bảng.
-- Kéo mép phải header để resize độ rộng cột và lưu layout trong `localStorage`.
-- ISSUE bổ sung resize cột native trên hệ column preferences hiện có.
+- Module `/workload` mới cho Workload & Capacity Planning.
+- API `/api/workload` tổng hợp tải việc từ `people`, `issues`, `project_plan_tasks`, `project_milestones` và `project_plan_reminders`.
+- Capacity Score, Focus Risk, Overload Detection và phân loại tải việc theo từng nhân sự.
+- Assignment Suggestions gợi ý người còn capacity để nhận thêm việc.
+- Capacity Risks và Capacity Calendar 4 tuần tới.
 
 ### Changed
 
-- Nội dung dài trong ô dữ liệu được xuống hàng để hiển thị đầy đủ hơn.
-- Các bảng không có cấu hình cột riêng được tự động nâng cấp mà không cần viết lại từng màn hình.
+- Sidebar bổ sung module Workload và vẫn tương thích cấu hình đổi tên/kéo thứ tự navbar.
+- Command Center bổ sung quick link sang Workload để điều phối nhân sự từ màn điều hành tổng.
 
 ### Database
 
-- Không có migration mới.
+- Không có migration mới; dùng lại schema People, ISSUE, Plan Task, Milestone và Reminder hiện có.
 
 ## V2.2.0 — PLHĐ Function Tree & Project Delete
 

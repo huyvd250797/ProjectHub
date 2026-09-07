@@ -1,15 +1,17 @@
-# ASC WORKING — V2.2.2
+# ASC WORKING — V2.4.0
 
-## V2.2.2 có gì mới?
+## V2.4.0 có gì mới?
 
-Global Data Grid UX
+Workload & Capacity Planning
 
-- Áp dụng grid UX toàn cục cho các bảng dữ liệu chuẩn trong app: kéo header để đổi vị trí cột.
-- Cho phép kéo mép phải header để resize độ rộng cột và ghi nhớ layout theo từng màn hình.
-- Nội dung dài trong ô tự xuống hàng để đọc đủ, hạn chế `truncate` / `line-clamp` làm mất dữ liệu.
-- ISSUE bổ sung resize cột trực tiếp trên hệ column preferences hiện có.
-- PLHĐ tiếp tục giữ kéo cột, resize cột và wrap nội dung từ bản V2.2.1.
-- Không cần migration mới; đây là nâng cấp frontend UX trên nền schema V2.2.0.
+- Module **Workload** mới tại `/workload` để quản lý tải việc nhân sự theo project đang chọn.
+- Tính **Capacity Score** cho từng nhân sự từ ISSUE đang mở, task kế hoạch, milestone và reminder.
+- Phát hiện nhân sự **quá tải**, tải cao, ổn định hoặc còn trống.
+- Có **Assignment Suggestions** để gợi ý ai có thể nhận thêm việc.
+- Có **Capacity Risks** cho người quá tải, việc quá hạn, task blocked và ISSUE chưa phân công.
+- Có lịch **Capacity Calendar** 4 tuần tới để thấy mật độ deadline.
+- Command Center bổ sung quick link sang Workload.
+- Không cần migration mới; dùng lại schema People, ISSUE, Plan Task, Milestone và Reminder hiện có.
 
 ## V2.2.0 có gì mới?
 

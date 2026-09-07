@@ -12,6 +12,7 @@ import {
   Map,
   RadioTower,
   Settings2,
+  UsersRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { NavigationHref } from "@/lib/workspace-preferences";
@@ -27,6 +28,7 @@ export const navigation: NavigationItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: CircleGauge },
   { label: "Portfolio", href: "/portfolio", icon: BriefcaseBusiness },
   { label: "Kế hoạch", href: "/plan", icon: Map },
+  { label: "Workload", href: "/workload", icon: UsersRound },
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
   { label: "Báo cáo", href: "/reports", icon: FileText },
   { label: "PLHĐ", href: "/contract", icon: FileStack },

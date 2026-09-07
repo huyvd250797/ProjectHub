@@ -103,6 +103,7 @@ export function createDemoCommandCenter(projectId: string): CommandCenterData {
     })),
     quickLinks: [
       { label: "Mở Master Plan", href: "/plan", description: "Cập nhật stage, task, reminder và milestone" },
+      { label: "Workload", href: "/workload", description: "Xem ai quá tải, ai còn trống để điều phối việc" },
       { label: "Xem ISSUE", href: "/issues", description: "Lọc các việc đang chờ xử lý hoặc quá hạn" },
       { label: "Kiểm tra PLHĐ", href: "/contract", description: "Đối chiếu phạm vi module và chi tiết PLHĐ" },
       { label: "Portfolio", href: "/portfolio", description: "So sánh rủi ro toàn bộ project" },
