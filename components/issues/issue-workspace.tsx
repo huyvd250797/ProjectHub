@@ -32,6 +32,7 @@ import {
   Zap,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useProject } from "@/components/project-context";
 import { IssueDrawer } from "@/components/issues/issue-drawer";
@@ -474,10 +475,37 @@ export function IssueWorkspace() {
     setDragOverColumn(null);
   }
 
+  function resizeColumn(columnId: IssueColumnId, event: ReactMouseEvent<HTMLSpanElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const spec = ISSUE_COLUMNS.find((item) => item.id === columnId);
+    const minWidth = spec?.min ?? 90;
+    const maxWidth = spec?.max ?? 520;
+    const startX = event.clientX;
+    const startWidth = preferences.columnWidths[columnId] ?? 160;
+
+    const onMove = (moveEvent: MouseEvent) => {
+      const nextWidth = Math.min(maxWidth, Math.max(minWidth, Math.round(startWidth + moveEvent.clientX - startX)));
+      setPreferences((current) => ({
+        ...current,
+        columnWidths: { ...current.columnWidths, [columnId]: nextWidth },
+      }));
+    };
+
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }
+
   function renderCell(issue: IssueRow, id: IssueColumnId) {
     const editingDisabled = !currentData.canEdit || currentData.source === "demo" || savingId === issue.id;
     if (id === "issueNo") return <span className="font-mono text-[10px] text-cyan-300/65">#{issue.issueNo ?? "—"}</span>;
-    if (id === "content") return <div><div className="line-clamp-2 font-medium leading-5 text-slate-300 group-hover:text-white">{issue.content}</div>{issue.requesterName ? <div className="mt-1 text-[9px] text-slate-700">YC: {issue.requesterName}</div> : null}</div>;
+    if (id === "content") return <div><div className="whitespace-normal break-words font-medium leading-5 text-slate-300 group-hover:text-white">{issue.content}</div>{issue.requesterName ? <div className="mt-1 text-[9px] text-slate-700">YC: {issue.requesterName}</div> : null}</div>;
     if (id === "status") return <FloatingSelect ariaLabel="Trạng thái" compact disabled={editingDisabled} value={issue.statusCode} options={currentData.lookups.statuses} onChange={(value) => inlineUpdate(issue, "statusCode", value)} tone={statusTone(issue.statusCode)} tagStyle={customizedTagStyle("status", issue.statusCode)} />;
     if (id === "customerStatus") return <FloatingSelect ariaLabel="Trạng thái khách hàng" compact disabled={editingDisabled} value={issue.customerStatusCode} options={currentData.lookups.customerStatuses} onChange={(value) => inlineUpdate(issue, "customerStatusCode", value)} placeholder="Chưa bàn giao" tagStyle={customizedTagStyle("customerStatus", issue.customerStatusCode)} />;
     if (id === "priority") return <FloatingSelect ariaLabel="Ưu tiên" compact disabled={editingDisabled} value={issue.priorityCode} options={currentData.lookups.priorities} onChange={(value) => inlineUpdate(issue, "priorityCode", value)} tone={priorityTone(issue.priorityCode)} tagStyle={customizedTagStyle("priority", issue.priorityCode)} />;
@@ -496,7 +524,7 @@ export function IssueWorkspace() {
       return <FloatingSelect ariaLabel="Phụ trách" compact disabled={editingDisabled} value={issue.assigneeId} options={assigneeOptions} onChange={(value) => inlineUpdate(issue, "assigneeId", value)} placeholder="Chưa phụ trách" tagStyle={customizedTagStyle("assignee", issue.assigneeId)} />;
     }
     if (id === "dueDate") return <span className={cn("text-[10px]", isOverdue(issue.dueDate) ? "font-semibold text-rose-300/80" : "text-slate-600")}>{formatDate(issue.dueDate)}</span>;
-    return issue.jiraUrl ? <a href={issue.jiraUrl} target="_blank" rel="noreferrer" title={issue.jiraUrl} className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-white/[0.06] px-2 py-1 text-[9px] font-medium text-cyan-300/70 hover:border-cyan-300/18 hover:text-cyan-200"><ExternalLink className="size-3 shrink-0" /><span className="truncate">{jiraCodeFromUrl(issue.jiraUrl)}</span></a> : <span className="text-slate-800">—</span>;
+    return issue.jiraUrl ? <a href={issue.jiraUrl} target="_blank" rel="noreferrer" title={issue.jiraUrl} className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-white/[0.06] px-2 py-1 text-[9px] font-medium text-cyan-300/70 hover:border-cyan-300/18 hover:text-cyan-200"><ExternalLink className="size-3 shrink-0" /><span className="whitespace-normal break-all">{jiraCodeFromUrl(issue.jiraUrl)}</span></a> : <span className="text-slate-800">—</span>;
   }
 
   return (
@@ -542,7 +570,7 @@ export function IssueWorkspace() {
         {selectedIds.size ? <div className={cn("sticky z-20 flex flex-col gap-2 border-b border-cyan-300/10 bg-[#0a1828]/95 px-4 py-3 shadow-lg backdrop-blur-xl lg:flex-row lg:items-center", fullScreen ? "top-0" : "top-[76px]")}><div className="flex items-center gap-2 text-xs font-medium text-cyan-100"><span className="grid size-6 place-items-center rounded-lg bg-cyan-300/[0.1] text-[10px]">{selectedIds.size}</span> ISSUE đã chọn</div><div className="w-[190px]"><ThemedSelect ariaLabel="Trường bulk update" value={bulkField} onChange={(value) => { setBulkField(value); setBulkValue(""); }} options={bulkFieldOptions} /></div>{bulkField === "dueDate" ? <div className="flex gap-1"><input type="date" value={bulkValue === "__clear__" ? "" : bulkValue} onChange={(e) => setBulkValue(e.target.value)} className="h-10 rounded-xl border border-white/[0.08] bg-black/10 px-3 text-xs text-slate-300 outline-none" /><button onClick={() => setBulkValue("__clear__")} className={cn("h-10 rounded-xl border px-3 text-[10px]", bulkValue === "__clear__" ? "border-rose-300/20 bg-rose-300/[0.06] text-rose-200" : "border-white/[0.07] text-slate-600")}>Xóa</button></div> : <div className="w-[240px]"><ThemedSelect ariaLabel="Giá trị bulk update" value={bulkValue} onChange={setBulkValue} options={bulkOptions()} placeholder="Chọn giá trị" menuClassName="min-w-[320px]" /></div>}<button disabled={!bulkValue || bulkSaving} onClick={() => void applyBulkUpdate()} className="flex h-10 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-[10px] font-semibold text-[#07111f] disabled:opacity-40">{bulkSaving ? <LoaderCircle className="size-3.5 animate-spin" /> : <Zap className="size-3.5" />} Cập nhật</button><button disabled={selectedIds.size !== 1 || bulkSaving} onClick={() => void duplicateSelected()} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-400 disabled:opacity-30"><CopyPlus className="size-3.5" /> Nhân bản</button>{data.canArchive ? <button disabled={bulkSaving} onClick={() => void deleteSelectedIssues()} className="flex h-10 items-center gap-2 rounded-xl border border-rose-300/15 bg-rose-300/[0.04] px-3 text-[10px] font-medium text-rose-200 hover:bg-rose-300/[0.08] disabled:opacity-40"><Trash2 className="size-3.5" /> Xóa</button> : null}<button onClick={() => setSelectedIds(new Set())} className="ml-auto flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-600"><X className="size-3.5" /> Bỏ chọn</button></div> : null}
 
         <div className={cn("scrollbar-thin min-h-[360px] overflow-auto overscroll-contain", fullScreen ? "min-h-0 flex-1" : "max-h-[calc(100vh-150px)]")}>
-          <table className="border-collapse text-left" style={{ width: totalTableWidth, minWidth: "100%" }}>
+          <table data-managed-grid="true" className="border-collapse text-left" style={{ width: totalTableWidth, minWidth: "100%" }}>
             <thead className="text-[9px] uppercase tracking-[0.13em] text-slate-600">
               <tr>
                 <th className="sticky left-0 top-0 z-50 w-[46px] border-b border-r border-white/[0.06] bg-[#0b1727]/[0.99] px-3 py-3 shadow-[0_1px_0_rgba(255,255,255,0.035)] backdrop-blur-xl"><input type="checkbox" aria-label="Chọn tất cả ISSUE trang này" checked={allCurrentSelected} onChange={(e) => setSelectedIds(e.target.checked ? new Set(data.rows.map((row) => row.id)) : new Set())} className="size-3.5 accent-cyan-300" /></th>
@@ -559,11 +587,12 @@ export function IssueWorkspace() {
                       onDragEnd={() => { setDraggedColumn(null); setDragOverColumn(null); }}
                       onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDragOverColumn(id); }}
                       onDrop={(event) => { event.preventDefault(); dropColumn(id); }}
-                      className={cn("sticky top-0 z-30 cursor-grab border-b border-white/[0.06] bg-[#0b1727]/[0.99] px-3 py-3 font-semibold shadow-[0_1px_0_rgba(255,255,255,0.035)] backdrop-blur-xl active:cursor-grabbing", pinned && "z-40 border-r", dragOverColumn === id && draggedColumn !== id && "bg-cyan-300/[0.09] text-cyan-100")}
+                      className={cn("sticky top-0 z-30 cursor-grab border-b border-white/[0.06] bg-[#0b1727]/[0.99] px-3 py-3 pr-5 font-semibold shadow-[0_1px_0_rgba(255,255,255,0.035)] backdrop-blur-xl active:cursor-grabbing", pinned && "z-40 border-r", dragOverColumn === id && draggedColumn !== id && "bg-cyan-300/[0.09] text-cyan-100")}
                       style={{ width, minWidth: width, maxWidth: width, left }}
-                      title="Kéo để đổi vị trí cột"
+                      title="Kéo để đổi vị trí cột. Kéo mép phải để resize."
                     >
                       <span className="flex items-center gap-1.5"><GripVertical className="size-3 shrink-0 text-slate-700" />{spec.label}</span>
+                      <span onMouseDown={(event) => resizeColumn(id, event)} className="absolute right-0 top-1/2 h-6 w-2 -translate-y-1/2 cursor-col-resize rounded-full border-r border-cyan-300/0 transition hover:border-cyan-300/45" />
                     </th>
                   );
                 })}
@@ -573,7 +602,7 @@ export function IssueWorkspace() {
               {data.rows.length ? data.rows.map((issue) => (
                 <tr key={issue.id} onClick={() => openIssue(issue)} className={cn("group cursor-pointer border-b border-white/[0.04] text-xs text-slate-400 transition hover:bg-white/[0.025]", selectedIds.has(issue.id) && "bg-cyan-300/[0.025]") }>
                   <td className="sticky left-0 z-20 w-[46px] border-r border-white/[0.045] bg-[#0b1727] px-3 py-3.5" onClick={(e) => e.stopPropagation()}><input type="checkbox" aria-label={`Chọn ISSUE ${issue.issueNo ?? issue.id}`} checked={selectedIds.has(issue.id)} onChange={(e) => setSelectedIds((current) => { const next = new Set(current); if (e.target.checked) next.add(issue.id); else next.delete(issue.id); return next; })} className="size-3.5 accent-cyan-300" /></td>
-                  {orderedVisibleColumns.map((id) => { const width = preferences.columnWidths[id] ?? 160; const left = pinnedLeft(id); const pinned = left !== undefined; const interactive = ["status","customerStatus","priority","module","department","assignee","jira"].includes(id); return <td key={id} className={cn("px-3 py-3.5 align-top", pinned && "sticky z-10 border-r border-white/[0.045] bg-[#0b1727]")} style={{ width, minWidth: width, maxWidth: width, left }} onClick={interactive ? (e) => e.stopPropagation() : undefined}><div className="max-w-full overflow-hidden">{renderCell(issue, id)}</div></td>; })}
+                  {orderedVisibleColumns.map((id) => { const width = preferences.columnWidths[id] ?? 160; const left = pinnedLeft(id); const pinned = left !== undefined; const interactive = ["status","customerStatus","priority","module","department","assignee","jira"].includes(id); return <td key={id} className={cn("px-3 py-3.5 align-top", pinned && "sticky z-10 border-r border-white/[0.045] bg-[#0b1727]")} style={{ width, minWidth: width, maxWidth: width, left }} onClick={interactive ? (e) => e.stopPropagation() : undefined}><div className="max-w-full whitespace-normal break-words">{renderCell(issue, id)}</div></td>; })}
                 </tr>
               )) : <tr><td colSpan={orderedVisibleColumns.length + 1} className="px-4 py-16 text-center"><Layers3 className="mx-auto size-6 text-slate-800" /><div className="mt-3 text-xs text-slate-500">Không có ISSUE phù hợp bộ lọc.</div><button onClick={() => clearFilters()} className="mt-3 text-[10px] text-cyan-300/60 hover:text-cyan-200">Xóa bộ lọc</button></td></tr>}
             </tbody>

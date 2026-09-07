@@ -1,18 +1,18 @@
 # Changelog
 
-## V2.2.1 — PLHĐ Grid UX & Jira Code Display
-
-### Fixed
-
-- Đổi tiêu đề PLHĐ từ “Cây PLHĐ duy nhất” sang “Cấu trúc PLHĐ”.
-- Lưới PLHĐ không còn ép dòng cố định; nội dung dài được xuống hàng để đọc đủ.
-- Combobox trạng thái trên Phân hệ/Module được thu gọn để không đè sát cột Chi tiết.
-- Cột Jira trong ISSUE hiển thị mã ticket rút từ URL `/browse/...` thay vì nhãn `Jira`.
+## V2.2.2 — Global Data Grid UX
 
 ### Added
 
-- Kéo thả header để đổi vị trí cột PLHĐ.
-- Kéo mép header để resize độ rộng cột PLHĐ, lưu trong `localStorage`.
+- Global Grid Enhancer cho các bảng dữ liệu chuẩn trong app.
+- Kéo thả header để đổi vị trí cột theo từng bảng.
+- Kéo mép phải header để resize độ rộng cột và lưu layout trong `localStorage`.
+- ISSUE bổ sung resize cột native trên hệ column preferences hiện có.
+
+### Changed
+
+- Nội dung dài trong ô dữ liệu được xuống hàng để hiển thị đầy đủ hơn.
+- Các bảng không có cấu hình cột riêng được tự động nâng cấp mà không cần viết lại từng màn hình.
 
 ### Database
 

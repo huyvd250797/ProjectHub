@@ -1,15 +1,15 @@
-# ASC WORKING — V2.2.1
+# ASC WORKING — V2.2.2
 
-## V2.2.1 có gì mới?
+## V2.2.2 có gì mới?
 
-PLHĐ Grid UX & Jira Code Display
+Global Data Grid UX
 
-- Đổi tiêu đề khu vực PLHĐ thành **Cấu trúc PLHĐ** cho dễ hiểu hơn.
-- Lưới PLHĐ cho phép kéo đổi vị trí cột và kéo resize độ rộng cột ngay trên header.
-- Dòng PLHĐ tự xuống hàng để hiển thị đủ nội dung Nhóm / Phân hệ / Module / Chức năng.
-- Thu nhỏ combobox trạng thái Module/Phân hệ để tránh dính vào cột kế bên.
-- Cột Jira trong ISSUE hiển thị mã ticket lấy từ link `/browse/...`, ví dụ `INTRACOM01-540`, và bấm trực tiếp để mở link Jira đã setup.
-- Không cần migration mới; đây là hotfix frontend trên nền schema V2.2.0.
+- Áp dụng grid UX toàn cục cho các bảng dữ liệu chuẩn trong app: kéo header để đổi vị trí cột.
+- Cho phép kéo mép phải header để resize độ rộng cột và ghi nhớ layout theo từng màn hình.
+- Nội dung dài trong ô tự xuống hàng để đọc đủ, hạn chế `truncate` / `line-clamp` làm mất dữ liệu.
+- ISSUE bổ sung resize cột trực tiếp trên hệ column preferences hiện có.
+- PLHĐ tiếp tục giữ kéo cột, resize cột và wrap nội dung từ bản V2.2.1.
+- Không cần migration mới; đây là nâng cấp frontend UX trên nền schema V2.2.0.
 
 ## V2.2.0 có gì mới?
 

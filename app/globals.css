@@ -356,6 +356,63 @@ html:not([data-theme="light"]) .theme-toggle:hover {
   color: #eaf9ff !important;
 }
 
+/* ASC WORKING V2.2.2 — Global Data Grid UX */
+.asc-data-grid {
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.asc-data-grid th,
+.asc-data-grid td {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  vertical-align: top;
+}
+
+.asc-data-grid th {
+  position: relative;
+  user-select: none;
+}
+
+.asc-data-grid th[data-asc-grid-column-handle="true"] {
+  cursor: grab;
+}
+
+.asc-data-grid th[data-asc-grid-column-handle="true"]::after {
+  content: "";
+  position: absolute;
+  inset-block: 9px;
+  right: 0;
+  width: 7px;
+  border-right: 1px solid rgba(57, 216, 255, 0.24);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.asc-data-grid th[data-asc-grid-column-handle="true"]:hover::after {
+  opacity: 1;
+}
+
+.asc-data-grid .truncate {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+}
+
+.asc-data-grid [class*="line-clamp"] {
+  display: block !important;
+  -webkit-line-clamp: unset !important;
+  line-clamp: unset !important;
+  -webkit-box-orient: initial !important;
+  overflow: visible !important;
+}
+
+.asc-data-grid td[class*="max-w-"],
+.asc-data-grid div[class*="max-w-"] {
+  max-width: none !important;
+}
+
 /* Accent labels stay vivid without looking neon-heavy. */
 html:not([data-theme="light"]) .text-cyan-100 { color: #d8f8ff !important; }
 html:not([data-theme="light"]) .text-cyan-200 { color: #a9efff !important; }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
+import { GlobalGridEnhancer } from "@/components/ui/global-grid-enhancer";
 import { ProjectProvider } from "@/components/project-context";
 import type { WorkspaceProject } from "@/lib/projects";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ export function AppShell({
 
   return (
     <ProjectProvider projects={projects} isMaster={isMaster}>
+      <GlobalGridEnhancer />
       <div className="min-h-screen">
         <Sidebar
           collapsed={collapsed}
@@ -60,7 +62,7 @@ export function AppShell({
           </main>
           <footer className="mx-auto flex w-full max-w-[1600px] flex-col gap-1 border-t border-white/[0.05] px-4 py-5 text-[10px] uppercase tracking-[0.14em] text-slate-700 md:flex-row md:items-center md:justify-between md:px-6">
             <span>© 2026 HuyVo. All rights reserved.</span>
-            <span>ASC WORKING • V2.2.1 • PLHĐ Grid UX & Jira Code Display</span>
+            <span>ASC WORKING • V2.2.2 • Global Data Grid UX</span>
           </footer>
         </div>
       </div>
