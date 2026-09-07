@@ -145,8 +145,8 @@ function exportPlan(data: ProjectPlanData) {
     ...data.milestones.map((milestone) => [milestone.title, milestone.dueDate, milestoneStatusMeta[milestone.status].label, milestone.stageName ?? "", milestone.ownerName ?? "", milestone.description ?? ""]),
     [],
     ["EXECUTION TASKS"],
-    ["Tên task", "Stage", "Deadline", "Trạng thái", "Ưu tiên", "Phụ trách", "Mô tả"],
-    ...data.tasks.map((task) => [task.title, task.stageName ?? "", task.dueDate ?? "", taskStatusMeta[task.status].label, taskPriorityMeta[task.priority].label, task.ownerName ?? "", task.description ?? ""]),
+    ["Tên task", "Stage", "Deadline", "Giờ ước tính", "Trạng thái", "Ưu tiên", "Phụ trách", "Mô tả"],
+    ...data.tasks.map((task) => [task.title, task.stageName ?? "", task.dueDate ?? "", task.estimatedHours ?? "", taskStatusMeta[task.status].label, taskPriorityMeta[task.priority].label, task.ownerName ?? "", task.description ?? ""]),
     [],
     ["MILESTONE CHECKLIST"],
     ["Milestone", "Checklist", "Hoàn tất"],
@@ -220,6 +220,7 @@ function TaskRow({
           <span className="flex items-center gap-1.5"><Layers3 className="size-3" /> {task.stageName || "Task độc lập"}</span>
           <span className="flex items-center gap-1.5"><CalendarDays className="size-3" /> {displayDate(task.dueDate)}</span>
           <span className="flex items-center gap-1.5"><UserRound className="size-3" /> {task.ownerName || "Chưa phân công"}</span>
+          <span>{task.estimatedHours === null ? "Chưa ước tính giờ" : `${task.estimatedHours.toLocaleString("vi-VN")}h estimated`}</span>
         </div>
       </div>
       {canEdit ? <div className="flex shrink-0 gap-2">{task.status !== "done" ? <button type="button" disabled={action === `done-task-${task.id}`} onClick={() => onDone(task)} className="flex h-8 items-center gap-1.5 rounded-lg border border-emerald-300/12 bg-emerald-300/[0.04] px-2.5 text-[9px] text-emerald-200 hover:bg-emerald-300/[0.08]">{action === `done-task-${task.id}` ? <LoaderCircle className="size-3 animate-spin" /> : <CheckCircle2 className="size-3" />} Done</button> : null}<button type="button" onClick={() => onEdit(task)} className="grid size-8 place-items-center rounded-lg border border-white/[0.07] text-slate-500 hover:text-cyan-200"><Edit3 className="size-3.5" /></button><button type="button" disabled={action === `delete-task-${task.id}`} onClick={() => onDelete(task)} className="grid size-8 place-items-center rounded-lg border border-rose-300/10 text-slate-600 hover:text-rose-200">{action === `delete-task-${task.id}` ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}</button></div> : null}
@@ -434,7 +435,7 @@ export function PlanWorkspace() {
     await mutation(`/api/plan/tasks/${task.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId: selectedProject.id, title: task.title, description: task.description, stageId: task.stageId, status: "done", priority: task.priority, dueDate: task.dueDate, ownerId: task.ownerId, sortOrder: task.sortOrder }),
+      body: JSON.stringify({ projectId: selectedProject.id, title: task.title, description: task.description, stageId: task.stageId, status: "done", priority: task.priority, dueDate: task.dueDate, estimatedHours: task.estimatedHours, ownerId: task.ownerId, sortOrder: task.sortOrder }),
     }, `done-task-${task.id}`);
   }
 

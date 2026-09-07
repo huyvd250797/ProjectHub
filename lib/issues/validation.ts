@@ -8,6 +8,7 @@ export type IssueInput = {
   jiraUrl: string | null;
   releaseDate: string | null;
   dueDate: string | null;
+  estimatedHours: number | null;
   moduleId: string | null;
   departmentId: string | null;
   requesterId: string | null;
@@ -26,6 +27,7 @@ export const ISSUE_FIELD_LABELS: Record<string, string> = {
   jiraUrl: "Link Jira",
   releaseDate: "Ngày release",
   dueDate: "Due Date",
+  estimatedHours: "Giờ ước tính",
   moduleId: "Module",
   departmentId: "Phòng ban",
   requesterId: "Nhân sự yêu cầu",
@@ -76,6 +78,17 @@ function urlOrNull(value: unknown, errors: Record<string, string>) {
   }
 }
 
+function numberOrNull(value: unknown, field: string, errors: Record<string, string>) {
+  const result = text(value);
+  if (!result) return null;
+  const parsed = Number(result);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 9999) {
+    errors[field] = `${ISSUE_FIELD_LABELS[field] ?? "Số giờ"} phải từ 0 đến 9.999.`;
+    return null;
+  }
+  return Math.round(parsed * 100) / 100;
+}
+
 export function issueValidationMessage(errors: Record<string, string>) {
   const labels = Object.keys(errors).map((field) => ISSUE_FIELD_LABELS[field] ?? field);
   if (!labels.length) return "Dữ liệu ISSUE chưa hợp lệ.";
@@ -109,6 +122,7 @@ export function parseIssueInput(raw: unknown, requireProject = true) {
     jiraUrl: urlOrNull(body.jiraUrl, errors),
     releaseDate: dateOrNull(body.releaseDate, "releaseDate", errors),
     dueDate: dateOrNull(body.dueDate, "dueDate", errors),
+    estimatedHours: numberOrNull(body.estimatedHours, "estimatedHours", errors),
     moduleId: uuidOrNull(body.moduleId, "moduleId", errors),
     departmentId: uuidOrNull(body.departmentId, "departmentId", errors),
     requesterId: uuidOrNull(body.requesterId, "requesterId", errors),
@@ -138,6 +152,7 @@ export function parseIssuePatch(raw: unknown) {
   if ("jiraUrl" in body) patch.jira_url = urlOrNull(body.jiraUrl, errors);
   if ("releaseDate" in body) patch.release_date = dateOrNull(body.releaseDate, "releaseDate", errors);
   if ("dueDate" in body) patch.due_date = dateOrNull(body.dueDate, "dueDate", errors);
+  if ("estimatedHours" in body) patch.estimated_hours = numberOrNull(body.estimatedHours, "estimatedHours", errors);
   if ("moduleId" in body) patch.module_id = uuidOrNull(body.moduleId, "moduleId", errors);
   if ("departmentId" in body) patch.department_id = uuidOrNull(body.departmentId, "departmentId", errors);
   if ("requesterId" in body) patch.requester_person_id = uuidOrNull(body.requesterId, "requesterId", errors);

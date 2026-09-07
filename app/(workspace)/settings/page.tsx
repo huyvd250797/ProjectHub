@@ -55,7 +55,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="System Foundation"
         title="Thiết lập Project Workspace"
-        description="ASC WORKING V2.4.1 bổ sung Workload & Capacity Planning: quản lý tải việc nhân sự, phát hiện quá tải và gợi ý người còn capacity để điều phối ISSUE/task."
+        description="ASC WORKING V2.5.0 bổ sung Resource Allocation Foundation: chuẩn hóa capacity theo giờ, giờ ước tính cho ISSUE/task và định dạng ngày DD/MM/YYYY toàn hệ thống."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -111,7 +111,7 @@ export default async function SettingsPage() {
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/60">Production Tool</div>
           <div className="mt-1 text-sm font-semibold text-slate-200">Hardening & UAT Center</div>
-          <div className="mt-1 text-xs leading-5 text-slate-600">Chạy automated readiness, kiểm tra RLS/schema/security environment, Command Center, Portfolio, Catalog Delete, Workload & Capacity Planning và regression testcase cho V2.4.1.</div>
+          <div className="mt-1 text-xs leading-5 text-slate-600">Chạy automated readiness, kiểm tra RLS/schema/security environment, Command Center, Portfolio, Catalog Delete, Resource Allocation và regression testcase cho V2.5.0.</div>
         </div>
         <div className="flex items-center gap-2 text-xs font-medium text-cyan-200/80 md:ml-auto">
           Mở UAT Center <ArrowRight className="size-4" />
@@ -173,8 +173,8 @@ export default async function SettingsPage() {
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Release</div>
         <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-lg font-semibold text-white">ASC WORKING V2.4.1</div>
-            <div className="mt-1 text-xs text-slate-500">Workload & Capacity Planning</div>
+            <div className="text-lg font-semibold text-white">ASC WORKING V2.5.0</div>
+            <div className="mt-1 text-xs text-slate-500">Resource Allocation Foundation</div>
           </div>
           <span className="w-fit rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200">
             Production Ready

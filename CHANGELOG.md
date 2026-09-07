@@ -1,5 +1,26 @@
 # Changelog
 
+## V2.5.0 — Resource Allocation Foundation
+
+### Added
+
+- Hour-based resource allocation model cho Workload.
+- `capacity_hours_per_week` và `allocation_target_percent` cho nhân sự project.
+- `estimated_hours` cho ISSUE và Execution Task.
+- Workload KPI: Planned Hours, Available Hours, Overload Hours và Avg Allocation.
+- ISSUE drawer, ISSUE grid và Plan Task modal hiển thị/nhập Est. Hours.
+- Date input chung theo định dạng `DD/MM/YYYY`; date-time theo `DD/MM/YYYY HH:mm`.
+
+### Changed
+
+- Tiêu chí quá tải ưu tiên allocation theo giờ: vượt capacity hoặc allocation >= 100%.
+- Assignment Suggestions ưu tiên người còn available hours nhiều hơn.
+- Readiness check kiểm tra schema Resource Allocation V2.5.0.
+
+### Database
+
+- Migration mới: `supabase/migrations/202609070001_v250_resource_allocation_foundation.sql`.
+
 ## V2.4.1 — Workload Issue Drilldown
 
 ### Added

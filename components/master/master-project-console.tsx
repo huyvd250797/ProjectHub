@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { ThemedSelect } from "@/components/ui/themed-select";
+import { DateFormInput } from "@/components/ui/date-input";
 import type {
   MasterProjectMember,
   MasterProjectRow,
@@ -232,10 +233,10 @@ export function MasterProjectConsole() {
                 <Field label="Tên dự án" className="md:col-span-1 xl:col-span-2"><input name="name" required maxLength={180} placeholder="Tên Project *" className={inputClass} /></Field>
                 <Field label="Trường / Đơn vị" className="md:col-span-2 xl:col-span-3"><input name="organizationName" maxLength={180} placeholder="Tên trường / đơn vị triển khai" className={inputClass} /></Field>
                 <Field label="Số hợp đồng"><input name="contractNo" maxLength={120} placeholder="Số hợp đồng" className={inputClass} /></Field>
-                <Field label="Ngày ký hợp đồng"><input name="contractDate" type="date" className={inputClass} /></Field>
+                <Field label="Ngày ký hợp đồng"><DateFormInput name="contractDate" className={inputClass} /></Field>
                 <div className="hidden xl:block" />
-                <Field label="Ngày bắt đầu"><input name="startDate" type="date" className={inputClass} /></Field>
-                <Field label="Ngày kế hoạch kết thúc"><input name="dueDate" type="date" className={inputClass} /></Field>
+                <Field label="Ngày bắt đầu"><DateFormInput name="startDate" className={inputClass} /></Field>
+                <Field label="Ngày kế hoạch kết thúc"><DateFormInput name="dueDate" className={inputClass} /></Field>
               </div>
               <footer className="flex items-center justify-end gap-2 border-t border-white/[0.06] px-5 py-4 md:px-6">
                 <button type="button" disabled={saving} onClick={() => setShowCreate(false)} className="h-10 rounded-xl border border-white/[0.07] px-4 text-xs text-slate-400 hover:bg-white/[0.03] hover:text-white disabled:opacity-40">Hủy</button>
@@ -400,10 +401,10 @@ function ProjectProfileForm({ project, onUpdated }: { project: MasterProjectRow;
         <div className="grid gap-3 md:grid-cols-2">
           <Field label="Số hợp đồng"><input name="contractNo" maxLength={120} defaultValue={project.contractNo ?? ""} className={inputClass} /></Field>
           <Field label="Giá trị hợp đồng"><input name="contractValue" inputMode="decimal" defaultValue={project.contractValue ?? ""} className={inputClass} placeholder="Ví dụ: 1500000000" /></Field>
-          <Field label="Ngày ký hợp đồng"><input name="contractDate" type="date" defaultValue={project.contractDate ?? ""} className={inputClass} /></Field>
+          <Field label="Ngày ký hợp đồng"><DateFormInput name="contractDate" defaultValue={project.contractDate ?? ""} className={inputClass} /></Field>
           <div className="hidden md:block" />
-          <Field label="Ngày bắt đầu"><input name="startDate" type="date" defaultValue={project.startDate ?? ""} className={inputClass} /></Field>
-          <Field label="Ngày kết thúc dự kiến"><input name="dueDate" type="date" defaultValue={project.dueDate ?? ""} className={inputClass} /></Field>
+          <Field label="Ngày bắt đầu"><DateFormInput name="startDate" defaultValue={project.startDate ?? ""} className={inputClass} /></Field>
+          <Field label="Ngày kết thúc dự kiến"><DateFormInput name="dueDate" defaultValue={project.dueDate ?? ""} className={inputClass} /></Field>
         </div>
       </section>
 

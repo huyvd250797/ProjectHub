@@ -1,4 +1,18 @@
-# ASC WORKING — V2.4.1
+# ASC WORKING — V2.5.0
+
+## V2.5.0 có gì mới?
+
+Resource Allocation Foundation
+
+- Workload chuyển nền đánh giá từ chỉ đếm đầu việc sang allocation theo giờ.
+- Mỗi nhân sự có `capacity_hours_per_week` và `allocation_target_percent`.
+- ISSUE và Execution Task có `estimated_hours` để tính planned hours.
+- Workload hiển thị Planned Hours, Available Hours, Overload Hours và Avg Allocation.
+- Modal ISSUE theo nhân sự hiển thị thêm Est. Hours để xem tải việc chi tiết.
+- ISSUE drawer và Plan Task modal cho phép nhập giờ ước tính thủ công.
+- Tất cả date picker trong app được chuẩn hóa nhập/xem theo định dạng `DD/MM/YYYY`; date-time dùng `DD/MM/YYYY HH:mm`.
+
+Chạy migration mới: `supabase/migrations/202609070001_v250_resource_allocation_foundation.sql`.
 
 ## V2.4.1 có gì mới?
 
@@ -10,7 +24,6 @@ Workload Issue Drilldown
 - Modal có tìm kiếm nhanh theo nội dung, module, phòng ban, trạng thái, priority và Jira.
 - Jira trong modal hiển thị mã như `INTRACOM01-540` và bấm được vào link đã setup.
 - Đóng modal bằng nút **Đóng** hoặc phím Esc, người dùng vẫn ở lại màn Workload.
-- Không cần migration mới; dùng lại payload `/api/workload` và bổ sung `issueItems` theo từng nhân sự.
 
 ## V2.2.0 có gì mới?
 

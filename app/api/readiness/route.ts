@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "2.4.1",
+        version: "2.5.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "2.4.1", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "2.5.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -216,19 +216,19 @@ export async function GET(request: NextRequest) {
   ));
 
   const workloadSchema = await timed(async () => Promise.all([
-    supabase.from("people").select("id,project_role,department_id", { count: "exact", head: true }).eq("project_id", projectId).eq("person_type", "asc").eq("is_active", true),
-    supabase.from("issues").select("id,assignee_person_id,status_code,due_date", { count: "exact", head: true }).eq("project_id", projectId).is("archived_at", null),
-    supabase.from("project_plan_tasks").select("id,status,priority,due_date,owner_person_id", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("people").select("id,project_role,department_id,capacity_hours_per_week,allocation_target_percent", { count: "exact", head: true }).eq("project_id", projectId).eq("person_type", "asc").eq("is_active", true),
+    supabase.from("issues").select("id,assignee_person_id,status_code,due_date,estimated_hours,actual_hours", { count: "exact", head: true }).eq("project_id", projectId).is("archived_at", null),
+    supabase.from("project_plan_tasks").select("id,status,priority,due_date,owner_person_id,estimated_hours", { count: "exact", head: true }).eq("project_id", projectId),
     supabase.from("project_plan_reminders").select("id,status,remind_at,owner_person_id", { count: "exact", head: true }).eq("project_id", projectId),
   ]));
   const workloadSchemaError = workloadSchema.error || workloadSchema.value?.find((result) => result.error)?.error;
   checks.push(check(
-    "workload_capacity",
-    "Workload & Capacity Planning",
+    "resource_allocation",
+    "Resource Allocation Foundation",
     workloadSchemaError ? "fail" : "pass",
     workloadSchemaError
-      ? "Không đọc được nguồn dữ liệu capacity; kiểm tra people, issues và plan execution schema."
-      : "Workload có đủ nguồn để tính capacity score, quá tải và gợi ý phân công.",
+      ? "Không đọc được capacity_hours_per_week / allocation_target_percent / estimated_hours; chạy migration V2.5.0."
+      : "Workload có đủ nguồn dữ liệu để tính planned hours, available hours, overload hours và allocation percent.",
     workloadSchema.durationMs,
   ));
 
@@ -341,7 +341,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "2.4.1",
+      version: "2.5.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

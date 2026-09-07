@@ -29,10 +29,11 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Không tải được Workload & Capacity Planning.";
     const missing = isPlanningMigrationMissing(message);
+    const resourceMissing = /capacity_hours_per_week|allocation_target_percent|estimated_hours|actual_hours|schema cache/i.test(message);
     return NextResponse.json({
       ok: false,
-      code: missing ? "V240_PLAN_SOURCE_REQUIRED" : "WORKLOAD_QUERY_FAILED",
-      message: missing ? "Workload cần dữ liệu Plan/Execution/Reminder hiện có để tổng hợp tải việc nhân sự." : message,
-    } satisfies WorkloadApiResponse, { status: missing ? 503 : 500 });
+      code: resourceMissing ? "V250_MIGRATION_REQUIRED" : missing ? "V240_PLAN_SOURCE_REQUIRED" : "WORKLOAD_QUERY_FAILED",
+      message: resourceMissing ? "Hãy chạy migration V2.5.0 trước khi dùng Resource Allocation Foundation." : missing ? "Workload cần dữ liệu Plan/Execution/Reminder hiện có để tổng hợp tải việc nhân sự." : message,
+    } satisfies WorkloadApiResponse, { status: missing || resourceMissing ? 503 : 500 });
   }
 }

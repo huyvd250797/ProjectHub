@@ -45,6 +45,10 @@ function formatDate(value: string | null) {
   return new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" }).format(date);
 }
 
+function formatHours(value: number) {
+  return `${value.toLocaleString("vi-VN", { maximumFractionDigits: 2 })}h`;
+}
+
 function jiraCodeFromUrl(value: string | null) {
   if (!value) return null;
   const match = value.match(/\/browse\/([^/?#]+)/i);
@@ -81,16 +85,17 @@ function KpiCard({ label, value, note, icon: Icon, tone = "cyan" }: { label: str
 
 function CapacityBar({ member }: { member: WorkloadMember }) {
   const bar = member.level === "overloaded" ? "bg-rose-300" : member.level === "high" ? "bg-amber-300" : member.level === "normal" ? "bg-cyan-300" : "bg-emerald-300";
+  const width = Math.min(100, member.allocationPercent);
   return (
     <div className="min-w-[180px]">
       <div className="flex items-center justify-between gap-3">
         <span className={cn("rounded-full border px-2.5 py-1 text-[10px] font-semibold", levelClass[member.level])}>{levelLabel[member.level]}</span>
-        <span className="text-xs font-semibold text-slate-200">{member.capacityScore}%</span>
+        <span className="text-xs font-semibold text-slate-200">{member.allocationPercent}%</span>
       </div>
       <div className="mt-2 h-2 rounded-full bg-white/[0.04]">
-        <div className={cn("h-full rounded-full", bar)} style={{ width: `${member.capacityScore}%` }} />
+        <div className={cn("h-full rounded-full", bar)} style={{ width: `${width}%` }} />
       </div>
-      <div className="mt-1 text-[10px] text-slate-700">Focus risk {member.focusScore}%</div>
+      <div className="mt-1 text-[10px] text-slate-700">{formatHours(member.plannedHours)} / {formatHours(member.effectiveCapacityHours)} • risk {member.focusScore}%</div>
     </div>
   );
 }
@@ -148,7 +153,8 @@ function MemberIssueModal({ member, onClose }: { member: WorkloadMember; onClose
         <div className="ml-auto hidden items-center gap-4 text-[10px] text-slate-500 md:flex">
           <span>Quá hạn <b className="text-rose-200">{member.overdueIssues.toLocaleString("vi-VN")}</b></span>
           <span>Sắp hạn <b className="text-amber-200">{member.dueSoonIssues.toLocaleString("vi-VN")}</b></span>
-          <span>Capacity <b className="text-cyan-200">{member.capacityScore}%</b></span>
+          <span>Allocation <b className="text-cyan-200">{member.allocationPercent}%</b></span>
+          <span>Planned <b className="text-cyan-200">{formatHours(member.plannedHours)}</b></span>
         </div>
         <button type="button" onClick={onClose} className="ml-2 flex h-9 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-[10px] text-slate-300 hover:border-cyan-300/20 hover:text-white" title="Đóng modal (Esc)">
           <X className="size-3.5" /> Đóng
@@ -177,6 +183,7 @@ function MemberIssueModal({ member, onClose }: { member: WorkloadMember; onClose
                 <th className="px-4 py-3">Phòng ban</th>
                 <th className="px-4 py-3">Ưu tiên</th>
                 <th className="px-4 py-3">Due Date</th>
+                <th className="px-4 py-3">Est. Hours</th>
                 <th className="px-4 py-3">Trạng thái</th>
                 <th className="px-4 py-3">Jira</th>
               </tr>
@@ -190,6 +197,7 @@ function MemberIssueModal({ member, onClose }: { member: WorkloadMember; onClose
                   <td className="max-w-[240px] whitespace-normal break-words px-4 py-4 text-xs text-slate-400">{issue.departmentName ?? "—"}</td>
                   <td className="px-4 py-4"><span className="rounded-lg border border-white/[0.07] bg-white/[0.025] px-2 py-1 text-[10px] font-semibold text-slate-300">{issue.priorityCode ?? "—"}</span></td>
                   <td className="px-4 py-4 text-xs text-slate-300">{formatDate(issue.dueDate)}</td>
+                  <td className="px-4 py-4 font-mono text-xs text-cyan-200/75">{formatHours(issue.estimatedHours)}</td>
                   <td className="px-4 py-4"><span className="rounded-lg border border-white/[0.07] bg-white/[0.025] px-2 py-1 text-[10px] font-semibold text-slate-300">{issue.statusCode ?? "—"}</span></td>
                   <td className="px-4 py-4">
                     {issue.jiraUrl ? (
@@ -203,7 +211,7 @@ function MemberIssueModal({ member, onClose }: { member: WorkloadMember; onClose
               ))}
               {!filteredIssues.length ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-xs text-slate-600">Không có ISSUE phù hợp bộ lọc hiện tại.</td>
+                  <td colSpan={9} className="px-4 py-12 text-center text-xs text-slate-600">Không có ISSUE phù hợp bộ lọc hiện tại.</td>
                 </tr>
               ) : null}
             </tbody>
@@ -288,11 +296,11 @@ export function WorkloadDashboard() {
         <div className="space-y-4">
           <section className="grid grid-cols-2 gap-3 xl:grid-cols-6">
             <KpiCard label="Nhân sự" value={data.summary.memberCount} note="ASC active trong project" icon={UsersRound} />
-            <KpiCard label="Quá tải" value={data.summary.overloadedMembers} note="Capacity >= 85% hoặc nhiều rủi ro" icon={AlertTriangle} tone={data.summary.overloadedMembers ? "rose" : "emerald"} />
-            <KpiCard label="Còn trống" value={data.summary.availableMembers} note="Low/normal capacity" icon={UserCheck} tone="emerald" />
-            <KpiCard label="Open Work" value={data.summary.totalOpenWork} note="ISSUE + task + milestone + reminder" icon={BriefcaseBusiness} />
-            <KpiCard label="Quá hạn" value={data.summary.overdueWork} note={`${data.summary.blockedTasks} task blocked`} icon={ListTodo} tone={data.summary.overdueWork ? "rose" : "emerald"} />
-            <KpiCard label="Avg Capacity" value={`${data.summary.averageCapacity}%`} note={`${data.summary.dueSoonWork} việc đến hạn trong 7 ngày`} icon={Gauge} tone={data.summary.averageCapacity >= 85 ? "rose" : data.summary.averageCapacity >= 65 ? "amber" : "cyan"} />
+            <KpiCard label="Quá tải" value={data.summary.overloadedMembers} note="Allocation >=100% hoặc nhiều rủi ro" icon={AlertTriangle} tone={data.summary.overloadedMembers ? "rose" : "emerald"} />
+            <KpiCard label="Planned Hours" value={formatHours(data.summary.totalPlannedHours)} note={`${data.summary.totalOpenWork} đầu việc đang mở`} icon={BriefcaseBusiness} />
+            <KpiCard label="Available Hours" value={formatHours(data.summary.availableHours)} note={`${data.summary.availableMembers} người còn capacity`} icon={UserCheck} tone="emerald" />
+            <KpiCard label="Overload Hours" value={formatHours(data.summary.overloadHours)} note={`${data.summary.blockedTasks} task blocked`} icon={ListTodo} tone={data.summary.overloadHours ? "rose" : "emerald"} />
+            <KpiCard label="Avg Allocation" value={`${data.summary.averageAllocation}%`} note={`${data.summary.dueSoonWork} việc đến hạn trong 7 ngày`} icon={Gauge} tone={data.summary.averageAllocation >= 100 ? "rose" : data.summary.averageAllocation >= 85 ? "amber" : "cyan"} />
           </section>
 
           <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_420px]">
@@ -322,11 +330,12 @@ export function WorkloadDashboard() {
                   <thead className="border-b border-white/[0.07] bg-white/[0.018] text-[10px] uppercase tracking-[0.16em] text-slate-600">
                     <tr>
                       <th className="px-4 py-3">Nhân sự</th>
-                      <th className="px-4 py-3">Capacity Score</th>
+                      <th className="px-4 py-3">Allocation</th>
+                      <th className="px-4 py-3">Capacity/Week</th>
+                      <th className="px-4 py-3">Planned Hours</th>
+                      <th className="px-4 py-3">Available</th>
                       <th className="px-4 py-3">ISSUE</th>
                       <th className="px-4 py-3">Task</th>
-                      <th className="px-4 py-3">Milestone</th>
-                      <th className="px-4 py-3">Reminder</th>
                       <th className="px-4 py-3">Deadline gần nhất</th>
                       <th className="px-4 py-3">Khuyến nghị</th>
                     </tr>
@@ -342,17 +351,18 @@ export function WorkloadDashboard() {
                           <div className="mt-2 text-[10px] text-slate-700">Bấm tên để xem {member.openIssues.toLocaleString("vi-VN")} ISSUE</div>
                         </td>
                         <td className="px-4 py-4"><CapacityBar member={member} /></td>
+                        <td className="px-4 py-4 text-slate-300">{formatHours(member.effectiveCapacityHours)}<div className="mt-1 text-[10px] text-slate-700">{formatHours(member.capacityHoursPerWeek)} × {member.allocationTargetPercent}%</div></td>
+                        <td className="px-4 py-4 text-slate-300">{formatHours(member.plannedHours)}<div className="mt-1 text-[10px] text-slate-700">Issue {formatHours(member.issueEstimatedHours)} • Task {formatHours(member.taskEstimatedHours)}</div></td>
+                        <td className={cn("px-4 py-4", member.overloadHours ? "font-semibold text-rose-200" : "text-emerald-200")}>{member.overloadHours ? `-${formatHours(member.overloadHours)}` : formatHours(member.availableHours)}<div className="mt-1 text-[10px] text-slate-700">Milestone/Reminder {formatHours(member.milestoneEstimatedHours + member.reminderEstimatedHours)}</div></td>
                         <td className="px-4 py-4 text-slate-300">{member.openIssues}<div className="mt-1 text-[10px] text-slate-700">{member.overdueIssues} quá hạn • {member.dueSoonIssues} sắp hạn</div></td>
                         <td className="px-4 py-4 text-slate-300">{member.openTasks}<div className="mt-1 text-[10px] text-slate-700">{member.blockedTasks} blocked • {member.overdueTasks} quá hạn</div></td>
-                        <td className="px-4 py-4 text-slate-300">{member.openMilestones}<div className="mt-1 text-[10px] text-slate-700">{member.overdueMilestones} quá hạn</div></td>
-                        <td className="px-4 py-4 text-slate-300">{member.openReminders}<div className="mt-1 text-[10px] text-slate-700">{member.overdueReminders} quá hạn</div></td>
                         <td className="px-4 py-4 text-slate-300">{formatDate(member.nextDueDate)}</td>
                         <td className="max-w-[300px] whitespace-normal break-words px-4 py-4 text-xs leading-5 text-slate-500">{member.recommendation}</td>
                       </tr>
                     ))}
                     {!visibleMembers.length ? (
                       <tr>
-                        <td colSpan={8} className="px-4 py-12 text-center text-xs text-slate-600">Không có nhân sự phù hợp bộ lọc hiện tại.</td>
+                        <td colSpan={9} className="px-4 py-12 text-center text-xs text-slate-600">Không có nhân sự phù hợp bộ lọc hiện tại.</td>
                       </tr>
                     ) : null}
                   </tbody>
@@ -377,7 +387,7 @@ export function WorkloadDashboard() {
                           <div className="text-xs font-semibold text-slate-100">{suggestion.name}</div>
                           <div className="mt-1 text-[10px] text-slate-600">{suggestion.departmentName ?? "Chưa gắn phòng ban"}</div>
                         </div>
-                        <span className={cn("shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold", levelClass[suggestion.level])}>{suggestion.capacityScore}%</span>
+                        <span className={cn("shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold", levelClass[suggestion.level])}>{suggestion.allocationPercent}%</span>
                       </div>
                       <div className="mt-2 text-[11px] leading-5 text-slate-500">{suggestion.reason}</div>
                     </div>

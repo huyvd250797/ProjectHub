@@ -61,6 +61,13 @@ function parseNumber(value: unknown, fallback: number) {
   return Number.isFinite(parsed) ? Math.trunc(parsed) : fallback;
 }
 
+function parseOptionalHours(value: unknown) {
+  const normalized = nullableText(value);
+  if (!normalized) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : Number.NaN;
+}
+
 export function parseMasterPlanInput(value: unknown): ParseResult<MasterPlanInput> {
   const body = record(value);
   const errors: Record<string, string> = {};
@@ -197,6 +204,7 @@ export function parsePlanTaskInput(value: unknown): ParseResult<PlanTaskInput> {
   const status = requiredText(body.status || "todo") as PlanTaskStatus;
   const priority = requiredText(body.priority || "medium") as PlanTaskPriority;
   const dueDate = nullableText(body.dueDate);
+  const estimatedHours = parseOptionalHours(body.estimatedHours);
   const ownerId = optionalUuid(body.ownerId);
   const sortOrder = body.sortOrder === null || body.sortOrder === undefined || body.sortOrder === "" ? null : parseNumber(body.sortOrder, -1);
 
@@ -207,12 +215,13 @@ export function parsePlanTaskInput(value: unknown): ParseResult<PlanTaskInput> {
   if (!(["todo", "doing", "blocked", "done"] as string[]).includes(status)) errors.status = "Trạng thái task không hợp lệ.";
   if (!(["low", "medium", "high", "critical"] as string[]).includes(priority)) errors.priority = "Mức ưu tiên task không hợp lệ.";
   if (dueDate && !validDate(dueDate)) errors.dueDate = "Deadline task không hợp lệ.";
+  if (estimatedHours !== null && (!Number.isFinite(estimatedHours) || estimatedHours < 0 || estimatedHours > 9999)) errors.estimatedHours = "Giờ ước tính task phải từ 0 đến 9.999.";
   if (ownerId && !UUID_PATTERN.test(ownerId)) errors.ownerId = "Người phụ trách không hợp lệ.";
   if (sortOrder !== null && (sortOrder < 0 || sortOrder > 100_000)) errors.sortOrder = "Thứ tự task không hợp lệ.";
 
   return Object.keys(errors).length
     ? { ok: false, errors }
-    : { ok: true, input: { projectId, title, description, stageId, status, priority, dueDate, ownerId, sortOrder } };
+    : { ok: true, input: { projectId, title, description, stageId, status, priority, dueDate, estimatedHours, ownerId, sortOrder } };
 }
 
 export function parseMilestoneChecklistInput(value: unknown): ParseResult<MilestoneChecklistInput> {

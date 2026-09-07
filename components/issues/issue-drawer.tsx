@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ThemedSelect } from "@/components/ui/themed-select";
+import { DateInput } from "@/components/ui/date-input";
 import type {
   IssueDetailApiResponse,
   IssueHistoryEntry,
@@ -32,6 +33,7 @@ type Draft = {
   jiraUrl: string;
   releaseDate: string;
   dueDate: string;
+  estimatedHours: string;
   moduleId: string;
   departmentId: string;
   requesterId: string;
@@ -50,6 +52,7 @@ function fromIssue(issue?: IssueRow | null): Draft {
     jiraUrl: issue?.jiraUrl ?? "",
     releaseDate: issue?.releaseDate ?? "",
     dueDate: issue?.dueDate ?? "",
+    estimatedHours: issue?.estimatedHours === null || issue?.estimatedHours === undefined ? "" : String(issue.estimatedHours),
     moduleId: issue?.moduleId ?? "",
     departmentId: issue?.departmentId ?? "",
     requesterId: issue?.requesterId ?? "",
@@ -69,6 +72,7 @@ const historyLabels: Record<string, string> = {
   jira_url: "Jira",
   release_date: "Ngày release",
   due_date: "Due Date",
+  estimated_hours: "Giờ ước tính",
   module_id: "Module",
   response: "ASC phản hồi",
   department_id: "Phòng ban",
@@ -197,6 +201,7 @@ export function IssueDrawer({
     jiraUrl: draft.jiraUrl || null,
     releaseDate: draft.releaseDate || null,
     dueDate: draft.dueDate || null,
+    estimatedHours: draft.estimatedHours === "" ? null : Number(draft.estimatedHours),
     moduleId: draft.moduleId || null,
     departmentId: draft.departmentId || null,
     requesterId: draft.requesterId || null,
@@ -218,6 +223,10 @@ export function IssueDrawer({
       } catch {
         errors.jiraUrl = "Link Jira phải là URL http/https hợp lệ.";
       }
+    }
+    if (draft.estimatedHours.trim()) {
+      const value = Number(draft.estimatedHours);
+      if (!Number.isFinite(value) || value < 0 || value > 9999) errors.estimatedHours = "Giờ ước tính phải từ 0 đến 9.999.";
     }
     return errors;
   }
@@ -386,8 +395,9 @@ export function IssueDrawer({
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <label className="block"><FieldLabel>Due Date</FieldLabel><div className="relative"><CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-600" /><input type="date" disabled={!writable} value={draft.dueDate} onChange={(e) => setDraft((c) => ({ ...c, dueDate: e.target.value }))} className="h-10 w-full rounded-xl border border-white/[0.08] bg-black/10 pl-9 pr-3 text-xs text-slate-300 outline-none focus:border-cyan-300/25 disabled:opacity-65" /></div><FieldError message={fieldErrors.dueDate} /></label>
-                <label className="block"><FieldLabel>Ngày release</FieldLabel><div className="relative"><CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-600" /><input type="date" disabled={!writable} value={draft.releaseDate} onChange={(e) => setDraft((c) => ({ ...c, releaseDate: e.target.value }))} className="h-10 w-full rounded-xl border border-white/[0.08] bg-black/10 pl-9 pr-3 text-xs text-slate-300 outline-none focus:border-cyan-300/25 disabled:opacity-65" /></div><FieldError message={fieldErrors.releaseDate} /></label>
+                <label className="block"><FieldLabel>Due Date</FieldLabel><div className="relative"><CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-600" /><DateInput disabled={!writable} value={draft.dueDate} onChange={(value) => setDraft((c) => ({ ...c, dueDate: value }))} className="h-10 w-full rounded-xl border border-white/[0.08] bg-black/10 pl-9 pr-3 text-xs text-slate-300 outline-none focus:border-cyan-300/25 disabled:opacity-65" /></div><FieldError message={fieldErrors.dueDate} /></label>
+                <label className="block"><FieldLabel>Ngày release</FieldLabel><div className="relative"><CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-600" /><DateInput disabled={!writable} value={draft.releaseDate} onChange={(value) => setDraft((c) => ({ ...c, releaseDate: value }))} className="h-10 w-full rounded-xl border border-white/[0.08] bg-black/10 pl-9 pr-3 text-xs text-slate-300 outline-none focus:border-cyan-300/25 disabled:opacity-65" /></div><FieldError message={fieldErrors.releaseDate} /></label>
+                <label className="block"><FieldLabel>Giờ ước tính</FieldLabel><input type="number" min="0" max="9999" step="0.25" disabled={!writable} value={draft.estimatedHours} onChange={(e) => setDraft((c) => ({ ...c, estimatedHours: e.target.value }))} placeholder="Ví dụ: 4" className="h-10 w-full rounded-xl border border-white/[0.08] bg-black/10 px-3.5 text-xs text-slate-300 outline-none placeholder:text-slate-700 focus:border-cyan-300/25 disabled:opacity-65" /><FieldError message={fieldErrors.estimatedHours} /></label>
               </div>
 
               <div>

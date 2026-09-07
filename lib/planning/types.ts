@@ -87,6 +87,7 @@ export type ProjectPlanTask = {
   status: PlanTaskStatus;
   priority: PlanTaskPriority;
   dueDate: string | null;
+  estimatedHours: number | null;
   completedAt: string | null;
   ownerId: string | null;
   ownerName: string | null;
@@ -275,6 +276,7 @@ export type PlanTaskInput = {
   status: PlanTaskStatus;
   priority: PlanTaskPriority;
   dueDate: string | null;
+  estimatedHours: number | null;
   ownerId: string | null;
   sortOrder: number | null;
 };

@@ -4,7 +4,7 @@ import type { IssueLookups, IssueRow, ProjectRole, SelectOption } from "./types"
 
 export const ISSUE_SELECT = `
   id, issue_no, content, status_code, customer_status_code, priority_code, stage_code,
-  jira_url, release_date, due_date, module_id, response, department_id,
+  jira_url, release_date, due_date, estimated_hours, actual_hours, module_id, response, department_id,
   requester_person_id, assignee_person_id, notes, created_at, updated_at,
   module:contract_items!issues_module_id_fkey(id, code, name),
   department:departments!issues_department_id_fkey(id, code, name),
@@ -21,6 +21,12 @@ function relation(value: unknown): Record<string, unknown> | null {
 function nullableText(value: unknown) {
   if (value === null || value === undefined || value === "") return null;
   return String(value);
+}
+
+function nullableNumber(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 export function normalizeIssue(raw: Record<string, unknown>): IssueRow {
@@ -40,6 +46,8 @@ export function normalizeIssue(raw: Record<string, unknown>): IssueRow {
     jiraUrl: nullableText(raw.jira_url),
     releaseDate: nullableText(raw.release_date),
     dueDate: nullableText(raw.due_date),
+    estimatedHours: nullableNumber(raw.estimated_hours),
+    actualHours: nullableNumber(raw.actual_hours) ?? 0,
     moduleId: nullableText(raw.module_id),
     moduleName: nullableText(module?.name),
     departmentId: nullableText(raw.department_id),

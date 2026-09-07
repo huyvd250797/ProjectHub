@@ -28,6 +28,7 @@ import {
 import { PageHeader } from "@/components/page-header";
 import { useProject } from "@/components/project-context";
 import { ThemedSelect } from "@/components/ui/themed-select";
+import { DateInput } from "@/components/ui/date-input";
 import type { ExecutiveReportApiResponse, ExecutiveReportData, ReportPeriodType, ReportSnapshotMutationResponse } from "@/lib/reports/types";
 import { cn } from "@/lib/utils";
 
@@ -176,7 +177,7 @@ export function ExecutiveReport() {
 
       <div className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.018] p-4 print:hidden">
         <div className="w-[190px]"><div className="mb-1.5 text-[9px] uppercase tracking-[0.14em] text-slate-600">Kỳ báo cáo</div><ThemedSelect ariaLabel="Kỳ báo cáo" value={period} onChange={(value) => setPeriod(value as ReportPeriodType)} options={periodOptions} /></div>
-        {period === "custom" ? <><label className="text-[9px] uppercase tracking-[0.14em] text-slate-600">Từ ngày<input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="mt-1.5 block h-10 rounded-xl border border-white/[0.07] bg-black/10 px-3 text-xs normal-case tracking-normal text-slate-300 outline-none" /></label><label className="text-[9px] uppercase tracking-[0.14em] text-slate-600">Đến ngày<input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="mt-1.5 block h-10 rounded-xl border border-white/[0.07] bg-black/10 px-3 text-xs normal-case tracking-normal text-slate-300 outline-none" /></label></> : null}
+        {period === "custom" ? <><label className="text-[9px] uppercase tracking-[0.14em] text-slate-600">Từ ngày<DateInput value={from} onChange={setFrom} className="mt-1.5 block h-10 rounded-xl border border-white/[0.07] bg-black/10 px-3 text-xs normal-case tracking-normal text-slate-300 outline-none" /></label><label className="text-[9px] uppercase tracking-[0.14em] text-slate-600">Đến ngày<DateInput value={to} onChange={setTo} className="mt-1.5 block h-10 rounded-xl border border-white/[0.07] bg-black/10 px-3 text-xs normal-case tracking-normal text-slate-300 outline-none" /></label></> : null}
         {data ? <div className="ml-auto text-right"><div className="text-[9px] uppercase tracking-[0.14em] text-slate-600">Kỳ đang xem</div><div className="mt-1 text-xs font-medium text-slate-300">{data.period.label}</div></div> : null}
       </div>
 

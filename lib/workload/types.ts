@@ -10,6 +10,7 @@ export type WorkloadMemberItem = {
   status: string | null;
   priority: string | null;
   dueDate: string | null;
+  estimatedHours: number;
   href: string;
 };
 
@@ -23,6 +24,7 @@ export type WorkloadIssueItem = {
   departmentName: string | null;
   dueDate: string | null;
   jiraUrl: string | null;
+  estimatedHours: number;
 };
 
 export type WorkloadMember = {
@@ -49,6 +51,17 @@ export type WorkloadMember = {
   overdueReminders: number;
   dueSoonWork: number;
   totalOpenWork: number;
+  capacityHoursPerWeek: number;
+  allocationTargetPercent: number;
+  effectiveCapacityHours: number;
+  plannedHours: number;
+  issueEstimatedHours: number;
+  taskEstimatedHours: number;
+  milestoneEstimatedHours: number;
+  reminderEstimatedHours: number;
+  allocationPercent: number;
+  availableHours: number;
+  overloadHours: number;
   capacityScore: number;
   focusScore: number;
   level: WorkloadLevel;
@@ -67,6 +80,11 @@ export type WorkloadSummary = {
   blockedTasks: number;
   dueSoonWork: number;
   averageCapacity: number;
+  totalCapacityHours: number;
+  totalPlannedHours: number;
+  averageAllocation: number;
+  availableHours: number;
+  overloadHours: number;
 };
 
 export type WorkloadAssignmentSuggestion = {
@@ -75,6 +93,8 @@ export type WorkloadAssignmentSuggestion = {
   departmentName: string | null;
   level: WorkloadLevel;
   capacityScore: number;
+  allocationPercent: number;
+  availableHours: number;
   reason: string;
 };
 

@@ -18,6 +18,8 @@ export type IssueRow = {
   jiraUrl: string | null;
   releaseDate: string | null;
   dueDate: string | null;
+  estimatedHours: number | null;
+  actualHours: number;
   moduleId: string | null;
   moduleName: string | null;
   departmentId: string | null;
@@ -113,6 +115,7 @@ export type IssueColumnId =
   | "department"
   | "assignee"
   | "dueDate"
+  | "estimatedHours"
   | "jira";
 
 export type IssueTagGroup = "status" | "customerStatus" | "priority" | "assignee";

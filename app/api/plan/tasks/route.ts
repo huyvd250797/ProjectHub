@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
     status: input.status,
     priority: input.priority,
     due_date: input.dueDate,
+    estimated_hours: input.estimatedHours,
     completed_at: input.status === "done" ? new Date().toISOString() : null,
     owner_person_id: input.ownerId,
     sort_order: sortOrder,

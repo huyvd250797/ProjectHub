@@ -15,6 +15,8 @@ import type {
 
 const CLOSED_ISSUE_STATUSES = ["resolved", "released", "no_action", "not_feasible"];
 const WEEK_DAYS = 7;
+const DEFAULT_CAPACITY_HOURS_PER_WEEK = 40;
+const DEFAULT_ALLOCATION_TARGET_PERCENT = 100;
 
 export const WORKLOAD_SOURCE_TABLES = [
   "people",
@@ -26,6 +28,15 @@ export const WORKLOAD_SOURCE_TABLES = [
 
 function nullableText(value: unknown) {
   return value === null || value === undefined || value === "" ? null : String(value);
+}
+
+function numberValue(value: unknown, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function boundedNumber(value: unknown, fallback: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, numberValue(value, fallback)));
 }
 
 function todayOnly() {
@@ -65,6 +76,23 @@ function taskPriorityWeight(priority: string | null) {
   return 1;
 }
 
+function issueEstimatedHours(issue: IssueRow) {
+  if (issue.estimatedHours !== null && issue.estimatedHours !== undefined) return Math.max(0, issue.estimatedHours);
+  const normalized = String(issue.priorityCode ?? "").toUpperCase();
+  if (normalized === "A" || normalized === "CRITICAL") return 8;
+  if (normalized === "B" || normalized === "HIGH") return 5;
+  if (normalized === "C" || normalized === "MEDIUM") return 3;
+  return 2;
+}
+
+function taskEstimatedHours(task: ProjectPlanTask) {
+  if (task.estimatedHours !== null && task.estimatedHours !== undefined) return Math.max(0, task.estimatedHours);
+  if (task.priority === "critical") return 8;
+  if (task.priority === "high") return 6;
+  if (task.priority === "medium") return 4;
+  return 2;
+}
+
 function projectRoleLabel(role: string | null) {
   if (role === "admin") return "Admin";
   if (role === "pm") return "PM";
@@ -74,6 +102,9 @@ function projectRoleLabel(role: string | null) {
 }
 
 function emptyMember(raw: Record<string, unknown>, departmentName: string | null): WorkloadMember {
+  const capacityHoursPerWeek = boundedNumber(raw.capacity_hours_per_week, DEFAULT_CAPACITY_HOURS_PER_WEEK, 0, 168);
+  const allocationTargetPercent = boundedNumber(raw.allocation_target_percent, DEFAULT_ALLOCATION_TARGET_PERCENT, 0, 200);
+  const effectiveCapacityHours = Math.round(capacityHoursPerWeek * allocationTargetPercent) / 100;
   return {
     id: String(raw.id ?? ""),
     name: String(raw.full_name ?? "Chưa đặt tên"),
@@ -98,6 +129,17 @@ function emptyMember(raw: Record<string, unknown>, departmentName: string | null
     overdueReminders: 0,
     dueSoonWork: 0,
     totalOpenWork: 0,
+    capacityHoursPerWeek,
+    allocationTargetPercent,
+    effectiveCapacityHours,
+    plannedHours: 0,
+    issueEstimatedHours: 0,
+    taskEstimatedHours: 0,
+    milestoneEstimatedHours: 0,
+    reminderEstimatedHours: 0,
+    allocationPercent: 0,
+    availableHours: 0,
+    overloadHours: 0,
     capacityScore: 0,
     focusScore: 0,
     level: "low",
@@ -114,17 +156,18 @@ function addItem(member: WorkloadMember, item: WorkloadMemberItem) {
 }
 
 function levelFor(member: WorkloadMember): WorkloadLevel {
-  if (member.capacityScore >= 85 || member.overdueIssues + member.overdueTasks + member.blockedTasks >= 4) return "overloaded";
-  if (member.capacityScore >= 65) return "high";
-  if (member.capacityScore >= 30) return "normal";
+  if (member.overloadHours > 0 || member.allocationPercent >= 100 || member.overdueIssues + member.overdueTasks + member.blockedTasks >= 4) return "overloaded";
+  if (member.allocationPercent >= 85 || member.capacityScore >= 85) return "high";
+  if (member.allocationPercent >= 50 || member.capacityScore >= 50) return "normal";
   return "low";
 }
 
-function recommendationFor(level: WorkloadLevel) {
-  if (level === "overloaded") return "Cần giảm tải ngay: chuyển bớt ISSUE/task quá hạn hoặc blocked.";
-  if (level === "high") return "Theo dõi sát, chỉ nhận thêm việc nhỏ hoặc cùng module.";
-  if (level === "normal") return "Có thể nhận thêm việc vừa phải nếu cùng chuyên môn.";
-  return "Còn capacity tốt, phù hợp nhận việc mới hoặc hỗ trợ nhóm quá tải.";
+function recommendationFor(member: WorkloadMember) {
+  if (member.level === "overloaded" && member.overloadHours > 0) return `Cần giảm tải ngay: vượt ${member.overloadHours.toLocaleString("vi-VN")}h so với capacity tuần hoặc có rủi ro quá hạn/blocked.`;
+  if (member.level === "overloaded") return "Cần xử lý rủi ro quá hạn/blocked trước khi nhận thêm việc mới.";
+  if (member.level === "high") return `Đã dùng ${member.allocationPercent}%, còn ${member.availableHours.toLocaleString("vi-VN")}h; chỉ nên nhận việc nhỏ.`;
+  if (member.level === "normal") return `Còn ${member.availableHours.toLocaleString("vi-VN")}h capacity, có thể nhận thêm việc vừa phải.`;
+  return `Còn ${member.availableHours.toLocaleString("vi-VN")}h capacity, phù hợp nhận việc mới hoặc hỗ trợ nhóm quá tải.`;
 }
 
 function finalizeMember(member: WorkloadMember) {
@@ -135,11 +178,12 @@ function finalizeMember(member: WorkloadMember) {
   }, 0);
   member.totalOpenWork = member.openIssues + member.openTasks + member.openMilestones + member.openReminders;
   member.dueSoonWork = member.dueSoonIssues + member.dueSoonTasks;
+  member.plannedHours = Math.round((member.issueEstimatedHours + member.taskEstimatedHours + member.milestoneEstimatedHours + member.reminderEstimatedHours) * 100) / 100;
+  member.allocationPercent = member.effectiveCapacityHours > 0 ? Math.round((member.plannedHours / member.effectiveCapacityHours) * 100) : member.plannedHours > 0 ? 100 : 0;
+  member.availableHours = Math.round(Math.max(0, member.effectiveCapacityHours - member.plannedHours) * 100) / 100;
+  member.overloadHours = Math.round(Math.max(0, member.plannedHours - member.effectiveCapacityHours) * 100) / 100;
   member.capacityScore = Math.min(100, Math.round(
-    member.openIssues * 8 +
-    member.openTasks * 10 +
-    member.openMilestones * 6 +
-    member.openReminders * 4 +
+    member.allocationPercent * 0.72 +
     member.overdueIssues * 8 +
     member.overdueTasks * 10 +
     member.overdueMilestones * 8 +
@@ -158,15 +202,17 @@ function finalizeMember(member: WorkloadMember) {
     member.dueSoonWork * 3,
   ));
   member.level = levelFor(member);
-  member.recommendation = recommendationFor(member.level);
+  member.recommendation = recommendationFor(member);
   member.items = member.items.sort((a, b) => String(a.dueDate ?? "9999-12-31").localeCompare(String(b.dueDate ?? "9999-12-31")));
   member.issueItems = member.issueItems.sort((a, b) => String(a.dueDate ?? "9999-12-31").localeCompare(String(b.dueDate ?? "9999-12-31")) || Number(a.issueNo ?? 0) - Number(b.issueNo ?? 0));
 }
 
 function applyIssue(member: WorkloadMember, issue: IssueRow, today: string) {
   const dueDate = dateOnly(issue.dueDate);
+  const estimatedHours = issueEstimatedHours(issue);
   member.issueCount += 1;
   member.openIssues += 1;
+  member.issueEstimatedHours += estimatedHours;
   if (isOverdue(dueDate, today)) member.overdueIssues += 1;
   if (isDueSoon(dueDate, today)) member.dueSoonIssues += 1;
   const issueItem: WorkloadIssueItem = {
@@ -179,6 +225,7 @@ function applyIssue(member: WorkloadMember, issue: IssueRow, today: string) {
     departmentName: issue.departmentName,
     dueDate,
     jiraUrl: issue.jiraUrl,
+    estimatedHours,
   };
   member.issueItems.push(issueItem);
   addItem(member, {
@@ -188,14 +235,17 @@ function applyIssue(member: WorkloadMember, issue: IssueRow, today: string) {
     status: issue.statusCode,
     priority: issue.priorityCode,
     dueDate,
+    estimatedHours,
     href: issue.dueDate && issue.dueDate < today ? "/issues?overdue=1" : "/issues",
   });
 }
 
 function applyTask(member: WorkloadMember, task: ProjectPlanTask, today: string) {
   const dueDate = dateOnly(task.dueDate);
+  const estimatedHours = taskEstimatedHours(task);
   member.taskCount += 1;
   member.openTasks += 1;
+  member.taskEstimatedHours += estimatedHours;
   if (task.status === "blocked") member.blockedTasks += 1;
   if (isOverdue(dueDate, today)) member.overdueTasks += 1;
   if (isDueSoon(dueDate, today)) member.dueSoonTasks += 1;
@@ -206,6 +256,7 @@ function applyTask(member: WorkloadMember, task: ProjectPlanTask, today: string)
     status: task.status,
     priority: task.priority,
     dueDate,
+    estimatedHours,
     href: "/plan",
   });
 }
@@ -214,6 +265,7 @@ function applyMilestone(member: WorkloadMember, milestone: ProjectMilestone, tod
   const dueDate = dateOnly(milestone.dueDate);
   member.milestoneCount += 1;
   member.openMilestones += 1;
+  member.milestoneEstimatedHours += 1;
   if (isOverdue(dueDate, today) || milestone.status === "missed") member.overdueMilestones += 1;
   addItem(member, {
     id: milestone.id,
@@ -222,6 +274,7 @@ function applyMilestone(member: WorkloadMember, milestone: ProjectMilestone, tod
     status: milestone.status,
     priority: null,
     dueDate,
+    estimatedHours: 1,
     href: "/plan",
   });
 }
@@ -230,6 +283,7 @@ function applyReminder(member: WorkloadMember, reminder: ProjectPlanReminder, to
   const dueDate = dateOnly(reminder.snoozedUntil ?? reminder.remindAt);
   member.reminderCount += 1;
   member.openReminders += 1;
+  member.reminderEstimatedHours += 0.25;
   if (isOverdue(dueDate, today)) member.overdueReminders += 1;
   addItem(member, {
     id: reminder.id,
@@ -238,6 +292,7 @@ function applyReminder(member: WorkloadMember, reminder: ProjectPlanReminder, to
     status: reminder.status,
     priority: reminder.priority,
     dueDate,
+    estimatedHours: 0.25,
     href: "/plan",
   });
 }
@@ -245,7 +300,7 @@ function applyReminder(member: WorkloadMember, reminder: ProjectPlanReminder, to
 function buildSuggestions(members: WorkloadMember[]) {
   return members
     .filter((member) => member.level === "low" || member.level === "normal")
-    .sort((a, b) => a.capacityScore - b.capacityScore || a.name.localeCompare(b.name))
+    .sort((a, b) => b.availableHours - a.availableHours || a.allocationPercent - b.allocationPercent || a.name.localeCompare(b.name))
     .slice(0, 6)
     .map((member) => ({
       memberId: member.id,
@@ -253,9 +308,11 @@ function buildSuggestions(members: WorkloadMember[]) {
       departmentName: member.departmentName,
       level: member.level,
       capacityScore: member.capacityScore,
+      allocationPercent: member.allocationPercent,
+      availableHours: member.availableHours,
       reason: member.level === "low"
-        ? "Capacity thấp và không có tín hiệu quá tải, phù hợp nhận việc mới."
-        : "Tải việc đang ổn định, có thể nhận thêm việc ngắn hạn nếu cùng chuyên môn.",
+        ? `Còn ${member.availableHours.toLocaleString("vi-VN")}h capacity trong tuần, phù hợp nhận việc mới.`
+        : `Còn ${member.availableHours.toLocaleString("vi-VN")}h capacity, có thể nhận thêm việc ngắn hạn nếu cùng chuyên môn.`,
     }));
 }
 
@@ -267,7 +324,7 @@ function buildRisks(members: WorkloadMember[], unassignedIssues: number): Worklo
     .map((member) => ({
       id: `member-${member.id}`,
       title: member.level === "overloaded" ? "Nhân sự quá tải" : "Tải việc cần chú ý",
-      summary: `${member.name} đang ${member.capacityScore}% capacity, ${member.overdueIssues + member.overdueTasks + member.overdueMilestones + member.overdueReminders} việc quá hạn và ${member.blockedTasks} task blocked.`,
+      summary: `${member.name} đang dùng ${member.plannedHours.toLocaleString("vi-VN")}h/${member.effectiveCapacityHours.toLocaleString("vi-VN")}h (${member.allocationPercent}%), ${member.overdueIssues + member.overdueTasks + member.overdueMilestones + member.overdueReminders} việc quá hạn và ${member.blockedTasks} task blocked.`,
       severity: member.level === "overloaded" ? "critical" : "warning",
       ownerName: member.name,
       href: "/issues?overdue=1",
@@ -319,7 +376,7 @@ export async function loadWorkloadData(
     loadProjectPlan(supabase, projectId, role),
     supabase
       .from("people")
-      .select("id,full_name,title,email,project_role,department_id")
+      .select("id,full_name,title,email,project_role,department_id,capacity_hours_per_week,allocation_target_percent")
       .eq("project_id", projectId)
       .eq("person_type", "asc")
       .eq("is_active", true)
@@ -384,6 +441,9 @@ export async function loadWorkloadData(
   const overloadedMembers = memberRows.filter((member) => member.level === "overloaded").length;
   const availableMembers = memberRows.filter((member) => member.level === "low" || member.level === "normal").length;
   const totalCapacity = memberRows.reduce((sum, member) => sum + member.capacityScore, 0);
+  const totalCapacityHours = Math.round(memberRows.reduce((sum, member) => sum + member.effectiveCapacityHours, 0) * 100) / 100;
+  const totalPlannedHours = Math.round(memberRows.reduce((sum, member) => sum + member.plannedHours, 0) * 100) / 100;
+  const totalAllocation = memberRows.reduce((sum, member) => sum + member.allocationPercent, 0);
   const summary = {
     memberCount: memberRows.length,
     overloadedMembers,
@@ -393,6 +453,11 @@ export async function loadWorkloadData(
     blockedTasks: memberRows.reduce((sum, member) => sum + member.blockedTasks, 0),
     dueSoonWork: memberRows.reduce((sum, member) => sum + member.dueSoonWork, 0),
     averageCapacity: memberRows.length ? Math.round(totalCapacity / memberRows.length) : 0,
+    totalCapacityHours,
+    totalPlannedHours,
+    averageAllocation: memberRows.length ? Math.round(totalAllocation / memberRows.length) : 0,
+    availableHours: Math.round(memberRows.reduce((sum, member) => sum + member.availableHours, 0) * 100) / 100,
+    overloadHours: Math.round(memberRows.reduce((sum, member) => sum + member.overloadHours, 0) * 100) / 100,
   };
 
   return {

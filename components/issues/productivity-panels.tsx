@@ -15,6 +15,7 @@ export const ISSUE_COLUMNS: Array<{ id: IssueColumnId; label: string; min: numbe
   { id: "department", label: "Phòng ban", min: 130, max: 320 },
   { id: "assignee", label: "Phụ trách", min: 120, max: 280 },
   { id: "dueDate", label: "Due Date", min: 105, max: 170 },
+  { id: "estimatedHours", label: "Est. Hours", min: 96, max: 150 },
   { id: "jira", label: "Jira", min: 120, max: 220 },
 ];
 

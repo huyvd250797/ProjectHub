@@ -8,9 +8,9 @@ function addDays(days: number) {
 }
 
 function recommendation(level: WorkloadLevel) {
-  if (level === "overloaded") return "Cần giảm tải ngay: chuyển bớt ISSUE/task quá hạn hoặc blocked.";
+  if (level === "overloaded") return "Cần giảm tải ngay: planned hours đã vượt capacity tuần.";
   if (level === "high") return "Theo dõi sát trong tuần này, chỉ nhận thêm việc nhỏ.";
-  if (level === "normal") return "Có thể nhận thêm việc vừa phải nếu cùng chuyên môn.";
+  if (level === "normal") return "Còn capacity vừa phải, có thể nhận thêm việc cùng chuyên môn.";
   return "Còn capacity tốt, nên ưu tiên giao việc mới hoặc hỗ trợ người quá tải.";
 }
 
@@ -37,6 +37,17 @@ function member(input: Partial<WorkloadMember> & Pick<WorkloadMember, "id" | "na
     overdueReminders: 0,
     dueSoonWork: 0,
     totalOpenWork: 0,
+    capacityHoursPerWeek: 40,
+    allocationTargetPercent: 100,
+    effectiveCapacityHours: 40,
+    plannedHours: 0,
+    issueEstimatedHours: 0,
+    taskEstimatedHours: 0,
+    milestoneEstimatedHours: 0,
+    reminderEstimatedHours: 0,
+    allocationPercent: input.capacityScore,
+    availableHours: 40,
+    overloadHours: 0,
     focusScore: input.capacityScore,
     recommendation: recommendation(input.level),
     nextDueDate: addDays(2),
@@ -67,13 +78,20 @@ export function createDemoWorkload(projectId: string): WorkloadData {
       dueSoonWork: 5,
       nextDueDate: addDays(-1),
       items: [
-        { id: "demo-issue-1", type: "issue", title: "ISSUE cần xử lý trước nghiệm thu", status: "pending", priority: "A", dueDate: addDays(-1), href: "/issues?overdue=1" },
-        { id: "demo-task-1", type: "task", title: "Task blocked cần PM tháo gỡ", status: "blocked", priority: "critical", dueDate: addDays(1), href: "/plan" },
+        { id: "demo-issue-1", type: "issue", title: "ISSUE cần xử lý trước nghiệm thu", status: "pending", priority: "A", dueDate: addDays(-1), estimatedHours: 12, href: "/issues?overdue=1" },
+        { id: "demo-task-1", type: "task", title: "Task blocked cần PM tháo gỡ", status: "blocked", priority: "critical", dueDate: addDays(1), estimatedHours: 10, href: "/plan" },
       ],
       issueItems: [
-        { id: "demo-issue-1", issueNo: 121, content: "Đưa văn bản nội bộ lên mobile", statusCode: "pending", priorityCode: "A", moduleName: "Mobile", departmentName: "Project Team", dueDate: addDays(-1), jiraUrl: "https://task.ascvn.com.vn/browse/DEMO-121" },
-        { id: "demo-issue-2", issueNo: 127, content: "Xử lý phân quyền theo vai trò", statusCode: "pending", priorityCode: "B", moduleName: "Phân quyền", departmentName: "Project Team", dueDate: addDays(2), jiraUrl: "https://task.ascvn.com.vn/browse/DEMO-127" },
+        { id: "demo-issue-1", issueNo: 121, content: "Đưa văn bản nội bộ lên mobile", statusCode: "pending", priorityCode: "A", moduleName: "Mobile", departmentName: "Project Team", dueDate: addDays(-1), jiraUrl: "https://task.ascvn.com.vn/browse/DEMO-121", estimatedHours: 12 },
+        { id: "demo-issue-2", issueNo: 127, content: "Xử lý phân quyền theo vai trò", statusCode: "pending", priorityCode: "B", moduleName: "Phân quyền", departmentName: "Project Team", dueDate: addDays(2), jiraUrl: "https://task.ascvn.com.vn/browse/DEMO-127", estimatedHours: 8 },
       ],
+      plannedHours: 46,
+      issueEstimatedHours: 30,
+      taskEstimatedHours: 15,
+      milestoneEstimatedHours: 1,
+      allocationPercent: 115,
+      availableHours: 0,
+      overloadHours: 6,
     }),
     member({
       id: "demo-2",
@@ -90,6 +108,11 @@ export function createDemoWorkload(projectId: string): WorkloadData {
       totalOpenWork: 4,
       dueSoonWork: 2,
       nextDueDate: addDays(4),
+      plannedHours: 22,
+      issueEstimatedHours: 10,
+      taskEstimatedHours: 12,
+      allocationPercent: 55,
+      availableHours: 18,
     }),
     member({
       id: "demo-3",
@@ -101,6 +124,10 @@ export function createDemoWorkload(projectId: string): WorkloadData {
       openIssues: 1,
       totalOpenWork: 1,
       nextDueDate: addDays(9),
+      plannedHours: 6,
+      issueEstimatedHours: 6,
+      allocationPercent: 15,
+      availableHours: 34,
     }),
   ];
 
@@ -118,11 +145,16 @@ export function createDemoWorkload(projectId: string): WorkloadData {
       blockedTasks: 1,
       dueSoonWork: 7,
       averageCapacity: 53,
+      totalCapacityHours: 120,
+      totalPlannedHours: 74,
+      averageAllocation: 62,
+      availableHours: 52,
+      overloadHours: 6,
     },
     members,
     suggestions: [
-      { memberId: "demo-3", name: "Trần Quốc Bảo", departmentName: "Project Team", level: "low", capacityScore: 18, reason: "Capacity thấp, chưa có việc quá hạn và có thể nhận thêm đầu việc mới." },
-      { memberId: "demo-2", name: "Nguyễn Minh Anh", departmentName: "Project Team", level: "normal", capacityScore: 48, reason: "Tải việc ổn định, phù hợp nhận task hỗ trợ ngắn hạn." },
+      { memberId: "demo-3", name: "Trần Quốc Bảo", departmentName: "Project Team", level: "low", capacityScore: 18, allocationPercent: 15, availableHours: 34, reason: "Còn 34h capacity trong tuần, phù hợp nhận việc mới." },
+      { memberId: "demo-2", name: "Nguyễn Minh Anh", departmentName: "Project Team", level: "normal", capacityScore: 48, allocationPercent: 55, availableHours: 18, reason: "Còn 18h capacity, phù hợp nhận task hỗ trợ ngắn hạn." },
     ],
     risks: [
       { id: "demo-risk-1", title: "Nhân sự quá tải", summary: "Võ Đức Huy đang vượt ngưỡng 85% capacity với ISSUE quá hạn và task blocked.", severity: "critical", ownerName: "Võ Đức Huy", href: "/issues?overdue=1" },

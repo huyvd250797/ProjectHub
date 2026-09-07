@@ -270,6 +270,7 @@ export async function POST(request: NextRequest) {
       jira_url: input.jiraUrl,
       release_date: input.releaseDate,
       due_date: input.dueDate,
+      estimated_hours: input.estimatedHours,
       module_id: input.moduleId,
       module_name_raw: relationNames.moduleName,
       department_id: input.departmentId,
