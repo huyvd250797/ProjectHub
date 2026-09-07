@@ -1,23 +1,23 @@
 # Changelog
 
-## V2.4.0 — Workload & Capacity Planning
+## V2.4.1 — Workload Issue Drilldown
 
 ### Added
 
-- Module `/workload` mới cho Workload & Capacity Planning.
-- API `/api/workload` tổng hợp tải việc từ `people`, `issues`, `project_plan_tasks`, `project_milestones` và `project_plan_reminders`.
-- Capacity Score, Focus Risk, Overload Detection và phân loại tải việc theo từng nhân sự.
-- Assignment Suggestions gợi ý người còn capacity để nhận thêm việc.
-- Capacity Risks và Capacity Calendar 4 tuần tới.
+- Modal chi tiết ISSUE theo nhân sự ngay tại màn `/workload`.
+- `issueItems` trong payload Workload để modal hiển thị đầy đủ ISSUE đang phụ trách.
+- Tìm kiếm trong modal theo nội dung, module, phòng ban, trạng thái, priority và Jira.
+- Jira code trong modal có thể bấm mở link Jira.
 
 ### Changed
 
-- Sidebar bổ sung module Workload và vẫn tương thích cấu hình đổi tên/kéo thứ tự navbar.
-- Command Center bổ sung quick link sang Workload để điều phối nhân sự từ màn điều hành tổng.
+- Bảng Workload không render danh sách ISSUE inline trong từng dòng nhân sự.
+- Tên nhân sự trong bảng Workload là nút mở modal full-screen, đóng modal vẫn ở lại Workload.
+- `member.items` không bị slice còn 6 dòng để Capacity Calendar không mất dữ liệu deadline.
 
 ### Database
 
-- Không có migration mới; dùng lại schema People, ISSUE, Plan Task, Milestone và Reminder hiện có.
+- Không có migration mới.
 
 ## V2.2.0 — PLHĐ Function Tree & Project Delete
 

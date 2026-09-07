@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "2.4.0" ? pass("Package version", "2.4.0") : fail("Package version", `Expected 2.4.0, got ${pkg.version}`);
+pkg.version === "2.4.1" ? pass("Package version", "2.4.1") : fail("Package version", `Expected 2.4.1, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -194,8 +194,8 @@ for (const rel of [
   "docs/V2.2.0-VALIDATION.md",
   "docs/V2.2.1-SCOPE.md",
   "docs/V2.2.1-VALIDATION.md",
-  "docs/V2.4.0-SCOPE.md",
-  "docs/V2.4.0-VALIDATION.md",
+  "docs/V2.4.1-SCOPE.md",
+  "docs/V2.4.1-VALIDATION.md",
   "components/ui/global-grid-enhancer.tsx",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
@@ -639,48 +639,57 @@ for (const token of ["jiraCodeFromUrl", "\\/browse\\/", "target=\"_blank\"", "de
 
 const globalGridEnhancerV222 = fs.readFileSync(path.join(root, "components/ui/global-grid-enhancer.tsx"), "utf8");
 for (const token of ["GlobalGridEnhancer", "MutationObserver", "moveColumn", "setColumnWidth", "localStorage", "asc-data-grid"]) {
-  globalGridEnhancerV222.includes(token) ? pass(`V2.4.0 Global grid enhancer: ${token}`) : fail(`V2.4.0 Global grid enhancer: ${token}`);
+  globalGridEnhancerV222.includes(token) ? pass(`V2.4.1 Global grid enhancer: ${token}`) : fail(`V2.4.1 Global grid enhancer: ${token}`);
 }
 
 const globalCssV222 = fs.readFileSync(path.join(root, "app/globals.css"), "utf8");
-for (const token of ["ASC WORKING V2.4.0", ".asc-data-grid", "overflow-wrap: anywhere", "[class*=\"line-clamp\"]"]) {
-  globalCssV222.includes(token) ? pass(`V2.4.0 Grid CSS: ${token}`) : fail(`V2.4.0 Grid CSS: ${token}`);
+for (const token of ["ASC WORKING V2.4.1", ".asc-data-grid", "overflow-wrap: anywhere", "[class*=\"line-clamp\"]"]) {
+  globalCssV222.includes(token) ? pass(`V2.4.1 Grid CSS: ${token}`) : fail(`V2.4.1 Grid CSS: ${token}`);
 }
 
 for (const token of ["resizeColumn", "data-managed-grid=\"true\"", "whitespace-normal break-words", "cursor-col-resize"]) {
-  issueWorkspace.includes(token) ? pass(`V2.4.0 ISSUE column resize/wrap: ${token}`) : fail(`V2.4.0 ISSUE column resize/wrap: ${token}`);
+  issueWorkspace.includes(token) ? pass(`V2.4.1 ISSUE column resize/wrap: ${token}`) : fail(`V2.4.1 ISSUE column resize/wrap: ${token}`);
 }
 
 const navigationV240 = fs.readFileSync(path.join(root, "lib/navigation.ts"), "utf8");
 for (const token of ["Workload", "/workload", "UsersRound"]) {
-  navigationV240.includes(token) ? pass(`V2.4.0 Workload navigation: ${token}`) : fail(`V2.4.0 Workload navigation: ${token}`);
+  navigationV240.includes(token) ? pass(`V2.4.1 Workload navigation: ${token}`) : fail(`V2.4.1 Workload navigation: ${token}`);
 }
 
 const preferencesV240 = fs.readFileSync(path.join(root, "lib/workspace-preferences.ts"), "utf8");
-preferencesV240.includes("\"/workload\"") ? pass("V2.4.0 Workload navbar preference") : fail("V2.4.0 Workload navbar preference");
+preferencesV240.includes("\"/workload\"") ? pass("V2.4.1 Workload navbar preference") : fail("V2.4.1 Workload navbar preference");
 
 const workloadTypesV240 = fs.readFileSync(path.join(root, "lib/workload/types.ts"), "utf8");
 for (const token of ["WorkloadMember", "capacityScore", "WorkloadAssignmentSuggestion", "WorkloadCalendarBucket"]) {
-  workloadTypesV240.includes(token) ? pass(`V2.4.0 Workload types: ${token}`) : fail(`V2.4.0 Workload types: ${token}`);
+  workloadTypesV240.includes(token) ? pass(`V2.4.1 Workload types: ${token}`) : fail(`V2.4.1 Workload types: ${token}`);
+}
+for (const token of ["WorkloadIssueItem", "issueItems", "jiraUrl"]) {
+  workloadTypesV240.includes(token) ? pass(`V2.4.1 Workload issue drilldown types: ${token}`) : fail(`V2.4.1 Workload issue drilldown types: ${token}`);
 }
 
 const workloadServerV240 = fs.readFileSync(path.join(root, "lib/workload/server.ts"), "utf8");
 for (const token of ["loadWorkloadData", "project_plan_tasks", "project_plan_reminders", "assignee_person_id", "overloaded", "buildCalendarBuckets"]) {
-  workloadServerV240.includes(token) ? pass(`V2.4.0 Workload server: ${token}`) : fail(`V2.4.0 Workload server: ${token}`);
+  workloadServerV240.includes(token) ? pass(`V2.4.1 Workload server: ${token}`) : fail(`V2.4.1 Workload server: ${token}`);
+}
+for (const token of ["issueItems.push", "moduleName", "departmentName", "jiraUrl"]) {
+  workloadServerV240.includes(token) ? pass(`V2.4.1 Workload issue drilldown server: ${token}`) : fail(`V2.4.1 Workload issue drilldown server: ${token}`);
 }
 
 const workloadApiV240 = fs.readFileSync(path.join(root, "app/api/workload/route.ts"), "utf8");
 for (const token of ["createDemoWorkload", "loadWorkloadData", "getEffectiveProjectRole", "WORKLOAD_QUERY_FAILED"]) {
-  workloadApiV240.includes(token) ? pass(`V2.4.0 Workload API: ${token}`) : fail(`V2.4.0 Workload API: ${token}`);
+  workloadApiV240.includes(token) ? pass(`V2.4.1 Workload API: ${token}`) : fail(`V2.4.1 Workload API: ${token}`);
 }
 
 const workloadUiV240 = fs.readFileSync(path.join(root, "components/workload/workload-dashboard.tsx"), "utf8");
 for (const token of ["Workload & Capacity Planning", "Capacity Score", "Assignment Suggestions", "Capacity Risks", "Capacity Calendar", "/api/workload"]) {
-  workloadUiV240.includes(token) ? pass(`V2.4.0 Workload UI: ${token}`) : fail(`V2.4.0 Workload UI: ${token}`);
+  workloadUiV240.includes(token) ? pass(`V2.4.1 Workload UI: ${token}`) : fail(`V2.4.1 Workload UI: ${token}`);
+}
+for (const token of ["MemberIssueModal", "ISSUE Full Screen", "setSelectedMemberId", "Bấm tên để xem", "jiraCodeFromUrl", "Escape"]) {
+  workloadUiV240.includes(token) ? pass(`V2.4.1 Workload issue modal UI: ${token}`) : fail(`V2.4.1 Workload issue modal UI: ${token}`);
 }
 
 const commandCenterRouteV240 = fs.readFileSync(path.join(root, "app/api/command-center/route.ts"), "utf8");
-commandCenterRouteV240.includes("/workload") ? pass("V2.4.0 Command Center workload link") : fail("V2.4.0 Command Center workload link");
+commandCenterRouteV240.includes("/workload") ? pass("V2.4.1 Command Center workload link") : fail("V2.4.1 Command Center workload link");
 
 const projectDeleteApiV220 = fs.readFileSync(path.join(root, "app/api/master/projects/[projectId]/route.ts"), "utf8");
 for (const token of ["export async function DELETE", "createServiceClient", "project hard delete", "SERVICE_ROLE_REQUIRED"]) {
@@ -697,7 +706,7 @@ for (const token of ["node_type = 'function'", "contract_detail_project_function
   migrationV220.includes(token) ? pass(`V2.2.0 Migration: ${token}`) : fail(`V2.2.0 Migration: ${token}`);
 }
 
-console.log("\nASC WORKING V2.4.0 - Workload & Capacity Planning Preflight\n");
+console.log("\nASC WORKING V2.4.1 - Workload Issue Drilldown Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

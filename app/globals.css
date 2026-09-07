@@ -356,7 +356,7 @@ html:not([data-theme="light"]) .theme-toggle:hover {
   color: #eaf9ff !important;
 }
 
-/* ASC WORKING V2.4.0 — Workload & Capacity Planning */
+/* ASC WORKING V2.4.1 — Workload Issue Drilldown */
 .asc-data-grid {
   table-layout: fixed;
   border-collapse: collapse;

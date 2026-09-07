@@ -5,10 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
-  BellRing,
   BriefcaseBusiness,
   CalendarDays,
   CheckCircle2,
+  ExternalLink,
   Gauge,
   ListTodo,
   LoaderCircle,
@@ -16,6 +16,7 @@ import {
   Search,
   UserCheck,
   UsersRound,
+  X,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { useProject } from "@/components/project-context";
@@ -36,19 +37,23 @@ const levelLabel: Record<WorkloadLevel, string> = {
   overloaded: "Quá tải",
 };
 
-const itemIcon = {
-  issue: ListTodo,
-  task: CheckCircle2,
-  milestone: CalendarDays,
-  reminder: BellRing,
-} as const;
-
 function formatDate(value: string | null) {
   if (!value) return "—";
   const normalized = value.includes("T") ? value : `${value}T00:00:00.000Z`;
   const date = new Date(normalized);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" }).format(date);
+}
+
+function jiraCodeFromUrl(value: string | null) {
+  if (!value) return null;
+  const match = value.match(/\/browse\/([^/?#]+)/i);
+  if (!match?.[1]) return "Jira";
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
 }
 
 function KpiCard({ label, value, note, icon: Icon, tone = "cyan" }: { label: string; value: number | string; note: string; icon: typeof Gauge; tone?: "cyan" | "emerald" | "amber" | "rose" }) {
@@ -104,6 +109,111 @@ function WorkloadSkeleton() {
   );
 }
 
+function MemberIssueModal({ member, onClose }: { member: WorkloadMember; onClose: () => void }) {
+  const [query, setQuery] = useState("");
+  const filteredIssues = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    if (!keyword) return member.issueItems;
+    return member.issueItems.filter((issue) =>
+      [
+        issue.issueNo ? `#${issue.issueNo}` : "",
+        issue.content,
+        issue.statusCode,
+        issue.priorityCode,
+        issue.moduleName,
+        issue.departmentName,
+        issue.jiraUrl,
+      ].some((value) => String(value ?? "").toLowerCase().includes(keyword)),
+    );
+  }, [member.issueItems, query]);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[120] flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-[#07111f] p-3 md:p-4">
+      <div className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border border-cyan-300/12 bg-[#0b1727] px-4 py-3 shadow-xl">
+        <div className="grid size-9 place-items-center rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] text-cyan-200">
+          <ListTodo className="size-4" />
+        </div>
+        <div className="min-w-0">
+          <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-cyan-300/60">ISSUE Full Screen</div>
+          <div className="mt-1 truncate text-xs font-medium text-slate-200">{member.name} • {member.openIssues.toLocaleString("vi-VN")} ISSUE đang phụ trách</div>
+        </div>
+        <div className="ml-auto hidden items-center gap-4 text-[10px] text-slate-500 md:flex">
+          <span>Quá hạn <b className="text-rose-200">{member.overdueIssues.toLocaleString("vi-VN")}</b></span>
+          <span>Sắp hạn <b className="text-amber-200">{member.dueSoonIssues.toLocaleString("vi-VN")}</b></span>
+          <span>Capacity <b className="text-cyan-200">{member.capacityScore}%</b></span>
+        </div>
+        <button type="button" onClick={onClose} className="ml-2 flex h-9 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-[10px] text-slate-300 hover:border-cyan-300/20 hover:text-white" title="Đóng modal (Esc)">
+          <X className="size-3.5" /> Đóng
+        </button>
+      </div>
+
+      <div className="tech-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
+        <div className="flex shrink-0 flex-col gap-3 border-b border-white/[0.07] p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Assignee Issue Detail</div>
+            <h2 className="mt-1.5 text-sm font-semibold text-white">Danh sách ISSUE của {member.name}</h2>
+          </div>
+          <label className="flex h-11 w-full items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-sm text-slate-600 lg:w-[420px]">
+            <Search className="size-4" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm nội dung, module, phòng ban, Jira..." className="min-w-0 flex-1 bg-transparent text-sm text-slate-200 outline-none placeholder:text-slate-700" />
+          </label>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-auto">
+          <table className="asc-data-grid min-w-[1180px] w-full text-left text-sm">
+            <thead className="sticky top-0 z-10 border-b border-white/[0.07] bg-[#122238] text-[10px] uppercase tracking-[0.16em] text-slate-600">
+              <tr>
+                <th className="px-4 py-3">Mã</th>
+                <th className="px-4 py-3">Nội dung yêu cầu</th>
+                <th className="px-4 py-3">Module</th>
+                <th className="px-4 py-3">Phòng ban</th>
+                <th className="px-4 py-3">Ưu tiên</th>
+                <th className="px-4 py-3">Due Date</th>
+                <th className="px-4 py-3">Trạng thái</th>
+                <th className="px-4 py-3">Jira</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.055]">
+              {filteredIssues.map((issue) => (
+                <tr key={issue.id} className="align-top hover:bg-white/[0.018]">
+                  <td className="px-4 py-4 text-xs font-semibold text-cyan-300">{issue.issueNo ? `#${issue.issueNo}` : "—"}</td>
+                  <td className="max-w-[520px] whitespace-normal break-words px-4 py-4 text-sm font-semibold leading-6 text-slate-100">{issue.content}</td>
+                  <td className="max-w-[260px] whitespace-normal break-words px-4 py-4 text-xs text-slate-400">{issue.moduleName ?? "—"}</td>
+                  <td className="max-w-[240px] whitespace-normal break-words px-4 py-4 text-xs text-slate-400">{issue.departmentName ?? "—"}</td>
+                  <td className="px-4 py-4"><span className="rounded-lg border border-white/[0.07] bg-white/[0.025] px-2 py-1 text-[10px] font-semibold text-slate-300">{issue.priorityCode ?? "—"}</span></td>
+                  <td className="px-4 py-4 text-xs text-slate-300">{formatDate(issue.dueDate)}</td>
+                  <td className="px-4 py-4"><span className="rounded-lg border border-white/[0.07] bg-white/[0.025] px-2 py-1 text-[10px] font-semibold text-slate-300">{issue.statusCode ?? "—"}</span></td>
+                  <td className="px-4 py-4">
+                    {issue.jiraUrl ? (
+                      <a href={issue.jiraUrl} target="_blank" rel="noreferrer" title={issue.jiraUrl} className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-cyan-300/12 px-2 py-1 text-[10px] font-medium text-cyan-300/75 hover:border-cyan-300/25 hover:text-cyan-200">
+                        <ExternalLink className="size-3 shrink-0" />
+                        <span className="whitespace-normal break-all">{jiraCodeFromUrl(issue.jiraUrl)}</span>
+                      </a>
+                    ) : <span className="text-slate-800">—</span>}
+                  </td>
+                </tr>
+              ))}
+              {!filteredIssues.length ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-12 text-center text-xs text-slate-600">Không có ISSUE phù hợp bộ lọc hiện tại.</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function WorkloadDashboard() {
   const { selectedProject } = useProject();
   const [data, setData] = useState<WorkloadData | null>(null);
@@ -112,6 +222,7 @@ export function WorkloadDashboard() {
   const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState("");
   const [level, setLevel] = useState<"all" | WorkloadLevel>("all");
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -149,6 +260,8 @@ export function WorkloadDashboard() {
       return matchesLevel && matchesText;
     });
   }, [data?.members, level, query]);
+
+  const selectedMember = useMemo(() => data?.members.find((member) => member.id === selectedMemberId) ?? null, [data?.members, selectedMemberId]);
 
   return (
     <>
@@ -222,19 +335,11 @@ export function WorkloadDashboard() {
                     {visibleMembers.map((member) => (
                       <tr key={member.id} className="align-top hover:bg-white/[0.018]">
                         <td className="px-4 py-4">
-                          <div className="font-semibold text-slate-100">{member.name}</div>
+                          <button type="button" onClick={() => setSelectedMemberId(member.id)} className="text-left font-semibold text-cyan-100 underline-offset-4 hover:text-cyan-200 hover:underline" title="Xem danh sách ISSUE đang phụ trách">
+                            {member.name}
+                          </button>
                           <div className="mt-1 text-[11px] leading-5 text-slate-600">{member.title ?? member.role ?? "ASC Team"}{member.departmentName ? ` • ${member.departmentName}` : ""}</div>
-                          <div className="mt-3 space-y-1.5">
-                            {member.items.map((item) => {
-                              const Icon = itemIcon[item.type];
-                              return (
-                                <Link key={`${item.type}-${item.id}`} href={item.href} className="flex items-start gap-2 rounded-lg border border-white/[0.045] bg-white/[0.015] px-2.5 py-2 text-[11px] leading-4 text-slate-500 hover:border-cyan-300/15 hover:text-cyan-100">
-                                  <Icon className="mt-0.5 size-3.5 shrink-0" />
-                                  <span className="min-w-0 whitespace-normal break-words">{item.title}</span>
-                                </Link>
-                              );
-                            })}
-                          </div>
+                          <div className="mt-2 text-[10px] text-slate-700">Bấm tên để xem {member.openIssues.toLocaleString("vi-VN")} ISSUE</div>
                         </td>
                         <td className="px-4 py-4"><CapacityBar member={member} /></td>
                         <td className="px-4 py-4 text-slate-300">{member.openIssues}<div className="mt-1 text-[10px] text-slate-700">{member.overdueIssues} quá hạn • {member.dueSoonIssues} sắp hạn</div></td>
@@ -334,6 +439,7 @@ export function WorkloadDashboard() {
           Đang chuẩn bị dữ liệu Workload.
         </div>
       )}
+      {selectedMember ? <MemberIssueModal member={selectedMember} onClose={() => setSelectedMemberId(null)} /> : null}
     </>
   );
 }

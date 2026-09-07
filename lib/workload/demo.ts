@@ -41,6 +41,7 @@ function member(input: Partial<WorkloadMember> & Pick<WorkloadMember, "id" | "na
     recommendation: recommendation(input.level),
     nextDueDate: addDays(2),
     items: [],
+    issueItems: [],
     ...input,
   };
 }
@@ -68,6 +69,10 @@ export function createDemoWorkload(projectId: string): WorkloadData {
       items: [
         { id: "demo-issue-1", type: "issue", title: "ISSUE cần xử lý trước nghiệm thu", status: "pending", priority: "A", dueDate: addDays(-1), href: "/issues?overdue=1" },
         { id: "demo-task-1", type: "task", title: "Task blocked cần PM tháo gỡ", status: "blocked", priority: "critical", dueDate: addDays(1), href: "/plan" },
+      ],
+      issueItems: [
+        { id: "demo-issue-1", issueNo: 121, content: "Đưa văn bản nội bộ lên mobile", statusCode: "pending", priorityCode: "A", moduleName: "Mobile", departmentName: "Project Team", dueDate: addDays(-1), jiraUrl: "https://task.ascvn.com.vn/browse/DEMO-121" },
+        { id: "demo-issue-2", issueNo: 127, content: "Xử lý phân quyền theo vai trò", statusCode: "pending", priorityCode: "B", moduleName: "Phân quyền", departmentName: "Project Team", dueDate: addDays(2), jiraUrl: "https://task.ascvn.com.vn/browse/DEMO-127" },
       ],
     }),
     member({

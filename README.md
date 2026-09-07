@@ -1,17 +1,16 @@
-# ASC WORKING — V2.4.0
+# ASC WORKING — V2.4.1
 
-## V2.4.0 có gì mới?
+## V2.4.1 có gì mới?
 
-Workload & Capacity Planning
+Workload Issue Drilldown
 
-- Module **Workload** mới tại `/workload` để quản lý tải việc nhân sự theo project đang chọn.
-- Tính **Capacity Score** cho từng nhân sự từ ISSUE đang mở, task kế hoạch, milestone và reminder.
-- Phát hiện nhân sự **quá tải**, tải cao, ổn định hoặc còn trống.
-- Có **Assignment Suggestions** để gợi ý ai có thể nhận thêm việc.
-- Có **Capacity Risks** cho người quá tải, việc quá hạn, task blocked và ISSUE chưa phân công.
-- Có lịch **Capacity Calendar** 4 tuần tới để thấy mật độ deadline.
-- Command Center bổ sung quick link sang Workload.
-- Không cần migration mới; dùng lại schema People, ISSUE, Plan Task, Milestone và Reminder hiện có.
+- Tại Workload, bỏ danh sách ISSUE inline trong từng dòng nhân sự để bảng không bị kéo dài khi một người có nhiều ISSUE.
+- Tên nhân sự trở thành nút mở modal chi tiết.
+- Modal hiển thị danh sách ISSUE nhân sự đang phụ trách theo phong cách **ISSUE Full Screen**.
+- Modal có tìm kiếm nhanh theo nội dung, module, phòng ban, trạng thái, priority và Jira.
+- Jira trong modal hiển thị mã như `INTRACOM01-540` và bấm được vào link đã setup.
+- Đóng modal bằng nút **Đóng** hoặc phím Esc, người dùng vẫn ở lại màn Workload.
+- Không cần migration mới; dùng lại payload `/api/workload` và bổ sung `issueItems` theo từng nhân sự.
 
 ## V2.2.0 có gì mới?
 

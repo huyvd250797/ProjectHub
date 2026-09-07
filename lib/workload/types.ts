@@ -13,6 +13,18 @@ export type WorkloadMemberItem = {
   href: string;
 };
 
+export type WorkloadIssueItem = {
+  id: string;
+  issueNo: number | null;
+  content: string;
+  statusCode: string | null;
+  priorityCode: string | null;
+  moduleName: string | null;
+  departmentName: string | null;
+  dueDate: string | null;
+  jiraUrl: string | null;
+};
+
 export type WorkloadMember = {
   id: string;
   name: string;
@@ -43,6 +55,7 @@ export type WorkloadMember = {
   recommendation: string;
   nextDueDate: string | null;
   items: WorkloadMemberItem[];
+  issueItems: WorkloadIssueItem[];
 };
 
 export type WorkloadSummary = {

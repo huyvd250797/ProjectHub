@@ -6,6 +6,7 @@ import type { ProjectMilestone, ProjectPlanReminder, ProjectPlanTask } from "@/l
 import type {
   WorkloadCalendarBucket,
   WorkloadData,
+  WorkloadIssueItem,
   WorkloadLevel,
   WorkloadMember,
   WorkloadMemberItem,
@@ -103,6 +104,7 @@ function emptyMember(raw: Record<string, unknown>, departmentName: string | null
     recommendation: "Còn capacity tốt, nên ưu tiên giao việc mới hoặc hỗ trợ người quá tải.",
     nextDueDate: null,
     items: [],
+    issueItems: [],
   };
 }
 
@@ -157,9 +159,8 @@ function finalizeMember(member: WorkloadMember) {
   ));
   member.level = levelFor(member);
   member.recommendation = recommendationFor(member.level);
-  member.items = member.items
-    .sort((a, b) => String(a.dueDate ?? "9999-12-31").localeCompare(String(b.dueDate ?? "9999-12-31")))
-    .slice(0, 6);
+  member.items = member.items.sort((a, b) => String(a.dueDate ?? "9999-12-31").localeCompare(String(b.dueDate ?? "9999-12-31")));
+  member.issueItems = member.issueItems.sort((a, b) => String(a.dueDate ?? "9999-12-31").localeCompare(String(b.dueDate ?? "9999-12-31")) || Number(a.issueNo ?? 0) - Number(b.issueNo ?? 0));
 }
 
 function applyIssue(member: WorkloadMember, issue: IssueRow, today: string) {
@@ -168,6 +169,18 @@ function applyIssue(member: WorkloadMember, issue: IssueRow, today: string) {
   member.openIssues += 1;
   if (isOverdue(dueDate, today)) member.overdueIssues += 1;
   if (isDueSoon(dueDate, today)) member.dueSoonIssues += 1;
+  const issueItem: WorkloadIssueItem = {
+    id: issue.id,
+    issueNo: issue.issueNo,
+    content: issue.content,
+    statusCode: issue.statusCode,
+    priorityCode: issue.priorityCode,
+    moduleName: issue.moduleName,
+    departmentName: issue.departmentName,
+    dueDate,
+    jiraUrl: issue.jiraUrl,
+  };
+  member.issueItems.push(issueItem);
   addItem(member, {
     id: issue.id,
     type: "issue",
