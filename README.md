@@ -1,16 +1,4 @@
-# ASC WORKING - V3.0.0
-
-## V3.0.0 có gì mới?
-
-Enterprise Project Suite
-
-- Thêm module **Enterprise Suite** tại `/enterprise` để chuẩn hóa lớp quản trị dự án chuyên nghiệp.
-- Tổng hợp dữ liệu Project, ISSUE, PLHĐ, Plan, Workload, Allocation và Report thành một màn PMO.
-- Có **PMO Maturity Score** để đánh giá mức độ sẵn sàng quản trị dự án.
-- Có **Enterprise Readiness Gates** cho Data Quality, Delivery Control, Resource Control, Executive Reporting và Scope Governance.
-- Có **PMO Operating Model** để xác định owner, cadence và metric vận hành.
-- Có **Priority Board** cho các việc quản lý cần xử lý trước.
-- Không có migration mới cho V3.0.0; dùng lại schema đã có đến V2.6.1.
+# ASC WORKING — V2.6.1
 
 ## V2.6.1 có gì mới?
 

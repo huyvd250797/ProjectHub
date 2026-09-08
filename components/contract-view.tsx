@@ -666,7 +666,7 @@ export function ContractView() {
 
         <div className="flex flex-col gap-2 border-t border-white/[0.05] px-4 py-3 text-[9px] text-slate-700 md:flex-row md:items-center md:justify-between">
           <span>{data.source === "database" ? "Supabase • project_id scoped" : "Demo Mode"} • Generated {new Date(data.generatedAt).toLocaleTimeString("vi-VN")}</span>
-          <span>V3.0.0 • Enterprise Project Suite</span>
+          <span>V2.6.1 • Allocation Board UX & ISSUE Columns</span>
         </div>
       </div>
 

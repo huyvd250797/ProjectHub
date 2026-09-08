@@ -1,5 +1,4 @@
 export const DEFAULT_NAV_ORDER = [
-  "/enterprise",
   "/command-center",
   "/dashboard",
   "/portfolio",

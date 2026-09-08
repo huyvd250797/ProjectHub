@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "3.0.0" ? pass("Package version", "3.0.0") : fail("Package version", `Expected 3.0.0, got ${pkg.version}`);
+pkg.version === "2.6.1" ? pass("Package version", "2.6.1") : fail("Package version", `Expected 2.6.1, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -212,14 +212,6 @@ for (const rel of [
   "docs/V2.6.1-VALIDATION.md",
   "components/ui/date-input.tsx",
   "components/ui/global-grid-enhancer.tsx",
-  "app/(workspace)/enterprise/page.tsx",
-  "app/api/enterprise/route.ts",
-  "components/enterprise/enterprise-suite.tsx",
-  "lib/enterprise/types.ts",
-  "lib/enterprise/server.ts",
-  "lib/enterprise/demo.ts",
-  "docs/V3.0.0-SCOPE.md",
-  "docs/V3.0.0-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -817,45 +809,7 @@ for (const token of ["node_type = 'function'", "contract_detail_project_function
   migrationV220.includes(token) ? pass(`V2.2.0 Migration: ${token}`) : fail(`V2.2.0 Migration: ${token}`);
 }
 
-const navigationV300 = fs.readFileSync(path.join(root, "lib/navigation.ts"), "utf8");
-for (const token of ["Enterprise Suite", "/enterprise", "ShieldCheck"]) {
-  navigationV300.includes(token) ? pass(`V3.0.0 Enterprise navigation: ${token}`) : fail(`V3.0.0 Enterprise navigation: ${token}`);
-}
-
-const preferencesV300 = fs.readFileSync(path.join(root, "lib/workspace-preferences.ts"), "utf8");
-preferencesV300.includes("\"/enterprise\"") ? pass("V3.0.0 Enterprise navbar preference") : fail("V3.0.0 Enterprise navbar preference");
-
-const enterpriseTypesV300 = fs.readFileSync(path.join(root, "lib/enterprise/types.ts"), "utf8");
-for (const token of ["EnterpriseSuiteData", "EnterpriseGate", "EnterpriseOperatingPillar", "EnterprisePriorityAction", "maturityScore"]) {
-  enterpriseTypesV300.includes(token) ? pass(`V3.0.0 Enterprise types: ${token}`) : fail(`V3.0.0 Enterprise types: ${token}`);
-}
-
-const enterpriseServerV300 = fs.readFileSync(path.join(root, "lib/enterprise/server.ts"), "utf8");
-for (const token of ["loadEnterpriseSuiteData", "loadProjectPlan", "loadWorkloadData", "contract_detail_items", "report_snapshots", "maturityScore"]) {
-  enterpriseServerV300.includes(token) ? pass(`V3.0.0 Enterprise server: ${token}`) : fail(`V3.0.0 Enterprise server: ${token}`);
-}
-
-const enterpriseApiV300 = fs.readFileSync(path.join(root, "app/api/enterprise/route.ts"), "utf8");
-for (const token of ["createDemoEnterpriseSuite", "loadEnterpriseSuiteData", "getEffectiveProjectRole", "Enterprise Project Suite", "ENTERPRISE_SUITE_QUERY_FAILED"]) {
-  enterpriseApiV300.includes(token) ? pass(`V3.0.0 Enterprise API: ${token}`) : fail(`V3.0.0 Enterprise API: ${token}`);
-}
-
-const enterpriseUiV300 = fs.readFileSync(path.join(root, "components/enterprise/enterprise-suite.tsx"), "utf8");
-for (const token of ["Enterprise Project Suite", "PMO Score", "Enterprise Readiness Gates", "Priority Board", "PMO Operating Model", "/api/enterprise"]) {
-  enterpriseUiV300.includes(token) ? pass(`V3.0.0 Enterprise UI: ${token}`) : fail(`V3.0.0 Enterprise UI: ${token}`);
-}
-
-const healthV300 = fs.readFileSync(path.join(root, "app/api/health/route.ts"), "utf8");
-for (const token of ["version: \"3.0.0\"", "Enterprise Project Suite", "enterprise-project-suite", "pmo-maturity-score", "enterprise-readiness-gates"]) {
-  healthV300.includes(token) ? pass(`V3.0.0 Health metadata: ${token}`) : fail(`V3.0.0 Health metadata: ${token}`);
-}
-
-const readinessV300 = fs.readFileSync(path.join(root, "app/api/readiness/route.ts"), "utf8");
-for (const token of ["version: \"3.0.0\"", "enterprise_project_suite", "Enterprise Project Suite", "PMO maturity score", "readiness gates"]) {
-  readinessV300.includes(token) ? pass(`V3.0.0 Readiness: ${token}`) : fail(`V3.0.0 Readiness: ${token}`);
-}
-
-console.log("\nASC WORKING V3.0.0 - Enterprise Project Suite Preflight\n");
+console.log("\nASC WORKING V2.6.1 - Allocation Board UX & ISSUE Columns Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);
