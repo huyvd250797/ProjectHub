@@ -54,6 +54,12 @@ function percent(value: number) {
   return `${percentFormatter.format(value)}%`;
 }
 
+const financeChartSeries = [
+  { key: "forecast", label: "Forecast", barClassName: "bg-cyan-300", labelClassName: "text-cyan-200" },
+  { key: "actual", label: "Actual", barClassName: "bg-amber-300", labelClassName: "text-amber-200" },
+  { key: "revenue", label: "Revenue", barClassName: "bg-emerald-300", labelClassName: "text-emerald-200" },
+] as const;
+
 function monthLabel(value: string) {
   if (!value) return "-";
   const [year, month] = value.slice(0, 7).split("-");
@@ -383,6 +389,14 @@ export function ProjectFinancialControl() {
               <div className="border-b border-white/[0.07] p-4">
                 <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Revenue Chart</div>
                 <h2 className="mt-1.5 text-sm font-semibold text-white">Forecast vs Actual vs Revenue</h2>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {financeChartSeries.map((series) => (
+                    <span key={series.key} className={cn("inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.025] px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.12em]", series.labelClassName)}>
+                      <span className={cn("size-2 rounded-full", series.barClassName)} />
+                      {series.label}
+                    </span>
+                  ))}
+                </div>
               </div>
               <div className="space-y-4 p-4">
                 {data.months.map((month) => (
@@ -393,10 +407,14 @@ export function ProjectFinancialControl() {
                     </div>
                     <div className="mt-3 space-y-2">
                       <div className="h-2 rounded-full bg-white/[0.04]"><div className="h-full rounded-full bg-cyan-300" style={{ width: `${Math.min(100, (month.forecastAmount / maxRevenue) * 100)}%` }} /></div>
-                      <div className="h-2 rounded-full bg-white/[0.04]"><div className="h-full rounded-full bg-sky-300" style={{ width: `${Math.min(100, (month.actualAmount / maxRevenue) * 100)}%` }} /></div>
+                      <div className="h-2 rounded-full bg-white/[0.04]"><div className="h-full rounded-full bg-amber-300" style={{ width: `${Math.min(100, (month.actualAmount / maxRevenue) * 100)}%` }} /></div>
                       <div className="h-2 rounded-full bg-white/[0.04]"><div className="h-full rounded-full bg-emerald-300" style={{ width: `${Math.min(100, (month.revenueAmount / maxRevenue) * 100)}%` }} /></div>
                     </div>
-                    <div className="mt-2 flex justify-between text-[9px] uppercase tracking-[0.12em] text-slate-700"><span>Forecast</span><span>Actual</span><span>Revenue</span></div>
+                    <div className="mt-2 grid grid-cols-3 gap-2 text-[9px] uppercase tracking-[0.12em]">
+                      {financeChartSeries.map((series) => (
+                        <span key={series.key} className={cn(series.labelClassName, series.key === "forecast" ? "text-left" : series.key === "actual" ? "text-center" : "text-right")}>{series.label}</span>
+                      ))}
+                    </div>
                   </div>
                 ))}
                 {!data.months.length ? <div className="rounded-xl border border-dashed border-white/[0.08] p-8 text-center text-xs text-slate-600">Chưa có dữ liệu biểu đồ.</div> : null}
