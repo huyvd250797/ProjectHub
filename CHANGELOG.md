@@ -1,5 +1,25 @@
 # Changelog
 
+## V3.1.0 - Project Financial Control
+
+### Added
+
+- Module **Tài chính** tại `/finance`.
+- API `/api/finance` để đọc, thêm/sửa và xóa dữ liệu tài chính theo tháng.
+- Bảng `project_financial_months` lưu forecast %, actual %, revenue, staff cost, other cost và notes.
+- Summary tài chính: contract value, forecast amount, actual amount, revenue, total cost, projected profit, margin và remaining revenue.
+- Revenue chart so sánh Forecast vs Revenue theo tháng.
+- Global modal scroll lock để khi modal mở, nền phía sau không còn bị cuộn.
+
+### Changed
+
+- Navbar bổ sung **Tài chính** sau Portfolio.
+- Health/readiness/preflight nhận diện Project Financial Control V3.1.0.
+
+### Database
+
+- Migration mới: `supabase/migrations/202609080001_v310_project_financial_control.sql`.
+
 ## V2.6.1 — Allocation Board UX & ISSUE Columns
 
 ### Added

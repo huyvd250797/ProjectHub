@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "2.6.1",
+        version: "3.1.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "2.6.1", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "3.1.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -248,6 +248,21 @@ export async function GET(request: NextRequest) {
     resourceSchedulingSchema.durationMs,
   ));
 
+  const financialSchema = await timed(async () => Promise.all([
+    supabase.from("projects").select("id,contract_value,contract_no,start_date,due_date", { count: "exact", head: true }).eq("id", projectId),
+    supabase.from("project_financial_months").select("id,month_date,forecast_percent,actual_percent,revenue_amount,staff_cost_amount,other_cost_amount", { count: "exact", head: true }).eq("project_id", projectId),
+  ]));
+  const financialSchemaError = financialSchema.error || financialSchema.value?.find((result) => result.error)?.error;
+  checks.push(check(
+    "project_financial_control",
+    "Project Financial Control",
+    financialSchemaError ? "fail" : "pass",
+    financialSchemaError
+      ? "Không đọc được project_financial_months; chạy migration V3.1.0 để quản lý forecast, actual, revenue, cost và profit."
+      : "Financial Control có đủ dữ liệu hợp đồng và bảng tháng để tính forecast, actual, revenue, cost, profit và margin.",
+    financialSchema.durationMs,
+  ));
+
   const notificationsSchema = await timed(async () => Promise.all([
     supabase.from("activity_events").select("id", { count: "exact", head: true }).eq("project_id", projectId),
     supabase.from("notifications").select("id", { count: "exact", head: true }).eq("project_id", projectId).eq("user_id", user.id),
@@ -357,7 +372,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "2.6.1",
+      version: "3.1.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

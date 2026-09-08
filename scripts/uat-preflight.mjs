@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "2.6.1" ? pass("Package version", "2.6.1") : fail("Package version", `Expected 2.6.1, got ${pkg.version}`);
+pkg.version === "3.1.0" ? pass("Package version", "3.1.0") : fail("Package version", `Expected 3.1.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -212,6 +212,16 @@ for (const rel of [
   "docs/V2.6.1-VALIDATION.md",
   "components/ui/date-input.tsx",
   "components/ui/global-grid-enhancer.tsx",
+  "app/(workspace)/finance/page.tsx",
+  "app/api/finance/route.ts",
+  "components/finance/project-financial-control.tsx",
+  "components/ui/modal-scroll-lock.tsx",
+  "lib/finance/types.ts",
+  "lib/finance/server.ts",
+  "lib/finance/demo.ts",
+  "supabase/migrations/202609080001_v310_project_financial_control.sql",
+  "docs/V3.1.0-SCOPE.md",
+  "docs/V3.1.0-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -809,7 +819,60 @@ for (const token of ["node_type = 'function'", "contract_detail_project_function
   migrationV220.includes(token) ? pass(`V2.2.0 Migration: ${token}`) : fail(`V2.2.0 Migration: ${token}`);
 }
 
-console.log("\nASC WORKING V2.6.1 - Allocation Board UX & ISSUE Columns Preflight\n");
+const navigationV310 = fs.readFileSync(path.join(root, "lib/navigation.ts"), "utf8");
+for (const token of ["Tài chính", "/finance", "DollarSign"]) {
+  navigationV310.includes(token) ? pass(`V3.1.0 Finance navigation: ${token}`) : fail(`V3.1.0 Finance navigation: ${token}`);
+}
+
+const preferencesV310 = fs.readFileSync(path.join(root, "lib/workspace-preferences.ts"), "utf8");
+preferencesV310.includes("\"/finance\"") ? pass("V3.1.0 Finance navbar preference") : fail("V3.1.0 Finance navbar preference");
+
+const financeTypesV310 = fs.readFileSync(path.join(root, "lib/finance/types.ts"), "utf8");
+for (const token of ["FinancialData", "FinancialMonth", "FinancialSummary", "projectedProfitAmount", "projectedMarginPercent"]) {
+  financeTypesV310.includes(token) ? pass(`V3.1.0 Finance types: ${token}`) : fail(`V3.1.0 Finance types: ${token}`);
+}
+
+const financeServerV310 = fs.readFileSync(path.join(root, "lib/finance/server.ts"), "utf8");
+for (const token of ["loadFinancialData", "parseFinancialMonthInput", "upsertFinancialMonth", "project_financial_months", "forecast_percent", "staff_cost_amount"]) {
+  financeServerV310.includes(token) ? pass(`V3.1.0 Finance server: ${token}`) : fail(`V3.1.0 Finance server: ${token}`);
+}
+
+const financeApiV310 = fs.readFileSync(path.join(root, "app/api/finance/route.ts"), "utf8");
+for (const token of ["createDemoFinancialData", "loadFinancialData", "export async function POST", "export async function DELETE", "V310_MIGRATION_REQUIRED"]) {
+  financeApiV310.includes(token) ? pass(`V3.1.0 Finance API: ${token}`) : fail(`V3.1.0 Finance API: ${token}`);
+}
+
+const financeUiV310 = fs.readFileSync(path.join(root, "components/finance/project-financial-control.tsx"), "utf8");
+for (const token of ["Project Financial Control", "Forecast / Actual / Revenue / Cost", "FinancialMonthModal", "Revenue Chart", "data-modal-lock"]) {
+  financeUiV310.includes(token) ? pass(`V3.1.0 Finance UI: ${token}`) : fail(`V3.1.0 Finance UI: ${token}`);
+}
+
+const modalScrollLockV310 = fs.readFileSync(path.join(root, "components/ui/modal-scroll-lock.tsx"), "utf8");
+for (const token of ["GlobalModalScrollLock", "MutationObserver", "asc-modal-scroll-locked", "document.body.style.position = \"fixed\"", "window.scrollTo"]) {
+  modalScrollLockV310.includes(token) ? pass(`V3.1.0 Modal scroll lock: ${token}`) : fail(`V3.1.0 Modal scroll lock: ${token}`);
+}
+
+const appShellV310 = fs.readFileSync(path.join(root, "components/app-shell.tsx"), "utf8");
+for (const token of ["GlobalModalScrollLock", "Project Financial Control"]) {
+  appShellV310.includes(token) ? pass(`V3.1.0 App shell: ${token}`) : fail(`V3.1.0 App shell: ${token}`);
+}
+
+const migrationV310 = fs.readFileSync(path.join(root, "supabase/migrations/202609080001_v310_project_financial_control.sql"), "utf8");
+for (const token of ["project_financial_months", "forecast_percent", "actual_percent", "revenue_amount", "staff_cost_amount", "project_financial_months_write_pm_v310"]) {
+  migrationV310.includes(token) ? pass(`V3.1.0 Finance migration: ${token}`) : fail(`V3.1.0 Finance migration: ${token}`);
+}
+
+const readinessV310 = fs.readFileSync(path.join(root, "app/api/readiness/route.ts"), "utf8");
+for (const token of ["project_financial_control", "project_financial_months", "Project Financial Control", "forecast, actual, revenue, cost và profit"]) {
+  readinessV310.includes(token) ? pass(`V3.1.0 Finance readiness: ${token}`) : fail(`V3.1.0 Finance readiness: ${token}`);
+}
+
+const healthV310 = fs.readFileSync(path.join(root, "app/api/health/route.ts"), "utf8");
+for (const token of ["version: \"3.1.0\"", "Project Financial Control", "project-financial-control", "modal-scroll-lock"]) {
+  healthV310.includes(token) ? pass(`V3.1.0 Health metadata: ${token}`) : fail(`V3.1.0 Health metadata: ${token}`);
+}
+
+console.log("\nASC WORKING V3.1.0 - Project Financial Control Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

@@ -14,6 +14,7 @@ import {
   Settings2,
   UsersRound,
   CalendarClock,
+  DollarSign,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { NavigationHref } from "@/lib/workspace-preferences";
@@ -28,6 +29,7 @@ export const navigation: NavigationItem[] = [
   { label: "Command Center", href: "/command-center", icon: Command },
   { label: "Dashboard", href: "/dashboard", icon: CircleGauge },
   { label: "Portfolio", href: "/portfolio", icon: BriefcaseBusiness },
+  { label: "Tài chính", href: "/finance", icon: DollarSign },
   { label: "Kế hoạch", href: "/plan", icon: Map },
   { label: "Workload", href: "/workload", icon: UsersRound },
   { label: "Phân bổ", href: "/resource-scheduling", icon: CalendarClock },

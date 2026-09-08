@@ -2,6 +2,7 @@ export const DEFAULT_NAV_ORDER = [
   "/command-center",
   "/dashboard",
   "/portfolio",
+  "/finance",
   "/plan",
   "/workload",
   "/resource-scheduling",

@@ -24,6 +24,12 @@ html {
   background: var(--bg);
 }
 
+html.asc-modal-scroll-locked,
+html.asc-modal-scroll-locked body {
+  overscroll-behavior: contain;
+  touch-action: none;
+}
+
 body {
   margin: 0;
   color: var(--text);

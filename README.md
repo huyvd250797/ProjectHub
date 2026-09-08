@@ -1,4 +1,17 @@
-# ASC WORKING — V2.6.1
+# ASC WORKING - V3.1.0
+
+## V3.1.0 có gì mới?
+
+Project Financial Control
+
+- Thêm module **Tài chính** tại `/finance`.
+- Quản lý giá trị hợp đồng, forecast %, actual %, revenue theo tháng.
+- Theo dõi chi phí nhân sự, chi phí khác, lợi nhuận dự kiến và margin.
+- Có biểu đồ nhanh Forecast vs Revenue theo từng tháng.
+- Có modal thêm/sửa tháng tài chính, dữ liệu lưu vào Supabase.
+- Scroll nền được khóa khi modal mở; chỉ vùng trong modal được cuộn.
+
+Chạy migration mới: `supabase/migrations/202609080001_v310_project_financial_control.sql`.
 
 ## V2.6.1 có gì mới?
 
