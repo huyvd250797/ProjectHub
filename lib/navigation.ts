@@ -1,6 +1,7 @@
 import {
   Activity,
   BarChart3,
+  Bot,
   Building2,
   CircleGauge,
   Command,
@@ -27,6 +28,7 @@ type NavigationItem = {
 
 export const navigation: NavigationItem[] = [
   { label: "Command Center", href: "/command-center", icon: Command },
+  { label: "AI Copilot", href: "/copilot", icon: Bot },
   { label: "Dashboard", href: "/dashboard", icon: CircleGauge },
   { label: "Portfolio", href: "/portfolio", icon: BriefcaseBusiness },
   { label: "Tài chính", href: "/finance", icon: DollarSign },
