@@ -517,3 +517,9 @@
 ## V1.2.0 DeployFix
 - Fix TypeScript TS18047 in `app/api/issues/route.ts` by using a stable non-null Supabase client inside the nested ISSUE row query builder.
 - Preserve corrected PostgreSQL `FILTER` syntax in `202608260002_v120_analytics_health.sql`.
+## V3.2.0 - Project Timeline Pro
+
+- Baseline snapshot cho stage/task.
+- Critical path, delay tracking và cảnh báo trễ.
+- Kéo thả stage/task trên Gantt để cập nhật lịch.
+- Migration `202609080002_v320_project_timeline_pro.sql`.

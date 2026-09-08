@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "3.1.0",
+        version: "3.2.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "3.1.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "3.2.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -263,6 +263,22 @@ export async function GET(request: NextRequest) {
     financialSchema.durationMs,
   ));
 
+  const timelineProSchema = await timed(async () => Promise.all([
+    supabase.from("project_master_plans").select("id,baseline_snapshot_at", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("project_stages").select("id,start_date,end_date,baseline_start_date,baseline_end_date,baseline_duration_days,is_critical", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("project_plan_tasks").select("id,due_date,baseline_due_date", { count: "exact", head: true }).eq("project_id", projectId),
+  ]));
+  const timelineProSchemaError = timelineProSchema.error || timelineProSchema.value?.find((result) => result.error)?.error;
+  checks.push(check(
+    "project_timeline_pro",
+    "Project Timeline Pro",
+    timelineProSchemaError ? "fail" : "pass",
+    timelineProSchemaError
+      ? "Không đọc được baseline/critical path metadata; chạy migration V3.2.0 Project Timeline Pro."
+      : "Timeline Pro có đủ baseline, critical path, delay tracking và drag-drop schedule metadata.",
+    timelineProSchema.durationMs,
+  ));
+
   const notificationsSchema = await timed(async () => Promise.all([
     supabase.from("activity_events").select("id", { count: "exact", head: true }).eq("project_id", projectId),
     supabase.from("notifications").select("id", { count: "exact", head: true }).eq("project_id", projectId).eq("user_id", user.id),
@@ -372,7 +388,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "3.1.0",
+      version: "3.2.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

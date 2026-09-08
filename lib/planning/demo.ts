@@ -8,6 +8,13 @@ function offsetDate(days: number) {
   return formatDateOnly(date);
 }
 
+function shiftDate(value: string | null, days: number) {
+  if (!value) return value;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return formatDateOnly(date);
+}
+
 export function createDemoPlan(projectId: string, projectCode = "DEMO"): ProjectPlanData {
   const now = new Date().toISOString();
   const masterPlan: MasterPlan = {
@@ -30,7 +37,15 @@ export function createDemoPlan(projectId: string, projectCode = "DEMO"): Project
     { id: "demo-stage-4", code: "STAGE-04", name: "UAT & Đào tạo", description: "UAT theo kịch bản, xử lý tồn đọng và đào tạo người dùng.", durationDays: 25, dateMode: "auto", startDate: null, endDate: null, status: "not_started", progress: 0, color: "#10B981", ownerId: "demo-person-3", ownerName: "Lê Minh Anh", sortOrder: 40, createdAt: now, updatedAt: now },
     { id: "demo-stage-5", code: "STAGE-05", name: "Nghiệm thu & Go-live", description: "Chốt hồ sơ, nghiệm thu, chuyển đổi và hỗ trợ vận hành.", durationDays: 15, dateMode: "auto", startDate: null, endDate: null, status: "not_started", progress: 0, color: "#F43F5E", ownerId: "demo-person-1", ownerName: "Võ Đức Huy", sortOrder: 50, createdAt: now, updatedAt: now },
   ];
-  const stages = calculateSequentialSchedule(masterPlan.startDate, masterPlan.scheduleMode, baseStages);
+  const stages = calculateSequentialSchedule(masterPlan.startDate, masterPlan.scheduleMode, baseStages).map((stage, index) => ({
+    ...stage,
+    baselineStartDate: stage.startDate,
+    baselineEndDate: stage.endDate,
+    baselineDurationDays: stage.durationDays,
+    delayDays: index === 2 ? 4 : 0,
+    isCritical: true,
+    endDate: index === 2 ? shiftDate(stage.endDate, 4) : stage.endDate,
+  })) as ProjectPlanStage[];
 
   const milestones: ProjectMilestone[] = [
     { id: "demo-milestone-1", title: "Biên bản Kick-off", description: "Biên bản họp khởi động được hai bên xác nhận.", dueDate: stages[0].endDate as string, status: "completed", stageId: stages[0].id, stageName: stages[0].name, ownerId: "demo-person-1", ownerName: "Võ Đức Huy", sortOrder: 10, completedAt: stages[0].endDate, createdAt: now, updatedAt: now },
@@ -46,7 +61,12 @@ export function createDemoPlan(projectId: string, projectCode = "DEMO"): Project
     { id: "demo-task-3", title: "Hoàn tất build UAT", description: "Đóng gói các chỉnh sửa chính và chuẩn bị dữ liệu kiểm thử.", stageId: stages[2].id, stageName: stages[2].name, status: "doing", priority: "critical", dueDate: offsetDate(5), estimatedHours: 10, completedAt: null, ownerId: "demo-person-1", ownerName: "Võ Đức Huy", sortOrder: 30, createdAt: now, updatedAt: now },
     { id: "demo-task-4", title: "Xử lý blocker tích hợp", description: "Làm rõ lỗi đồng bộ dữ liệu trước khi mở UAT chính thức.", stageId: stages[2].id, stageName: stages[2].name, status: "blocked", priority: "critical", dueDate: offsetDate(-1), estimatedHours: 8, completedAt: null, ownerId: "demo-person-1", ownerName: "Võ Đức Huy", sortOrder: 40, createdAt: now, updatedAt: now },
     { id: "demo-task-5", title: "Soạn checklist UAT", description: "Chuẩn bị testcase trọng yếu theo từng phân hệ.", stageId: stages[3].id, stageName: stages[3].name, status: "todo", priority: "high", dueDate: stages[3].startDate, estimatedHours: 5, completedAt: null, ownerId: "demo-person-3", ownerName: "Lê Minh Anh", sortOrder: 50, createdAt: now, updatedAt: now },
-  ];
+  ].map((task, index) => ({
+    ...task,
+    baselineDueDate: task.dueDate,
+    delayDays: index === 3 ? 2 : 0,
+    dueDate: index === 3 ? shiftDate(task.dueDate, 2) : task.dueDate,
+  })) as ProjectPlanTask[];
 
   const checklistItems: MilestoneChecklistItem[] = [
     { id: "demo-checklist-1", milestoneId: milestones[2].id, milestoneTitle: milestones[2].title, title: "Build UAT đã deploy", isDone: true, sortOrder: 10, completedAt: now, createdAt: now, updatedAt: now },

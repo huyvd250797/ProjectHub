@@ -1,8 +1,10 @@
-# ASC WORKING - V3.1.0
+# ASC WORKING - V3.2.0
 
-## V3.1.0 có gì mới?
+## V3.2.0 có gì mới?
 
-Project Financial Control
+Project Timeline Pro
+
+Timeline/Gantt chuyên nghiệp hơn với baseline, delay, critical path, kéo thả stage/task và cảnh báo trễ.
 
 - Thêm module **Tài chính** tại `/finance`.
 - Quản lý giá trị hợp đồng, forecast %, actual %, revenue theo tháng.

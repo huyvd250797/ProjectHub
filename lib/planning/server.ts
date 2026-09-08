@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { buildPlanSummary, buildSmartPlanAlerts, countScheduleDays } from "@/lib/planning/schedule";
+import { buildPlanSummary, buildSmartPlanAlerts, countScheduleDays, diffCalendarDays } from "@/lib/planning/schedule";
 import type {
   MasterPlan,
   MasterPlanStatus,
@@ -94,6 +94,11 @@ export function normalizeMasterPlan(raw: Record<string, unknown>): MasterPlan {
 
 export function normalizePlanStage(raw: Record<string, unknown>): ProjectPlanStage {
   const owner = relation(raw.owner);
+  const startDate = nullableText(raw.start_date);
+  const endDate = nullableText(raw.end_date);
+  const baselineStartDate = nullableText(raw.baseline_start_date) ?? startDate;
+  const baselineEndDate = nullableText(raw.baseline_end_date) ?? endDate;
+  const delayDays = endDate && baselineEndDate ? Math.max(0, diffCalendarDays(baselineEndDate, endDate)) : 0;
   return {
     id: String(raw.id ?? ""),
     code: String(raw.code ?? ""),
@@ -101,8 +106,13 @@ export function normalizePlanStage(raw: Record<string, unknown>): ProjectPlanSta
     description: nullableText(raw.description),
     durationDays: Math.max(1, numberValue(raw.duration_days, 1)),
     dateMode: stageDateMode(raw.date_mode),
-    startDate: nullableText(raw.start_date),
-    endDate: nullableText(raw.end_date),
+    startDate,
+    endDate,
+    baselineStartDate,
+    baselineEndDate,
+    baselineDurationDays: nullableNumber(raw.baseline_duration_days),
+    delayDays,
+    isCritical: Boolean(raw.is_critical ?? true),
     status: stageStatus(raw.status),
     progress: Math.max(0, Math.min(100, numberValue(raw.progress))),
     color: /^#[0-9A-F]{6}$/i.test(String(raw.color ?? "")) ? String(raw.color).toUpperCase() : "#22D3EE",
@@ -137,6 +147,8 @@ export function normalizeMilestone(raw: Record<string, unknown>): ProjectMilesto
 export function normalizePlanTask(raw: Record<string, unknown>): ProjectPlanTask {
   const stage = relation(raw.stage);
   const owner = relation(raw.owner);
+  const dueDate = nullableText(raw.due_date);
+  const baselineDueDate = nullableText(raw.baseline_due_date) ?? dueDate;
   return {
     id: String(raw.id ?? ""),
     title: String(raw.title ?? ""),
@@ -145,7 +157,9 @@ export function normalizePlanTask(raw: Record<string, unknown>): ProjectPlanTask
     stageName: nullableText(stage?.name),
     status: taskStatus(raw.status),
     priority: taskPriority(raw.priority),
-    dueDate: nullableText(raw.due_date),
+    dueDate,
+    baselineDueDate,
+    delayDays: dueDate && baselineDueDate ? Math.max(0, diffCalendarDays(baselineDueDate, dueDate)) : 0,
     estimatedHours: nullableNumber(raw.estimated_hours),
     completedAt: nullableText(raw.completed_at),
     ownerId: nullableText(raw.owner_person_id),
@@ -193,7 +207,7 @@ export function normalizePlanReminder(raw: Record<string, unknown>): ProjectPlan
 }
 
 export function isPlanningMigrationMissing(message: string) {
-  return /project_master_plans|project_milestones|project_plan_tasks|project_milestone_checklist_items|project_plan_reminders|duration_days|owner_person_id|date_mode|estimated_hours|recalculate_project_plan_v16[01]|schema cache|does not exist/i.test(message);
+  return /project_master_plans|project_milestones|project_plan_tasks|project_milestone_checklist_items|project_plan_reminders|duration_days|owner_person_id|date_mode|estimated_hours|baseline_start_date|baseline_end_date|baseline_due_date|is_critical|snapshot_project_timeline_baseline_v320|recalculate_project_plan_v16[01]|schema cache|does not exist/i.test(message);
 }
 
 export async function loadProjectPlan(
@@ -210,7 +224,7 @@ export async function loadProjectPlan(
       .maybeSingle(),
     supabase
       .from("project_stages")
-      .select("id,code,name,description,duration_days,date_mode,start_date,end_date,status,progress,color,owner_person_id,sort_order,created_at,updated_at,owner:people!project_stages_owner_person_id_fkey(id,full_name)")
+      .select("id,code,name,description,duration_days,date_mode,start_date,end_date,baseline_start_date,baseline_end_date,baseline_duration_days,is_critical,status,progress,color,owner_person_id,sort_order,created_at,updated_at,owner:people!project_stages_owner_person_id_fkey(id,full_name)")
       .eq("project_id", projectId)
       .order("sort_order", { ascending: true })
       .order("code", { ascending: true }),
@@ -222,7 +236,7 @@ export async function loadProjectPlan(
       .order("sort_order", { ascending: true }),
     supabase
       .from("project_plan_tasks")
-      .select("id,title,description,stage_id,status,priority,due_date,estimated_hours,completed_at,owner_person_id,sort_order,created_at,updated_at,stage:project_stages!project_plan_tasks_stage_id_fkey(id,name),owner:people!project_plan_tasks_owner_person_id_fkey(id,full_name)")
+      .select("id,title,description,stage_id,status,priority,due_date,baseline_due_date,estimated_hours,completed_at,owner_person_id,sort_order,created_at,updated_at,stage:project_stages!project_plan_tasks_stage_id_fkey(id,name),owner:people!project_plan_tasks_owner_person_id_fkey(id,full_name)")
       .eq("project_id", projectId)
       .order("due_date", { ascending: true, nullsFirst: false })
       .order("sort_order", { ascending: true }),

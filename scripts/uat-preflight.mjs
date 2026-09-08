@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "3.1.0" ? pass("Package version", "3.1.0") : fail("Package version", `Expected 3.1.0, got ${pkg.version}`);
+pkg.version === "3.2.0" ? pass("Package version", "3.2.0") : fail("Package version", `Expected 3.2.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -222,6 +222,11 @@ for (const rel of [
   "supabase/migrations/202609080001_v310_project_financial_control.sql",
   "docs/V3.1.0-SCOPE.md",
   "docs/V3.1.0-VALIDATION.md",
+  "components/planning/plan-timeline.tsx",
+  "app/api/plan/timeline/route.ts",
+  "supabase/migrations/202609080002_v320_project_timeline_pro.sql",
+  "docs/V3.2.0-SCOPE.md",
+  "docs/V3.2.0-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -853,7 +858,7 @@ for (const token of ["GlobalModalScrollLock", "MutationObserver", "asc-modal-scr
 }
 
 const appShellV310 = fs.readFileSync(path.join(root, "components/app-shell.tsx"), "utf8");
-for (const token of ["GlobalModalScrollLock", "Project Financial Control"]) {
+for (const token of ["GlobalModalScrollLock", "Project Timeline Pro"]) {
   appShellV310.includes(token) ? pass(`V3.1.0 App shell: ${token}`) : fail(`V3.1.0 App shell: ${token}`);
 }
 
@@ -868,11 +873,26 @@ for (const token of ["project_financial_control", "project_financial_months", "P
 }
 
 const healthV310 = fs.readFileSync(path.join(root, "app/api/health/route.ts"), "utf8");
-for (const token of ["version: \"3.1.0\"", "Project Financial Control", "project-financial-control", "modal-scroll-lock"]) {
+for (const token of ["version: \"3.2.0\"", "Project Timeline Pro", "timelinePro", "criticalPath"]) {
   healthV310.includes(token) ? pass(`V3.1.0 Health metadata: ${token}`) : fail(`V3.1.0 Health metadata: ${token}`);
 }
 
-console.log("\nASC WORKING V3.1.0 - Project Financial Control Preflight\n");
+const timelinePro = fs.readFileSync(path.join(root, "components/planning/plan-timeline.tsx"), "utf8");
+for (const token of ["Project Timeline Pro", "Chụp baseline hiện tại", "critical stage", "Kéo thả stage/task", "application/asc-timeline-type", "baselineEndDate", "delayDays"]) {
+  timelinePro.includes(token) ? pass(`V3.2.0 Timeline Pro UI: ${token}`) : fail(`V3.2.0 Timeline Pro UI: ${token}`);
+}
+
+const timelineApi = fs.readFileSync(path.join(root, "app/api/plan/timeline/route.ts"), "utf8");
+for (const token of ["snapshot_baseline", "move_stage", "move_task", "V320_MIGRATION_REQUIRED", "snapshot_project_timeline_baseline_v320"]) {
+  timelineApi.includes(token) ? pass(`V3.2.0 Timeline Pro API: ${token}`) : fail(`V3.2.0 Timeline Pro API: ${token}`);
+}
+
+const timelineMigration = fs.readFileSync(path.join(root, "supabase/migrations/202609080002_v320_project_timeline_pro.sql"), "utf8");
+for (const token of ["baseline_start_date", "baseline_end_date", "baseline_due_date", "is_critical", "snapshot_project_timeline_baseline_v320"]) {
+  timelineMigration.includes(token) ? pass(`V3.2.0 Timeline Pro migration: ${token}`) : fail(`V3.2.0 Timeline Pro migration: ${token}`);
+}
+
+console.log("\nASC WORKING V3.2.0 - Project Timeline Pro Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

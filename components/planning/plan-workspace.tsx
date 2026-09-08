@@ -485,8 +485,8 @@ export function PlanWorkspace() {
     <>
       <PageHeader
         eyebrow="Planning & Delivery Control"
-        title="Master Plan"
-        description={`Lập kế hoạch tổng thể, Project Stages, timeline và milestone theo riêng Project ${selectedProject.code}.`}
+        title="Project Timeline Pro"
+        description={`Project Timeline Pro: quản lý baseline, critical path, delay và kéo thả stage/task cho Project ${selectedProject.code}.`}
         actions={<div className="flex flex-wrap items-center gap-2">
           {data ? <button type="button" onClick={() => exportPlan(data)} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-white"><Download className="size-3.5" /> Export</button> : null}
           <button type="button" onClick={() => void loadPlan()} className="grid size-10 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-slate-500 hover:text-cyan-200" aria-label="Làm mới"><RefreshCw className={cn("size-4", loading && "animate-spin")} /></button>
@@ -508,7 +508,7 @@ export function PlanWorkspace() {
             <div className="flex gap-1 overflow-x-auto">
               {([
                 ["overview", "Tổng quan", Map, null],
-                ["timeline", "Timeline", CalendarDays, null],
+                ["timeline", "Timeline Pro", CalendarDays, null],
                 ["stages", "Project Stages", Layers3, data.stages.length],
                 ["tasks", "Execution Tasks", ClipboardList, data.tasks.length],
                 ["alerts", "Smart Alerts", BellRing, data.summary.smartAlertCount],
@@ -580,7 +580,7 @@ export function PlanWorkspace() {
             </>
           ) : null}
 
-          {view === "timeline" ? <PlanTimeline masterPlan={data.masterPlan} stages={data.stages} milestones={data.milestones} /> : null}
+          {view === "timeline" ? <PlanTimeline masterPlan={data.masterPlan} stages={data.stages} milestones={data.milestones} tasks={data.tasks} canEdit={data.canEdit} projectId={selectedProject.id} onChanged={(message) => { setNotice(message); void loadPlan(); }} /> : null}
 
           {view === "stages" ? (
             <div className="tech-panel overflow-hidden rounded-2xl">

@@ -52,6 +52,11 @@ export type ProjectPlanStage = {
   dateMode: ProjectStageDateMode;
   startDate: string | null;
   endDate: string | null;
+  baselineStartDate?: string | null;
+  baselineEndDate?: string | null;
+  baselineDurationDays?: number | null;
+  delayDays?: number;
+  isCritical?: boolean;
   status: ProjectStageStatus;
   progress: number;
   color: string;
@@ -87,6 +92,8 @@ export type ProjectPlanTask = {
   status: PlanTaskStatus;
   priority: PlanTaskPriority;
   dueDate: string | null;
+  baselineDueDate?: string | null;
+  delayDays?: number;
   estimatedHours: number | null;
   completedAt: string | null;
   ownerId: string | null;
@@ -183,6 +190,8 @@ export type ProjectPlanData = {
   summary: PlanSummary;
   generatedAt: string;
 };
+
+export type TimelineMutationAction = "snapshot_baseline" | "move_stage" | "move_task";
 
 export type ProjectPlanApiResponse =
   | { ok: true; data: ProjectPlanData }
