@@ -12,6 +12,7 @@ import {
   Map,
   RadioTower,
   Settings2,
+  ShieldCheck,
   UsersRound,
   CalendarClock,
 } from "lucide-react";
@@ -25,6 +26,7 @@ type NavigationItem = {
 };
 
 export const navigation: NavigationItem[] = [
+  { label: "Enterprise Suite", href: "/enterprise", icon: ShieldCheck },
   { label: "Command Center", href: "/command-center", icon: Command },
   { label: "Dashboard", href: "/dashboard", icon: CircleGauge },
   { label: "Portfolio", href: "/portfolio", icon: BriefcaseBusiness },

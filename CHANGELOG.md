@@ -1,5 +1,25 @@
 # Changelog
 
+## V3.0.0 - Enterprise Project Suite
+
+### Added
+
+- Module **Enterprise Suite** tại `/enterprise`.
+- API `/api/enterprise` tổng hợp dữ liệu từ Project, ISSUE, PLHĐ, Plan, Workload và Report.
+- PMO Maturity Score để đo mức chuẩn hóa quản trị dự án.
+- Enterprise Readiness Gates: Data Quality, Delivery Control, Resource Control, Executive Reporting và Scope Governance.
+- PMO Operating Model: owner, cadence và metric cho từng trụ cột vận hành.
+- Priority Board cho hành động quản lý cần xử lý trước.
+
+### Changed
+
+- Navbar bổ sung **Enterprise Suite** ở đầu nhóm Project Workspace.
+- Health/readiness/preflight cập nhật metadata V3.0.0.
+
+### Database
+
+- Không có migration mới. V3.0.0 dùng lại schema đã có đến V2.6.1.
+
 ## V2.6.1 — Allocation Board UX & ISSUE Columns
 
 ### Added
