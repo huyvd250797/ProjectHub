@@ -6,15 +6,9 @@ function addMonths(date: Date, months: number) {
   return copy.toISOString().slice(0, 10);
 }
 
-function percentFromAmount(amount: number, contractValue: number) {
-  if (contractValue <= 0) return 0;
-  return Math.round((amount / contractValue) * 10000) / 100;
-}
-
-function buildMonth(projectId: string, index: number, contractValue: number, forecastAmount: number, actualAmount: number, staffCostAmount: number, otherCostAmount: number): FinancialMonth {
-  const forecastPercent = percentFromAmount(forecastAmount, contractValue);
-  const actualPercent = percentFromAmount(actualAmount, contractValue);
-  const revenueAmount = actualAmount;
+function buildMonth(projectId: string, index: number, contractValue: number, forecastPercent: number, actualPercent: number, revenueAmount: number, staffCostAmount: number, otherCostAmount: number): FinancialMonth {
+  const forecastAmount = Math.round((contractValue * forecastPercent) / 100);
+  const actualAmount = Math.round((contractValue * actualPercent) / 100);
   const totalCostAmount = staffCostAmount + otherCostAmount;
   const projectedProfitAmount = revenueAmount - totalCostAmount;
   const projectedMarginPercent = revenueAmount > 0 ? Math.round((projectedProfitAmount / revenueAmount) * 1000) / 10 : 0;
@@ -42,9 +36,9 @@ export function createDemoFinancialData(projectId: string): FinancialData {
   const project = demoProjects.find((item) => item.id === projectId) ?? demoProjects[0];
   const contractValue = 520_000_000;
   const months = [
-    buildMonth(project.id, 0, contractValue, 130_000_000, 94_000_000, 54_000_000, 6_000_000),
-    buildMonth(project.id, 1, contractValue, 210_000_000, 176_000_000, 72_000_000, 8_000_000),
-    buildMonth(project.id, 2, contractValue, 156_000_000, 62_000_000, 48_000_000, 5_000_000),
+    buildMonth(project.id, 0, contractValue, 25, 18, 94_000_000, 54_000_000, 6_000_000),
+    buildMonth(project.id, 1, contractValue, 45, 38, 176_000_000, 72_000_000, 8_000_000),
+    buildMonth(project.id, 2, contractValue, 72, 50, 62_000_000, 48_000_000, 5_000_000),
   ];
   const revenueAmount = months.reduce((sum, item) => sum + item.revenueAmount, 0);
   const staffCostAmount = months.reduce((sum, item) => sum + item.staffCostAmount, 0);
@@ -67,15 +61,15 @@ export function createDemoFinancialData(projectId: string): FinancialData {
     },
     summary: {
       contractValue,
-      forecastAmount: months.reduce((sum, item) => sum + item.forecastAmount, 0),
-      actualAmount: months.reduce((sum, item) => sum + item.actualAmount, 0),
+      forecastPercent: 72,
+      actualPercent: 50,
+      forecastAmount: Math.round((contractValue * 72) / 100),
+      actualAmount: Math.round((contractValue * 50) / 100),
       revenueAmount,
       staffCostAmount,
       otherCostAmount,
       totalCostAmount,
       projectedProfitAmount,
-      forecastPercent: percentFromAmount(months.reduce((sum, item) => sum + item.forecastAmount, 0), contractValue),
-      actualPercent: percentFromAmount(months.reduce((sum, item) => sum + item.actualAmount, 0), contractValue),
       projectedMarginPercent: revenueAmount > 0 ? Math.round((projectedProfitAmount / revenueAmount) * 1000) / 10 : 0,
       remainingRevenueAmount: Math.max(0, contractValue - revenueAmount),
     },

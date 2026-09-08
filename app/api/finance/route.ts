@@ -13,7 +13,7 @@ function text(value: unknown) {
 }
 
 function financeMigrationMissing(message: string) {
-  return /project_financial_months|forecast_percent|forecast_amount|actual_amount|staff_cost_amount|other_cost_amount|schema cache|relation .* does not exist/i.test(message);
+  return /project_financial_months|forecast_percent|actual_percent|staff_cost_amount|other_cost_amount|schema cache|relation .* does not exist/i.test(message);
 }
 
 async function getProjectContractValue(supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>, projectId: string) {
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ok: false,
       code: missing ? "V310_MIGRATION_REQUIRED" : "FINANCE_QUERY_FAILED",
-      message: missing ? "Hãy chạy migration V3.1.0 và V3.2.1 Finance Forecast Actual Flow Fix trước khi dùng module tài chính." : message,
+      message: missing ? "Hãy chạy migration V3.1.0 Project Financial Control trước khi dùng module tài chính." : message,
     } satisfies FinancialApiResponse, { status: missing ? 503 : 500 });
   }
 }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: false,
       code: missing ? "V310_MIGRATION_REQUIRED" : "FINANCE_SAVE_FAILED",
-      message: missing ? "Hãy chạy migration V3.1.0 và V3.2.1 trước khi lưu dữ liệu tài chính." : message,
+      message: missing ? "Hãy chạy migration V3.1.0 trước khi lưu dữ liệu tài chính." : message,
     } satisfies FinancialMutationResponse, { status: missing ? 503 : 500 });
   }
 }
@@ -105,7 +105,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       ok: false,
       code: missing ? "V310_MIGRATION_REQUIRED" : "FINANCE_DELETE_FAILED",
-      message: missing ? "Hãy chạy migration V3.1.0 và V3.2.1 trước khi xóa dữ liệu tài chính." : error.message,
+      message: missing ? "Hãy chạy migration V3.1.0 trước khi xóa dữ liệu tài chính." : error.message,
     } satisfies FinancialDeleteResponse, { status: missing ? 503 : 500 });
   }
   return NextResponse.json({ ok: true, deletedId: id, message: "Đã xóa dữ liệu tài chính tháng." } satisfies FinancialDeleteResponse);
