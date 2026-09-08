@@ -250,7 +250,7 @@ export async function GET(request: NextRequest) {
 
   const financialSchema = await timed(async () => Promise.all([
     supabase.from("projects").select("id,contract_value,contract_no,start_date,due_date", { count: "exact", head: true }).eq("id", projectId),
-    supabase.from("project_financial_months").select("id,month_date,forecast_percent,actual_percent,revenue_amount,staff_cost_amount,other_cost_amount", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("project_financial_months").select("id,month_date,forecast_percent,actual_percent,forecast_amount,actual_amount,revenue_amount,staff_cost_amount,other_cost_amount", { count: "exact", head: true }).eq("project_id", projectId),
   ]));
   const financialSchemaError = financialSchema.error || financialSchema.value?.find((result) => result.error)?.error;
   checks.push(check(
@@ -258,8 +258,8 @@ export async function GET(request: NextRequest) {
     "Project Financial Control",
     financialSchemaError ? "fail" : "pass",
     financialSchemaError
-      ? "Không đọc được project_financial_months; chạy migration V3.1.0 để quản lý forecast, actual, revenue, cost và profit."
-      : "Financial Control có đủ dữ liệu hợp đồng và bảng tháng để tính forecast, actual, revenue, cost, profit và margin.",
+      ? "Không đọc được project_financial_months hoặc forecast_amount/actual_amount; chạy migration V3.1.0 và V3.2.1."
+      : "Financial Control có đủ dữ liệu hợp đồng và bảng tháng để tính forecast amount, actual amount, revenue, cost, profit và margin.",
     financialSchema.durationMs,
   ));
 

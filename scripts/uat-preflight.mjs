@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "3.2.0" ? pass("Package version", "3.2.0") : fail("Package version", `Expected 3.2.0, got ${pkg.version}`);
+pkg.version === "3.2.1" ? pass("Package version", "3.2.1") : fail("Package version", `Expected 3.2.1, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -227,6 +227,9 @@ for (const rel of [
   "supabase/migrations/202609080002_v320_project_timeline_pro.sql",
   "docs/V3.2.0-SCOPE.md",
   "docs/V3.2.0-VALIDATION.md",
+  "supabase/migrations/202609080003_v321_finance_forecast_actual_amounts.sql",
+  "docs/V3.2.1-SCOPE.md",
+  "docs/V3.2.1-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -848,7 +851,7 @@ for (const token of ["createDemoFinancialData", "loadFinancialData", "export asy
 }
 
 const financeUiV310 = fs.readFileSync(path.join(root, "components/finance/project-financial-control.tsx"), "utf8");
-for (const token of ["Project Financial Control", "Forecast / Actual / Revenue / Cost", "FinancialMonthModal", "Revenue Chart", "data-modal-lock"]) {
+for (const token of ["Project Financial Control", "Forecast Amount / Actual Amount / Revenue / Cost", "FinancialMonthModal", "Revenue Chart", "data-modal-lock"]) {
   financeUiV310.includes(token) ? pass(`V3.1.0 Finance UI: ${token}`) : fail(`V3.1.0 Finance UI: ${token}`);
 }
 
@@ -868,13 +871,23 @@ for (const token of ["project_financial_months", "forecast_percent", "actual_per
 }
 
 const readinessV310 = fs.readFileSync(path.join(root, "app/api/readiness/route.ts"), "utf8");
-for (const token of ["project_financial_control", "project_financial_months", "Project Financial Control", "forecast, actual, revenue, cost và profit"]) {
+for (const token of ["project_financial_control", "project_financial_months", "Project Financial Control", "forecast amount, actual amount, revenue, cost, profit và margin"]) {
   readinessV310.includes(token) ? pass(`V3.1.0 Finance readiness: ${token}`) : fail(`V3.1.0 Finance readiness: ${token}`);
 }
 
 const healthV310 = fs.readFileSync(path.join(root, "app/api/health/route.ts"), "utf8");
-for (const token of ["version: \"3.2.0\"", "Project Timeline Pro", "timelinePro", "criticalPath"]) {
+for (const token of ["version: \"3.2.1\"", "Finance Forecast Actual Flow Fix", "timelinePro", "criticalPath"]) {
   healthV310.includes(token) ? pass(`V3.1.0 Health metadata: ${token}`) : fail(`V3.1.0 Health metadata: ${token}`);
+}
+
+const financeMigrationV321 = fs.readFileSync(path.join(root, "supabase/migrations/202609080003_v321_finance_forecast_actual_amounts.sql"), "utf8");
+for (const token of ["forecast_amount", "actual_amount", "revenue_amount > 0", "Derived forecast ratio"]) {
+  financeMigrationV321.includes(token) ? pass(`V3.2.1 Finance migration: ${token}`) : fail(`V3.2.1 Finance migration: ${token}`);
+}
+
+for (const token of ["forecastAmount", "actualAmount", "percentFromAmount", "Forecast vs Actual vs Revenue", "finance-amount-based-forecast"]) {
+  const source = token === "finance-amount-based-forecast" ? healthV310 : `${financeUiV310}\n${financeServerV310}`;
+  source.includes(token) ? pass(`V3.2.1 Finance flow: ${token}`) : fail(`V3.2.1 Finance flow: ${token}`);
 }
 
 const timelinePro = fs.readFileSync(path.join(root, "components/planning/plan-timeline.tsx"), "utf8");
@@ -892,7 +905,7 @@ for (const token of ["baseline_start_date", "baseline_end_date", "baseline_due_d
   timelineMigration.includes(token) ? pass(`V3.2.0 Timeline Pro migration: ${token}`) : fail(`V3.2.0 Timeline Pro migration: ${token}`);
 }
 
-console.log("\nASC WORKING V3.2.0 - Project Timeline Pro Preflight\n");
+console.log("\nASC WORKING V3.2.1 - Finance Forecast Actual Flow Fix Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

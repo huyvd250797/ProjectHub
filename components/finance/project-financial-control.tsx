@@ -24,8 +24,8 @@ import { cn } from "@/lib/utils";
 type FinanceForm = {
   id: string | null;
   monthDate: string;
-  forecastPercent: string;
-  actualPercent: string;
+  forecastAmount: string;
+  actualAmount: string;
   revenueAmount: string;
   staffCostAmount: string;
   otherCostAmount: string;
@@ -35,8 +35,8 @@ type FinanceForm = {
 const emptyForm: FinanceForm = {
   id: null,
   monthDate: new Date().toISOString().slice(0, 7),
-  forecastPercent: "0",
-  actualPercent: "0",
+  forecastAmount: "0",
+  actualAmount: "0",
   revenueAmount: "0",
   staffCostAmount: "0",
   otherCostAmount: "0",
@@ -65,12 +65,17 @@ function numberInput(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function percentFromAmount(amount: number, contractValue: number) {
+  if (contractValue <= 0) return 0;
+  return Math.round((amount / contractValue) * 10000) / 100;
+}
+
 function formFromMonth(month: FinancialMonth): FinanceForm {
   return {
     id: month.id,
     monthDate: month.monthDate.slice(0, 7),
-    forecastPercent: String(month.forecastPercent),
-    actualPercent: String(month.actualPercent),
+    forecastAmount: String(month.forecastAmount),
+    actualAmount: String(month.actualAmount),
     revenueAmount: String(month.revenueAmount),
     staffCostAmount: String(month.staffCostAmount),
     otherCostAmount: String(month.otherCostAmount),
@@ -118,12 +123,14 @@ function FinancialMonthModal({
   onSave: (form: FinanceForm) => void;
 }) {
   const [form, setForm] = useState(initial);
-  const forecastAmount = Math.round((projectContractValue * numberInput(form.forecastPercent)) / 100);
-  const actualAmount = Math.round((projectContractValue * numberInput(form.actualPercent)) / 100);
+  const forecastAmount = numberInput(form.forecastAmount);
+  const actualAmount = numberInput(form.actualAmount);
   const revenueAmount = numberInput(form.revenueAmount);
   const totalCost = numberInput(form.staffCostAmount) + numberInput(form.otherCostAmount);
   const profit = revenueAmount - totalCost;
   const margin = revenueAmount > 0 ? Math.round((profit / revenueAmount) * 10000) / 100 : 0;
+  const forecastPercent = percentFromAmount(forecastAmount, projectContractValue);
+  const actualPercent = percentFromAmount(actualAmount, projectContractValue);
 
   return (
     <div className="fixed inset-0 z-[260] grid place-items-center p-3 md:p-6" role="dialog" aria-modal="true" data-modal-lock="true">
@@ -139,7 +146,7 @@ function FinancialMonthModal({
           <div>
             <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/60">Monthly Financial Control</div>
             <div className="mt-1 text-base font-semibold text-white">{form.id ? "Cập nhật tháng tài chính" : "Thêm tháng tài chính"}</div>
-            <div className="mt-1 text-xs text-slate-600">Forecast, actual, revenue, chi phí nhân sự và lợi nhuận dự kiến.</div>
+            <div className="mt-1 text-xs text-slate-600">Nhập forecast/actual theo số tiền; phần trăm chỉ là tỷ lệ đạt so với giá trị hợp đồng.</div>
           </div>
           <button type="button" onClick={onClose} disabled={saving} className="grid size-9 place-items-center rounded-xl border border-white/[0.08] text-slate-500 hover:text-white">
             <X className="size-4" />
@@ -153,15 +160,15 @@ function FinancialMonthModal({
               <input type="month" value={form.monthDate} onChange={(event) => setForm((value) => ({ ...value, monthDate: event.target.value }))} className="field mt-2" required />
             </label>
             <label className="block">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">Forecast %</span>
-              <input type="number" min="0" max="100" step="0.01" value={form.forecastPercent} onChange={(event) => setForm((value) => ({ ...value, forecastPercent: event.target.value }))} className="field mt-2" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">Forecast Amount</span>
+              <input type="number" min="0" step="1000" value={form.forecastAmount} onChange={(event) => setForm((value) => ({ ...value, forecastAmount: event.target.value }))} className="field mt-2" />
             </label>
             <label className="block">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">Actual %</span>
-              <input type="number" min="0" max="100" step="0.01" value={form.actualPercent} onChange={(event) => setForm((value) => ({ ...value, actualPercent: event.target.value }))} className="field mt-2" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">Actual Amount</span>
+              <input type="number" min="0" step="1000" value={form.actualAmount} onChange={(event) => setForm((value) => ({ ...value, actualAmount: event.target.value }))} className="field mt-2" />
             </label>
             <label className="block">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">Revenue</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">Revenue Recognized</span>
               <input type="number" min="0" step="1000" value={form.revenueAmount} onChange={(event) => setForm((value) => ({ ...value, revenueAmount: event.target.value }))} className="field mt-2" />
             </label>
             <label className="block">
@@ -175,8 +182,8 @@ function FinancialMonthModal({
           </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-4">
-            <div className="rounded-xl border border-white/[0.055] bg-white/[0.018] p-3"><div className="text-[9px] uppercase tracking-[0.16em] text-slate-700">Forecast Amount</div><div className="mt-2 text-sm font-semibold text-cyan-200">{money(forecastAmount)}</div></div>
-            <div className="rounded-xl border border-white/[0.055] bg-white/[0.018] p-3"><div className="text-[9px] uppercase tracking-[0.16em] text-slate-700">Actual Amount</div><div className="mt-2 text-sm font-semibold text-emerald-200">{money(actualAmount)}</div></div>
+            <div className="rounded-xl border border-white/[0.055] bg-white/[0.018] p-3"><div className="text-[9px] uppercase tracking-[0.16em] text-slate-700">Forecast Ratio</div><div className="mt-2 text-sm font-semibold text-cyan-200">{percent(forecastPercent)}</div></div>
+            <div className="rounded-xl border border-white/[0.055] bg-white/[0.018] p-3"><div className="text-[9px] uppercase tracking-[0.16em] text-slate-700">Actual Ratio</div><div className="mt-2 text-sm font-semibold text-emerald-200">{percent(actualPercent)}</div></div>
             <div className="rounded-xl border border-white/[0.055] bg-white/[0.018] p-3"><div className="text-[9px] uppercase tracking-[0.16em] text-slate-700">Profit</div><div className={cn("mt-2 text-sm font-semibold", profit >= 0 ? "text-emerald-200" : "text-rose-200")}>{money(profit)}</div></div>
             <div className="rounded-xl border border-white/[0.055] bg-white/[0.018] p-3"><div className="text-[9px] uppercase tracking-[0.16em] text-slate-700">Margin</div><div className={cn("mt-2 text-sm font-semibold", margin >= 0 ? "text-emerald-200" : "text-rose-200")}>{percent(margin)}</div></div>
           </div>
@@ -234,7 +241,7 @@ export function ProjectFinancialControl() {
     };
   }, [selectedProject.id, reloadKey]);
 
-  const maxRevenue = useMemo(() => Math.max(1, ...(data?.months.map((item) => Math.max(item.forecastAmount, item.revenueAmount)) ?? [1])), [data?.months]);
+  const maxRevenue = useMemo(() => Math.max(1, ...(data?.months.map((item) => Math.max(item.forecastAmount, item.actualAmount, item.revenueAmount)) ?? [1])), [data?.months]);
 
   async function saveMonth(form: FinanceForm) {
     setSaving(true);
@@ -247,8 +254,8 @@ export function ProjectFinancialControl() {
           id: form.id,
           projectId: selectedProject.id,
           monthDate: form.monthDate,
-          forecastPercent: numberInput(form.forecastPercent),
-          actualPercent: numberInput(form.actualPercent),
+          forecastAmount: numberInput(form.forecastAmount),
+          actualAmount: numberInput(form.actualAmount),
           revenueAmount: numberInput(form.revenueAmount),
           staffCostAmount: numberInput(form.staffCostAmount),
           otherCostAmount: numberInput(form.otherCostAmount),
@@ -315,8 +322,8 @@ export function ProjectFinancialControl() {
         <div className="space-y-4">
           <section className="grid grid-cols-2 gap-3 xl:grid-cols-6">
             <SummaryCard label="Contract Value" value={money(data.summary.contractValue)} note={data.project.contractNo ?? "Chưa có số hợp đồng"} icon={DollarSign} tone="violet" />
-            <SummaryCard label="Forecast" value={percent(data.summary.forecastPercent)} note={money(data.summary.forecastAmount)} icon={TrendingUp} tone="cyan" />
-            <SummaryCard label="Actual" value={percent(data.summary.actualPercent)} note={money(data.summary.actualAmount)} icon={BarChart3} tone="emerald" />
+            <SummaryCard label="Forecast" value={money(data.summary.forecastAmount)} note={`${percent(data.summary.forecastPercent)} của hợp đồng`} icon={TrendingUp} tone="cyan" />
+            <SummaryCard label="Actual" value={money(data.summary.actualAmount)} note={`${percent(data.summary.actualPercent)} của hợp đồng`} icon={BarChart3} tone="emerald" />
             <SummaryCard label="Revenue" value={money(data.summary.revenueAmount)} note={`Còn lại ${money(data.summary.remainingRevenueAmount)}`} icon={DollarSign} tone="emerald" />
             <SummaryCard label="Total Cost" value={money(data.summary.totalCostAmount)} note={`Nhân sự ${money(data.summary.staffCostAmount)}`} icon={TrendingDown} tone="amber" />
             <SummaryCard label="Profit" value={money(data.summary.projectedProfitAmount)} note={`Margin ${percent(data.summary.projectedMarginPercent)}`} icon={data.summary.projectedProfitAmount >= 0 ? TrendingUp : TrendingDown} tone={data.summary.projectedProfitAmount >= 0 ? "emerald" : "rose"} />
@@ -327,7 +334,7 @@ export function ProjectFinancialControl() {
               <div className="flex items-center justify-between border-b border-white/[0.07] p-4">
                 <div>
                   <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Monthly Revenue Plan</div>
-                  <h2 className="mt-1.5 text-sm font-semibold text-white">Forecast / Actual / Revenue / Cost</h2>
+                  <h2 className="mt-1.5 text-sm font-semibold text-white">Forecast Amount / Actual Amount / Revenue / Cost</h2>
                 </div>
                 <CalendarDays className="size-5 text-cyan-300/70" />
               </div>
@@ -336,8 +343,8 @@ export function ProjectFinancialControl() {
                   <thead className="bg-white/[0.025] text-[10px] uppercase tracking-[0.18em] text-slate-600">
                     <tr>
                       <th className="px-4 py-3">Tháng</th>
-                      <th className="px-4 py-3">Forecast</th>
-                      <th className="px-4 py-3">Actual</th>
+                      <th className="px-4 py-3">Forecast Amount</th>
+                      <th className="px-4 py-3">Actual Amount</th>
                       <th className="px-4 py-3">Revenue</th>
                       <th className="px-4 py-3">Staff Cost</th>
                       <th className="px-4 py-3">Other Cost</th>
@@ -351,8 +358,8 @@ export function ProjectFinancialControl() {
                     {data.months.map((month) => (
                       <tr key={month.id} className="align-top hover:bg-white/[0.018]">
                         <td className="px-4 py-4 font-semibold text-cyan-200">{monthLabel(month.monthDate)}</td>
-                        <td className="px-4 py-4 text-slate-300">{percent(month.forecastPercent)}<div className="mt-1 text-[10px] text-slate-700">{money(month.forecastAmount)}</div></td>
-                        <td className="px-4 py-4 text-slate-300">{percent(month.actualPercent)}<div className="mt-1 text-[10px] text-slate-700">{money(month.actualAmount)}</div></td>
+                        <td className="px-4 py-4 font-semibold text-cyan-200">{money(month.forecastAmount)}<div className="mt-1 text-[10px] font-normal text-slate-700">{percent(month.forecastPercent)} của hợp đồng</div></td>
+                        <td className="px-4 py-4 font-semibold text-emerald-200">{money(month.actualAmount)}<div className="mt-1 text-[10px] font-normal text-slate-700">{percent(month.actualPercent)} của hợp đồng</div></td>
                         <td className="px-4 py-4 font-semibold text-emerald-200">{money(month.revenueAmount)}</td>
                         <td className="px-4 py-4 text-slate-400">{money(month.staffCostAmount)}</td>
                         <td className="px-4 py-4 text-slate-400">{money(month.otherCostAmount)}</td>
@@ -369,7 +376,7 @@ export function ProjectFinancialControl() {
                     ))}
                     {!data.months.length ? (
                       <tr>
-                        <td colSpan={10} className="px-4 py-12 text-center text-sm text-slate-600">Chưa có dữ liệu tài chính theo tháng. Bấm Thêm tháng để nhập forecast, actual, revenue và chi phí.</td>
+                        <td colSpan={10} className="px-4 py-12 text-center text-sm text-slate-600">Chưa có dữ liệu tài chính theo tháng. Bấm Thêm tháng để nhập forecast amount, actual amount, revenue và chi phí.</td>
                       </tr>
                     ) : null}
                   </tbody>
@@ -380,7 +387,7 @@ export function ProjectFinancialControl() {
             <div className="tech-panel overflow-hidden rounded-2xl">
               <div className="border-b border-white/[0.07] p-4">
                 <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Revenue Chart</div>
-                <h2 className="mt-1.5 text-sm font-semibold text-white">Forecast vs Revenue</h2>
+                <h2 className="mt-1.5 text-sm font-semibold text-white">Forecast vs Actual vs Revenue</h2>
               </div>
               <div className="space-y-4 p-4">
                 {data.months.map((month) => (
@@ -391,9 +398,10 @@ export function ProjectFinancialControl() {
                     </div>
                     <div className="mt-3 space-y-2">
                       <div className="h-2 rounded-full bg-white/[0.04]"><div className="h-full rounded-full bg-cyan-300" style={{ width: `${Math.min(100, (month.forecastAmount / maxRevenue) * 100)}%` }} /></div>
+                      <div className="h-2 rounded-full bg-white/[0.04]"><div className="h-full rounded-full bg-sky-300" style={{ width: `${Math.min(100, (month.actualAmount / maxRevenue) * 100)}%` }} /></div>
                       <div className="h-2 rounded-full bg-white/[0.04]"><div className="h-full rounded-full bg-emerald-300" style={{ width: `${Math.min(100, (month.revenueAmount / maxRevenue) * 100)}%` }} /></div>
                     </div>
-                    <div className="mt-2 flex justify-between text-[9px] uppercase tracking-[0.12em] text-slate-700"><span>Forecast</span><span>Revenue</span></div>
+                    <div className="mt-2 flex justify-between text-[9px] uppercase tracking-[0.12em] text-slate-700"><span>Forecast</span><span>Actual</span><span>Revenue</span></div>
                   </div>
                 ))}
                 {!data.months.length ? <div className="rounded-xl border border-dashed border-white/[0.08] p-8 text-center text-xs text-slate-600">Chưa có dữ liệu biểu đồ.</div> : null}

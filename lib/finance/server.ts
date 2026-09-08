@@ -13,8 +13,18 @@ function moneyValue(value: unknown) {
   return Math.max(0, Math.round(numberValue(value) * 100) / 100);
 }
 
+function optionalMoneyValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  return moneyValue(value);
+}
+
 function percentValue(value: unknown) {
   return Math.max(0, Math.min(100, Math.round(numberValue(value) * 100) / 100));
+}
+
+function percentFromAmount(amount: number, contractValue: number) {
+  if (contractValue <= 0) return 0;
+  return Math.round((amount / contractValue) * 10000) / 100;
 }
 
 function textValue(value: unknown, max = 2000) {
@@ -35,11 +45,13 @@ function monthDate(value: unknown) {
 }
 
 function normalizeFinancialMonth(row: Dict, contractValue: number): FinancialMonth {
-  const forecastPercent = percentValue(row.forecast_percent);
-  const actualPercent = percentValue(row.actual_percent);
-  const forecastAmount = Math.round((contractValue * forecastPercent) / 100);
-  const actualAmount = Math.round((contractValue * actualPercent) / 100);
   const revenueAmount = moneyValue(row.revenue_amount);
+  const legacyForecastAmount = Math.round((contractValue * percentValue(row.forecast_percent)) / 100);
+  const legacyActualAmount = Math.round((contractValue * percentValue(row.actual_percent)) / 100);
+  const forecastAmount = optionalMoneyValue(row.forecast_amount) ?? (revenueAmount > 0 ? revenueAmount : legacyForecastAmount);
+  const actualAmount = optionalMoneyValue(row.actual_amount) ?? (revenueAmount > 0 ? revenueAmount : legacyActualAmount);
+  const forecastPercent = percentFromAmount(forecastAmount, contractValue);
+  const actualPercent = percentFromAmount(actualAmount, contractValue);
   const staffCostAmount = moneyValue(row.staff_cost_amount);
   const otherCostAmount = moneyValue(row.other_cost_amount);
   const totalCostAmount = Math.round((staffCostAmount + otherCostAmount) * 100) / 100;
@@ -66,8 +78,6 @@ function normalizeFinancialMonth(row: Dict, contractValue: number): FinancialMon
 }
 
 function buildSummary(months: FinancialMonth[], contractValue: number): FinancialSummary {
-  const forecastPercent = Math.round(months.reduce((sum, item) => sum + item.forecastPercent, 0) * 100) / 100;
-  const actualPercent = Math.round(months.reduce((sum, item) => sum + item.actualPercent, 0) * 100) / 100;
   const forecastAmount = months.reduce((sum, item) => sum + item.forecastAmount, 0);
   const actualAmount = months.reduce((sum, item) => sum + item.actualAmount, 0);
   const revenueAmount = months.reduce((sum, item) => sum + item.revenueAmount, 0);
@@ -77,8 +87,8 @@ function buildSummary(months: FinancialMonth[], contractValue: number): Financia
   const projectedProfitAmount = revenueAmount - totalCostAmount;
   return {
     contractValue,
-    forecastPercent,
-    actualPercent,
+    forecastPercent: percentFromAmount(forecastAmount, contractValue),
+    actualPercent: percentFromAmount(actualAmount, contractValue),
     forecastAmount,
     actualAmount,
     revenueAmount,
@@ -96,8 +106,8 @@ export function parseFinancialMonthInput(raw: unknown) {
   const parsedMonth = monthDate(body.monthDate);
   const fieldErrors: Record<string, string> = {};
   if (!parsedMonth) fieldErrors.monthDate = "Tháng tài chính không hợp lệ.";
-  const forecastPercent = percentValue(body.forecastPercent);
-  const actualPercent = percentValue(body.actualPercent);
+  const forecastAmount = moneyValue(body.forecastAmount);
+  const actualAmount = moneyValue(body.actualAmount);
   const revenueAmount = moneyValue(body.revenueAmount);
   const staffCostAmount = moneyValue(body.staffCostAmount);
   const otherCostAmount = moneyValue(body.otherCostAmount);
@@ -105,8 +115,8 @@ export function parseFinancialMonthInput(raw: unknown) {
     id: textValue(body.id, 80),
     projectId: textValue(body.projectId, 80),
     monthDate: parsedMonth,
-    forecastPercent,
-    actualPercent,
+    forecastAmount,
+    actualAmount,
     revenueAmount,
     staffCostAmount,
     otherCostAmount,
@@ -116,10 +126,16 @@ export function parseFinancialMonthInput(raw: unknown) {
 }
 
 export async function loadFinancialData(supabase: SupabaseClient, projectId: string, role: ProjectRole): Promise<FinancialData> {
-  const [projectResult, monthsResult] = await Promise.all([
-    supabase.from("projects").select("id,code,name,organization_name,contract_no,contract_value,start_date,due_date").eq("id", projectId).maybeSingle(),
-    supabase.from("project_financial_months").select("id,project_id,month_date,forecast_percent,actual_percent,revenue_amount,staff_cost_amount,other_cost_amount,notes,created_at,updated_at").eq("project_id", projectId).order("month_date", { ascending: true }),
+  const projectQuery = supabase.from("projects").select("id,code,name,organization_name,contract_no,contract_value,start_date,due_date").eq("id", projectId).maybeSingle();
+  const monthSelect = "id,project_id,month_date,forecast_percent,actual_percent,forecast_amount,actual_amount,revenue_amount,staff_cost_amount,other_cost_amount,notes,created_at,updated_at";
+  const [projectResult, initialMonthsResult] = await Promise.all([
+    projectQuery,
+    supabase.from("project_financial_months").select(monthSelect).eq("project_id", projectId).order("month_date", { ascending: true }),
   ]);
+  let monthsResult: { data: unknown[] | null; error: { message: string } | null } = initialMonthsResult as unknown as { data: unknown[] | null; error: { message: string } | null };
+  if (monthsResult.error && /forecast_amount|actual_amount|schema cache/i.test(monthsResult.error.message)) {
+    monthsResult = await supabase.from("project_financial_months").select("id,project_id,month_date,forecast_percent,actual_percent,revenue_amount,staff_cost_amount,other_cost_amount,notes,created_at,updated_at").eq("project_id", projectId).order("month_date", { ascending: true }) as unknown as { data: unknown[] | null; error: { message: string } | null };
+  }
   if (projectResult.error) throw new Error(projectResult.error.message);
   if (monthsResult.error) throw new Error(monthsResult.error.message);
   if (!projectResult.data) throw new Error("Project không tồn tại hoặc bạn không có quyền truy cập.");
@@ -152,16 +168,19 @@ export async function upsertFinancialMonth(supabase: SupabaseClient, projectId: 
   const payload = {
     project_id: projectId,
     month_date: input.monthDate,
-    forecast_percent: input.forecastPercent,
-    actual_percent: input.actualPercent,
+    forecast_percent: percentFromAmount(input.forecastAmount, contractValue),
+    actual_percent: percentFromAmount(input.actualAmount, contractValue),
+    forecast_amount: input.forecastAmount,
+    actual_amount: input.actualAmount,
     revenue_amount: input.revenueAmount,
     staff_cost_amount: input.staffCostAmount,
     other_cost_amount: input.otherCostAmount,
     notes: input.notes,
   };
+  const select = "id,project_id,month_date,forecast_percent,actual_percent,forecast_amount,actual_amount,revenue_amount,staff_cost_amount,other_cost_amount,notes,created_at,updated_at";
   const query = input.id
-    ? supabase.from("project_financial_months").update(payload).eq("id", input.id).eq("project_id", projectId).select("id,project_id,month_date,forecast_percent,actual_percent,revenue_amount,staff_cost_amount,other_cost_amount,notes,created_at,updated_at").single()
-    : supabase.from("project_financial_months").upsert(payload, { onConflict: "project_id,month_date" }).select("id,project_id,month_date,forecast_percent,actual_percent,revenue_amount,staff_cost_amount,other_cost_amount,notes,created_at,updated_at").single();
+    ? supabase.from("project_financial_months").update(payload).eq("id", input.id).eq("project_id", projectId).select(select).single()
+    : supabase.from("project_financial_months").upsert(payload, { onConflict: "project_id,month_date" }).select(select).single();
   const { data, error } = await query;
   if (error || !data) throw new Error(error?.message ?? "Không lưu được dữ liệu tài chính.");
   return normalizeFinancialMonth(data as Dict, contractValue);
