@@ -11,6 +11,7 @@ import { useProject } from "@/components/project-context";
 import { DEFAULT_NAV_ORDER, normalizeNavigationOrder, normalizeWorkspacePreferences } from "@/lib/workspace-preferences";
 import type { NavigationDisplayLabels, NavigationHref, WorkspacePreferencesApiResponse } from "@/lib/workspace-preferences";
 import { cn } from "@/lib/utils";
+import { APP_VERSION_LABEL } from "@/lib/app-meta";
 
 const NAV_PREFERENCES_STORAGE_KEY = "asc-working-nav-preferences-v200";
 const NAV_ORDER_STORAGE_KEY = "asc-working-nav-order-v160";
@@ -224,7 +225,7 @@ export function Sidebar({
             <div className={cn("min-w-0", collapsed && "hidden")}>
               <div className="text-[9px] font-medium uppercase tracking-[0.16em] text-slate-600">Project hiện tại</div>
               <div className="mt-1 truncate text-[11px] font-semibold text-slate-300">{selectedProject.code} • {selectedProject.organizationName || selectedProject.name}</div>
-              <div className="mt-1 text-[9px] uppercase tracking-[0.15em] text-slate-700">V3.2.0 • {isMaster ? "MASTER • ALL PROJECTS" : "PROJECT ACCESS"}</div>
+              <div className="mt-1 text-[9px] uppercase tracking-[0.15em] text-slate-700">{APP_VERSION_LABEL} • {isMaster ? "MASTER • ALL PROJECTS" : "PROJECT ACCESS"}</div>
             </div>
           </div>
         </div>

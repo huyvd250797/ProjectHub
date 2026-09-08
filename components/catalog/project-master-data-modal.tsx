@@ -19,6 +19,7 @@ import {
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useProject } from "@/components/project-context";
+import { APP_VERSION_LABEL } from "@/lib/app-meta";
 import { ProjectQuickImportButton } from "@/components/catalog/quick-import-modal";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import type {
@@ -329,7 +330,7 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
         <header className="flex items-start gap-4 border-b border-white/[0.06] px-5 py-4 md:px-6">
           <div className="grid size-11 shrink-0 place-items-center rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.05]"><Settings2 className="size-4.5 text-cyan-200/80" /></div>
           <div className="min-w-0 flex-1">
-          <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/60">Project Master Data • V3.1.0</div>
+          <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/60">Project Master Data • {APP_VERSION_LABEL}</div>
             <h2 className="mt-1 text-lg font-semibold text-white">Danh mục {selectedProject.code} • {selectedProject.name}</h2>
             <p className="mt-1 text-[10px] text-slate-500">Danh mục là nguồn chuẩn cho PLHĐ. Dữ liệu có trong danh mục mới được hiển thị ra lưới PLHĐ bên ngoài.</p>
           </div>

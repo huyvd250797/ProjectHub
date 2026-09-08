@@ -1,4 +1,15 @@
-# ASC WORKING - V3.2.0
+# ASC WORKING - V3.3.0
+
+## V3.3.0 có gì mới?
+
+### Data Integrity & Source of Truth
+
+- Bổ sung kiểm tra nhất quán giữa nguồn danh mục và màn nghiệp vụ của Plan, ISSUE, PLHĐ, Finance và Workload.
+- Hiển thị Integrity Score, mức độ lỗi, nhóm dữ liệu, entity bị lệch và hướng dẫn màn hình cần sửa.
+- Readiness có thêm kiểm tra Data Integrity để chặn báo cáo khi gặp lỗi critical.
+- Không tự động sửa, xóa hoặc ghi đè dữ liệu; không thêm migration mới. Bản này chỉ đọc schema hiện có và đề xuất xử lý an toàn.
+
+Mở `Thiết lập → Data Integrity & Source of Truth` để chạy kiểm tra theo Project.
 
 ## V3.2.0 có gì mới?
 

@@ -1,0 +1,61 @@
+import type { DataIntegrityReport } from "@/lib/data-integrity/types";
+
+export function createDemoDataIntegrityReport(projectId: string): DataIntegrityReport {
+  return {
+    source: "demo",
+    projectId,
+    projectCode: "DEMO",
+    generatedAt: new Date().toISOString(),
+    status: "attention",
+    score: 88,
+    summary: "Demo Mode đang mô phỏng kiểm tra source-of-truth. Kết nối Supabase để audit dữ liệu thật theo Project.",
+    metrics: {
+      issues: 24,
+      modules: 8,
+      departments: 5,
+      people: 12,
+      stages: 4,
+      milestones: 6,
+      tasks: 18,
+      financialMonths: 5,
+      findings: 2,
+      critical: 0,
+      high: 1,
+    },
+    domains: [
+      { domain: "catalog", label: "Catalog / PLHĐ", status: "clean", findingCount: 0, criticalCount: 0, highCount: 0 },
+      { domain: "issue", label: "ISSUE", status: "attention", findingCount: 1, criticalCount: 0, highCount: 1 },
+      { domain: "plan", label: "Plan", status: "attention", findingCount: 1, criticalCount: 0, highCount: 0 },
+      { domain: "finance", label: "Finance", status: "clean", findingCount: 0, criticalCount: 0, highCount: 0 },
+      { domain: "workload", label: "Workload", status: "clean", findingCount: 0, criticalCount: 0, highCount: 0 },
+    ],
+    findings: [
+      {
+        id: "demo-issue-missing-module",
+        domain: "issue",
+        severity: "high",
+        title: "ISSUE thiếu Module trong danh mục",
+        detail: "Một ISSUE đang không gắn module_id nên Workload/Finance/PLHĐ không thể đối chiếu đủ.",
+        entityType: "issue",
+        entityId: null,
+        entityLabel: "ISSUE #12",
+        expectedSource: "Danh mục PLHĐ / Module",
+        fixHint: "Mở ISSUE và chọn lại Module từ danh mục PLHĐ hiện hành.",
+        href: "/issues",
+      },
+      {
+        id: "demo-task-outside-stage",
+        domain: "plan",
+        severity: "medium",
+        title: "Task nằm ngoài ngày Stage",
+        detail: "Task có due date vượt khỏi khoảng ngày của Stage nên timeline có thể báo sai.",
+        entityType: "plan_task",
+        entityId: null,
+        entityLabel: "UAT tổng thể",
+        expectedSource: "Project Stages",
+        fixHint: "Điều chỉnh ngày task hoặc ngày stage trong màn Kế hoạch.",
+        href: "/plan",
+      },
+    ],
+  };
+}

@@ -3,6 +3,7 @@ import { Logo } from "@/components/logo";
 import { LoginForm } from "@/components/login-form";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { APP_VERSION_LABEL } from "@/lib/app-meta";
 
 export const metadata = { title: "Đăng nhập" };
 
@@ -53,7 +54,7 @@ export default function LoginPage() {
             </div>
           </div>
           <div className="text-[9px] uppercase tracking-[0.2em] text-slate-700">
-            © 2026 HuyVo • ASC WORKING V3.2.0
+            © 2026 HuyVo • ASC WORKING {APP_VERSION_LABEL}
           </div>
         </section>
 

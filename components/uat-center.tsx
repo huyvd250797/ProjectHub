@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Circle, ClipboardCheck, Copy, LoaderCircle, RefreshCw, ShieldCheck, TriangleAlert, XCircle } from "lucide-react";
 import { useProject } from "@/components/project-context";
 import type { ReadinessApiResponse, ReadinessData, ReadinessStatus } from "@/lib/readiness/types";
+import { APP_VERSION_LABEL } from "@/lib/app-meta";
 
 const manualItems = [
   ["login", "Đăng nhập/đăng xuất và redirect hoạt động ổn định"],
@@ -68,7 +69,7 @@ export function UatCenter() {
 
   async function copyReport() {
     const lines = [
-      `ASC WORKING V3.1.0 - UAT Report`,
+      `ASC WORKING ${APP_VERSION_LABEL} - UAT Report`,
       `Project: ${selectedProject.code} - ${selectedProject.name}`,
       `Generated: ${new Date().toLocaleString("vi-VN")}`,
       `Automated readiness: ${data?.overall ?? "unknown"}`,

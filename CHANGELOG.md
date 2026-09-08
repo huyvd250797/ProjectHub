@@ -1,5 +1,18 @@
 # Changelog
 
+## V3.3.0 - Data Integrity & Source of Truth
+
+### Added
+
+- Dashboard audit theo Project cho Plan, ISSUE, PLHĐ, Finance và Workload.
+- Integrity Score, trạng thái Clean/Attention/Blocked, thống kê theo domain và finding có link về màn sửa.
+- Readiness/Health nhận diện source-of-truth audit và các feature data quality.
+
+### Safety
+
+- Chỉ đọc và đề xuất sửa; không tự động update/delete/archive dữ liệu.
+- Không có migration mới; tiếp tục dùng schema hiện có đến V3.2.3.
+
 ## V3.1.0 - Project Financial Control
 
 ### Added

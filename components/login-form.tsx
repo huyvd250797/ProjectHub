@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, LoaderCircle, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { APP_VERSION_LABEL } from "@/lib/app-meta";
 
 export function LoginForm({ configured }: { configured: boolean }) {
   const router = useRouter();
@@ -121,7 +122,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
       {!configured ? (
         <div className="mt-6 border-t border-white/[0.06] pt-5">
           <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300/70">
-            V3.1.0 Demo Mode
+            {APP_VERSION_LABEL} Demo Mode
           </div>
           <p className="mb-4 text-xs leading-5 text-slate-500">
             Chưa có biến môi trường Supabase. Bạn vẫn có thể xem toàn bộ Dashboard và giao diện workspace.

@@ -26,6 +26,7 @@ import {
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useProject } from "@/components/project-context";
 import { ThemedSelect } from "@/components/ui/themed-select";
+import { APP_VERSION_LABEL } from "@/lib/app-meta";
 import type {
   DepartmentRow,
   DepartmentsApiResponse,
@@ -505,7 +506,7 @@ export function DepartmentIntelligence({ initialDepartmentId = "" }: { initialDe
             <div>
               <div className="text-xs font-semibold text-amber-100">Project chưa có dữ liệu Phòng ban/ISSUE</div>
               <div className="mt-1 text-[10px] leading-5 text-amber-100/45">
-                V1.3.2 đang đọc Supabase thật và không lấy số mock để che dữ liệu trống. Hãy nạp departments, people, contract_items và issues cho project đang chọn.
+                {APP_VERSION_LABEL} đang đọc Supabase thật và không lấy số mock để che dữ liệu trống. Hãy nạp departments, people, contract_items và issues cho project đang chọn.
               </div>
             </div>
           </div>
@@ -678,7 +679,7 @@ export function DepartmentIntelligence({ initialDepartmentId = "" }: { initialDe
 
         <div className="flex flex-col gap-2 border-t border-white/[0.04] px-4 py-3 text-[9px] uppercase tracking-[0.12em] text-slate-700 sm:flex-row sm:items-center sm:justify-between">
           <span>{filteredRows.length} / {data.departments.length} nhóm hiển thị • Source: {data.source === "database" ? "Supabase" : "Demo Mode"}</span>
-          <span>ASC WORKING V1.3.2 • Department Intelligence</span>
+          <span>ASC WORKING {APP_VERSION_LABEL} • Department Intelligence</span>
         </div>
       </div>
 

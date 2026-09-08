@@ -6,6 +6,8 @@ import { getGlobalRole, getEffectiveProjectRole } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { googleDriveReady } from "@/lib/documents/google-drive";
+import { isDataIntegritySourceMissing, loadDataIntegrityReport } from "@/lib/data-integrity/server";
+import { APP_VERSION } from "@/lib/app-meta";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +40,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "3.2.0",
+        version: APP_VERSION,
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -70,7 +72,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "3.2.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: APP_VERSION, projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -383,12 +385,34 @@ export async function GET(request: NextRequest) {
     checks.push(check("data_quality", "UAT data quality", "warn", "Không chạy được kiểm tra chất lượng dữ liệu nhanh.", quality.durationMs));
   }
 
+  const integrity = await timed(async () => loadDataIntegrityReport(supabase, projectId, role));
+  const integrityReport = integrity.value;
+  const integrityMessage = integrity.error instanceof Error ? integrity.error.message : "";
+  const integrityStatus: ReadinessStatus = integrity.error
+    ? (isDataIntegritySourceMissing(integrityMessage) ? "warn" : "fail")
+    : integrityReport?.status === "blocked"
+      ? "fail"
+      : integrityReport?.status === "attention"
+        ? "warn"
+        : "pass";
+  checks.push(check(
+    "data_integrity",
+    "Data Integrity & Source of Truth",
+    integrityStatus,
+    integrity.error
+      ? (isDataIntegritySourceMissing(integrityMessage)
+        ? "Data Integrity chưa chạy được vì schema nguồn chưa đủ; kiểm tra các migration hiện có đến V3.2.3."
+        : `Không kiểm tra được source-of-truth: ${integrityMessage}`)
+      : integrityReport?.summary ?? "Đã kiểm tra nhất quán giữa danh mục và các màn nghiệp vụ.",
+    integrity.durationMs,
+  ));
+
   const overall = checks.some((item) => item.status === "fail") ? "blocked" : checks.some((item) => item.status === "warn") ? "attention" : "ready";
   const body: ReadinessApiResponse = {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "3.2.0",
+      version: APP_VERSION,
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

@@ -26,6 +26,7 @@ import { ThemedSelect } from "@/components/ui/themed-select";
 import type { ProjectCatalogMutationResponse } from "@/lib/catalog/types";
 import type { ContractApiResponse, ContractData, ContractDetailItem, ContractOverviewItem } from "@/lib/contract/types";
 import { cn } from "@/lib/utils";
+import { APP_VERSION_LABEL } from "@/lib/app-meta";
 
 type PlhdNodeKind = "root" | "subsystem" | "module" | "function";
 type PlhdNode = {
@@ -666,7 +667,7 @@ export function ContractView() {
 
         <div className="flex flex-col gap-2 border-t border-white/[0.05] px-4 py-3 text-[9px] text-slate-700 md:flex-row md:items-center md:justify-between">
           <span>{data.source === "database" ? "Supabase • project_id scoped" : "Demo Mode"} • Generated {new Date(data.generatedAt).toLocaleTimeString("vi-VN")}</span>
-          <span>V3.1.0 • Project Financial Control</span>
+          <span>{APP_VERSION_LABEL} • Data Integrity & Source of Truth</span>
         </div>
       </div>
 

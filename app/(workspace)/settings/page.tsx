@@ -8,6 +8,7 @@ import {
   Code2,
   Crown,
   Database,
+  DatabaseZap,
   FileSpreadsheet,
   FolderOpen,
   ClipboardCheck,
@@ -24,6 +25,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { isMasterUser } from "@/lib/access";
 import { googleDriveReady } from "@/lib/documents/google-drive";
+import { APP_RELEASE, APP_VERSION_LABEL } from "@/lib/app-meta";
 
 export const metadata = { title: "Thiết lập" };
 
@@ -48,6 +50,7 @@ export default async function SettingsPage() {
     { label: "Notifications & Activity", text: "Bell inbox + Activity Feed + Due Reminder + Preferences", ok: true, icon: Activity },
     { label: "Project Documents", text: driveReady ? "Google Drive OAuth + private proxy" : "Cần cấu hình Google Drive OAuth", ok: driveReady, icon: FolderOpen },
     { label: "Master Plan", text: "Stage Từ ngày–Đến ngày + Timeline + Milestones", ok: true, icon: Map },
+    { label: "Data Integrity", text: "Source-of-truth audit cho Plan, ISSUE, PLHĐ, Finance và Workload", ok: true, icon: DatabaseZap },
   ];
 
   return (
@@ -55,7 +58,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="System Foundation"
         title="Thiết lập Project Workspace"
-        description="ASC WORKING V3.1.0 bổ sung Project Financial Control: quản lý hợp đồng, forecast, actual, revenue, chi phí nhân sự và lợi nhuận dự kiến."
+        description={`${APP_VERSION_LABEL} tập trung bảo đảm Plan, ISSUE, PLHĐ, Finance và Workload dùng đúng nguồn dữ liệu thống nhất.`}
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -102,6 +105,23 @@ export default async function SettingsPage() {
       ) : null}
 
       <Link
+        href="/settings/data-integrity"
+        className="tech-panel tech-panel-hover mt-4 flex flex-col gap-4 rounded-2xl border-cyan-300/10 p-5 md:flex-row md:items-center md:p-6"
+      >
+        <div className="grid size-12 shrink-0 place-items-center rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.055]">
+          <DatabaseZap className="size-5 text-cyan-200/80" />
+        </div>
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/60">Source of Truth</div>
+          <div className="mt-1 text-sm font-semibold text-slate-200">Data Integrity & Source of Truth</div>
+          <div className="mt-1 text-xs leading-5 text-slate-600">Rà lỗi tham chiếu giữa danh mục và màn nghiệp vụ; chỉ đề xuất sửa, không tự ý ghi đè dữ liệu.</div>
+        </div>
+        <div className="flex items-center gap-2 text-xs font-medium text-cyan-200/80 md:ml-auto">
+          Chạy kiểm tra <ArrowRight className="size-4" />
+        </div>
+      </Link>
+
+      <Link
         href="/settings/uat"
         className="tech-panel tech-panel-hover mt-4 flex flex-col gap-4 rounded-2xl p-5 md:flex-row md:items-center md:p-6"
       >
@@ -111,7 +131,7 @@ export default async function SettingsPage() {
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/60">Production Tool</div>
           <div className="mt-1 text-sm font-semibold text-slate-200">Hardening & UAT Center</div>
-          <div className="mt-1 text-xs leading-5 text-slate-600">Chạy automated readiness, kiểm tra RLS/schema/security environment, Command Center, Portfolio, Resource Scheduling, Financial Control và regression testcase cho V3.1.0.</div>
+          <div className="mt-1 text-xs leading-5 text-slate-600">Chạy automated readiness, kiểm tra RLS/schema/security environment và regression testcase cho bản phát hành hiện tại.</div>
         </div>
         <div className="flex items-center gap-2 text-xs font-medium text-cyan-200/80 md:ml-auto">
           Mở UAT Center <ArrowRight className="size-4" />
@@ -173,8 +193,8 @@ export default async function SettingsPage() {
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Release</div>
         <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-lg font-semibold text-white">ASC WORKING V3.1.0</div>
-            <div className="mt-1 text-xs text-slate-500">Project Financial Control</div>
+            <div className="text-lg font-semibold text-white">ASC WORKING {APP_VERSION_LABEL}</div>
+            <div className="mt-1 text-xs text-slate-500">{APP_RELEASE}</div>
           </div>
           <span className="w-fit rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200">
             Production Ready
