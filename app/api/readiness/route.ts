@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "2.6.1",
+        version: "3.0.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "2.6.1", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "3.0.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -248,6 +248,26 @@ export async function GET(request: NextRequest) {
     resourceSchedulingSchema.durationMs,
   ));
 
+  const enterpriseSuite = await timed(async () => Promise.all([
+    supabase.from("projects").select("id,code,name,status,start_date,due_date", { count: "exact", head: true }).eq("id", projectId),
+    supabase.from("issues").select("id,assignee_person_id,module_id,department_id,status_code,due_date", { count: "exact", head: true }).eq("project_id", projectId).is("archived_at", null),
+    supabase.from("contract_items").select("id,item_type", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("contract_detail_items").select("id", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("project_plan_tasks").select("id,status,priority,due_date,owner_person_id,estimated_hours", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("people").select("id,capacity_hours_per_week,allocation_target_percent", { count: "exact", head: true }).eq("project_id", projectId).eq("person_type", "asc").eq("is_active", true),
+    supabase.from("report_snapshots").select("id", { count: "exact", head: true }).eq("project_id", projectId),
+  ]));
+  const enterpriseSuiteError = enterpriseSuite.error || enterpriseSuite.value?.find((result) => result.error)?.error;
+  checks.push(check(
+    "enterprise_project_suite",
+    "Enterprise Project Suite",
+    enterpriseSuiteError ? "fail" : "pass",
+    enterpriseSuiteError
+      ? "Không đủ nguồn dữ liệu Project/ISSUE/PLHĐ/Plan/Resource/Report để dựng lớp quản trị V3.0.0."
+      : "Enterprise Suite có đủ nguồn dữ liệu để tính PMO maturity score, readiness gates, operating model và priority board.",
+    enterpriseSuite.durationMs,
+  ));
+
   const notificationsSchema = await timed(async () => Promise.all([
     supabase.from("activity_events").select("id", { count: "exact", head: true }).eq("project_id", projectId),
     supabase.from("notifications").select("id", { count: "exact", head: true }).eq("project_id", projectId).eq("user_id", user.id),
@@ -357,7 +377,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "2.6.1",
+      version: "3.0.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,
