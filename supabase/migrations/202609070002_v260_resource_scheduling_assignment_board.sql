@@ -24,7 +24,7 @@ create policy resource_assignment_events_select_member_v260
   on public.resource_assignment_events
   for select
   using (
-    public.is_project_member_v090(project_id)
+    public.is_project_member(project_id)
     or exists (
       select 1 from public.profiles p
       where p.id = auth.uid()
@@ -37,7 +37,7 @@ create policy resource_assignment_events_insert_pm_v260
   on public.resource_assignment_events
   for insert
   with check (
-    public.get_project_role_v090(project_id) in ('admin', 'pm')
+    public.has_project_role(project_id, array['admin','pm'])
     or exists (
       select 1 from public.profiles p
       where p.id = auth.uid()

@@ -1,6 +1,26 @@
 # Changelog
 
+## V2.6.1 — Allocation Board UX & ISSUE Columns
+
+### Added
+
+- Allocation Board có nút **Full Screen** để mở không gian thao tác rộng hơn, thoát bằng nút **Thoát** hoặc phím Esc.
+- Cột **Nhân sự** trên bảng phân bổ được cố định khi kéo ngang qua các tuần.
+- Có thể thu gọn/mở rộng từng nhân sự, kèm nút **Thu gọn tất cả** và **Mở rộng tất cả** để xem tổng quan khi nhiều task.
+- ISSUE grid bổ sung đủ cột theo form tạo/sửa ISSUE: Giai đoạn, Nhân sự yêu cầu, Ngày release, ASC phản hồi và Ghi chú.
+- Cấu hình cột ISSUE tự nhận các cột mới cho user đang có preference cũ.
+
+### Database
+
+- Không có migration mới. Tiếp tục dùng migration V2.5.0/V2.6.0 hiện có.
+
 ## V2.6.0 — Resource Scheduling & Assignment Board
+
+### SQL Fix
+
+- Sửa migration `202609070002_v260_resource_scheduling_assignment_board.sql` không còn gọi helper không tồn tại `public.is_project_member_v090(...)` và `public.get_project_role_v090(...)`.
+- RLS policy của `resource_assignment_events` dùng đúng helper hiện có: `public.is_project_member(...)` và `public.has_project_role(..., array['admin','pm'])`.
+- Preflight bổ sung kiểm tra để không lọt lại lỗi `_v090` trong migration V2.6.0.
 
 ### Added
 

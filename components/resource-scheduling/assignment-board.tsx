@@ -4,9 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CalendarDays,
+  ChevronDown,
+  ChevronRight,
   Clock3,
   GripVertical,
   LoaderCircle,
+  Maximize2,
+  Minimize2,
   RefreshCw,
   Search,
   UserPlus,
@@ -127,6 +131,7 @@ function MemberCell({
   members,
   draggingItem,
   assigningKey,
+  collapsed,
   onAssign,
   onDragStart,
 }: {
@@ -135,6 +140,7 @@ function MemberCell({
   members: ResourceScheduleMember[];
   draggingItem: ResourceScheduleItem | null;
   assigningKey: string;
+  collapsed: boolean;
   onAssign: (item: ResourceScheduleItem, assigneeId: string | null) => void;
   onDragStart: (item: ResourceScheduleItem) => void;
 }) {
@@ -147,7 +153,7 @@ function MemberCell({
         event.preventDefault();
         if (draggingItem) onAssign(draggingItem, member.id);
       }}
-      className={cn("min-w-[260px] border-l border-white/[0.045] p-3 align-top transition", wouldOverload && "bg-rose-300/[0.045]")}
+      className={cn("min-w-[260px] border-l border-white/[0.045] p-3 align-top transition", collapsed && "py-2", wouldOverload && "bg-rose-300/[0.045]")}
     >
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-semibold", levelClass[week.level])}>{levelLabel[week.level]}</span>
@@ -163,8 +169,15 @@ function MemberCell({
         {formatHours(week.plannedHours)} / {formatHours(member.effectiveCapacityHours)}
         {week.overloadHours ? <span className="text-rose-200"> • vượt {formatHours(week.overloadHours)}</span> : <span> • còn {formatHours(week.availableHours)}</span>}
       </div>
+      {collapsed ? (
+        <div className="mt-2 rounded-lg border border-white/[0.055] bg-white/[0.018] px-2 py-1.5 text-[10px] text-slate-600">
+          {week.items.length ? `${week.items.length} việc đã phân bổ` : "Chưa có việc"}
+        </div>
+      ) : null}
+      {!collapsed ? (
+        <>
       {wouldOverload ? <div className="mt-2 rounded-lg border border-rose-300/15 bg-rose-300/[0.055] px-2 py-1 text-[10px] text-rose-100">Nếu thả vào đây sẽ vượt capacity tuần.</div> : null}
-      <div className="mt-3 space-y-2">
+      <div className="scrollbar-thin mt-3 max-h-[520px] space-y-2 overflow-auto pr-1">
         {week.items.map((item) => (
           <WorkItemCard
             key={`${item.type}-${item.id}`}
@@ -177,6 +190,8 @@ function MemberCell({
         ))}
         {!week.items.length ? <div className="rounded-xl border border-dashed border-white/[0.07] px-3 py-6 text-center text-[10px] text-slate-700">Thả việc vào đây để phân công</div> : null}
       </div>
+        </>
+      ) : null}
     </td>
   );
 }
@@ -191,6 +206,8 @@ export function AssignmentBoard() {
   const [startDate, setStartDate] = useState(todayOnly());
   const [draggingItem, setDraggingItem] = useState<ResourceScheduleItem | null>(null);
   const [assigningKey, setAssigningKey] = useState("");
+  const [collapsedMemberIds, setCollapsedMemberIds] = useState<Set<string>>(new Set());
+  const [fullScreen, setFullScreen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -218,7 +235,25 @@ export function AssignmentBoard() {
     };
   }, [selectedProject.id, startDate, reloadKey]);
 
+  useEffect(() => {
+    if (!fullScreen) return;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFullScreen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [fullScreen]);
+
   const members = data?.members ?? [];
+  const collapsedCount = members.filter((member) => collapsedMemberIds.has(member.id)).length;
   const visibleUnassigned = useMemo(() => {
     const keyword = query.trim().toLowerCase();
     return (data?.unassignedItems ?? []).filter((item) => !keyword || [item.code, item.title, item.status, item.priority, item.moduleName, item.departmentName, item.stageName].some((value) => String(value ?? "").toLowerCase().includes(keyword)));
@@ -246,7 +281,7 @@ export function AssignmentBoard() {
   }
 
   return (
-    <>
+    <div className={cn(fullScreen && "fixed inset-0 z-[130] flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-[#07111f] p-3 md:p-4")} data-allocation-fullscreen={fullScreen ? "true" : "false"}>
       <PageHeader
         eyebrow="Resource Scheduling"
         title={`${selectedProject.code} • Assignment Board`}
@@ -262,6 +297,10 @@ export function AssignmentBoard() {
             <button type="button" onClick={() => setReloadKey((value) => value + 1)} className="grid size-10 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-slate-500 hover:text-cyan-200" aria-label="Tải lại Assignment Board">
               <RefreshCw className={cn("size-4", loading && "animate-spin")} />
             </button>
+            <button type="button" onClick={() => setFullScreen((value) => !value)} className={cn("flex h-10 items-center gap-2 rounded-xl border px-3 text-[10px] font-semibold transition", fullScreen ? "border-cyan-300/18 bg-cyan-300/[0.08] text-cyan-100" : "border-white/[0.08] bg-white/[0.025] text-slate-500 hover:text-cyan-200")} title={fullScreen ? "Thoát Full Screen (Esc)" : "Mở Allocation toàn màn hình"}>
+              {fullScreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
+              {fullScreen ? "Thoát" : "Full Screen"}
+            </button>
           </div>
         }
       />
@@ -276,8 +315,8 @@ export function AssignmentBoard() {
       ) : null}
 
       {data ? (
-        <div className="space-y-4">
-          <section className="grid grid-cols-2 gap-3 xl:grid-cols-6">
+        <div className={cn("space-y-4", fullScreen && "flex min-h-0 flex-1 flex-col")}>
+          <section className={cn("grid grid-cols-2 gap-3 xl:grid-cols-6", fullScreen && "hidden")}>
             <KpiCard label="Nhân sự" value={data.summary.memberCount} note="ASC active trong project" icon={UsersRound} />
             <KpiCard label="Assignable" value={data.summary.assignableItems} note="ISSUE/task đã có lịch phân bổ" icon={CalendarDays} />
             <KpiCard label="Chưa phân công" value={data.summary.unassignedItems} note="Cần kéo vào người phù hợp" icon={UserPlus} tone={data.summary.unassignedItems ? "amber" : "emerald"} />
@@ -286,8 +325,8 @@ export function AssignmentBoard() {
             <KpiCard label="Available" value={formatHours(data.summary.totalAvailableHours)} note={`Overload ${formatHours(data.summary.totalOverloadHours)}`} icon={UsersRound} tone="emerald" />
           </section>
 
-          <section className="grid grid-cols-1 gap-4 xl:grid-cols-[360px_1fr]">
-            <aside className="tech-panel h-fit rounded-2xl">
+          <section className={cn("grid grid-cols-1 gap-4 xl:grid-cols-[360px_1fr]", fullScreen && "min-h-0 flex-1 xl:grid-cols-[340px_1fr]")}>
+            <aside className={cn("tech-panel h-fit rounded-2xl", fullScreen && "flex min-h-0 flex-col overflow-hidden")}>
               <div
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={(event) => {
@@ -306,7 +345,7 @@ export function AssignmentBoard() {
                   <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm ISSUE/task..." className="min-w-0 flex-1 bg-transparent text-xs text-slate-200 outline-none placeholder:text-slate-700" />
                 </label>
               </div>
-              <div className="max-h-[680px] space-y-2 overflow-auto p-4">
+              <div className={cn("space-y-2 overflow-auto p-4", fullScreen ? "min-h-0 flex-1" : "max-h-[680px]")}>
                 {visibleUnassigned.map((item) => (
                   <WorkItemCard key={`${item.type}-${item.id}`} item={item} members={members} assigning={assigningKey === `${item.type}:${item.id}`} onAssign={assignItem} onDragStart={setDraggingItem} />
                 ))}
@@ -314,19 +353,23 @@ export function AssignmentBoard() {
               </div>
             </aside>
 
-            <div className="tech-panel overflow-hidden rounded-2xl">
-              <div className="flex flex-col gap-2 border-b border-white/[0.07] p-4 md:flex-row md:items-center md:justify-between">
+            <div className={cn("tech-panel overflow-hidden rounded-2xl", fullScreen && "flex min-h-0 flex-col")}>
+              <div className="flex flex-col gap-3 border-b border-white/[0.07] p-4 md:flex-row md:items-center md:justify-between">
                 <div>
                   <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Weekly Assignment Board</div>
                   <h2 className="mt-1.5 text-sm font-semibold text-white">Bảng phân bổ theo tuần</h2>
                 </div>
-                <div className="text-[10px] text-slate-600">Kéo card giữa các nhân sự để điều phối lại. Board tự cảnh báo khi vượt capacity.</div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="text-[10px] text-slate-600">Kéo card giữa các nhân sự để điều phối lại. Đã thu gọn {collapsedCount}/{members.length} nhân sự.</div>
+                  <button type="button" onClick={() => setCollapsedMemberIds(new Set(members.map((member) => member.id)))} className="h-8 rounded-lg border border-white/[0.07] px-3 text-[10px] text-slate-500 hover:text-cyan-200">Thu gọn tất cả</button>
+                  <button type="button" onClick={() => setCollapsedMemberIds(new Set())} className="h-8 rounded-lg border border-white/[0.07] px-3 text-[10px] text-slate-500 hover:text-cyan-200">Mở rộng tất cả</button>
+                </div>
               </div>
-              <div className="overflow-auto">
+              <div className={cn("overflow-auto", fullScreen && "min-h-0 flex-1")}>
                 <table className="asc-data-grid min-w-[1760px] w-full text-left text-sm">
                   <thead className="sticky top-0 z-10 border-b border-white/[0.07] bg-[#122238] text-[10px] uppercase tracking-[0.16em] text-slate-600">
                     <tr>
-                      <th className="w-[260px] px-4 py-3">Nhân sự</th>
+                      <th className="sticky left-0 top-0 z-30 w-[280px] min-w-[280px] border-r border-white/[0.06] bg-[#122238] px-4 py-3 shadow-[10px_0_24px_rgba(0,0,0,0.18)]">Nhân sự</th>
                       {data.weeks.map((week) => (
                         <th key={week.id} className="min-w-[260px] border-l border-white/[0.045] px-4 py-3">
                           <div className="text-slate-400">{week.label}</div>
@@ -336,23 +379,42 @@ export function AssignmentBoard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/[0.055]">
-                    {members.map((member) => (
-                      <tr key={member.id} className="align-top">
-                        <td className="sticky left-0 z-[2] w-[260px] bg-[#102035] px-4 py-4">
-                          <div className="font-semibold text-cyan-100">{member.name}</div>
-                          <div className="mt-1 text-[11px] leading-5 text-slate-600">{member.title ?? member.role ?? "ASC Team"}{member.departmentName ? ` • ${member.departmentName}` : ""}</div>
-                          <div className="mt-3 rounded-xl border border-white/[0.055] bg-white/[0.018] p-3">
+                    {members.map((member) => {
+                      const collapsed = collapsedMemberIds.has(member.id);
+                      return (
+                      <tr key={member.id} className={cn("align-top", collapsed && "bg-white/[0.012]")}>
+                        <td className="sticky left-0 z-[2] w-[280px] min-w-[280px] border-r border-white/[0.055] bg-[#102035] px-4 py-4 shadow-[10px_0_24px_rgba(0,0,0,0.14)]">
+                          <div className="flex items-start gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setCollapsedMemberIds((current) => {
+                                const next = new Set(current);
+                                if (next.has(member.id)) next.delete(member.id);
+                                else next.add(member.id);
+                                return next;
+                              })}
+                              className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-lg border border-white/[0.07] text-slate-500 hover:border-cyan-300/20 hover:text-cyan-200"
+                              aria-label={collapsed ? `Mở rộng ${member.name}` : `Thu gọn ${member.name}`}
+                            >
+                              {collapsed ? <ChevronRight className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                            </button>
+                            <div className="min-w-0">
+                              <div className="whitespace-normal break-words font-semibold text-cyan-100">{member.name}</div>
+                              <div className="mt-1 text-[11px] leading-5 text-slate-600">{member.title ?? member.role ?? "ASC Team"}{member.departmentName ? ` • ${member.departmentName}` : ""}</div>
+                            </div>
+                          </div>
+                          <div className={cn("mt-3 rounded-xl border border-white/[0.055] bg-white/[0.018] p-3", collapsed && "py-2")}>
                             <div className="text-[10px] text-slate-600">Capacity/tuần</div>
                             <div className="mt-1 text-sm font-semibold text-white">{formatHours(member.effectiveCapacityHours)}</div>
-                            <div className="mt-1 text-[10px] text-slate-700">{formatHours(member.capacityHoursPerWeek)} × {member.allocationTargetPercent}% target</div>
+                            {!collapsed ? <div className="mt-1 text-[10px] text-slate-700">{formatHours(member.capacityHoursPerWeek)} × {member.allocationTargetPercent}% target</div> : null}
                           </div>
                           <div className="mt-2 text-[10px] text-slate-600">Avg allocation {member.averageAllocationPercent}% • overload {formatHours(member.totalOverloadHours)}</div>
                         </td>
                         {member.weeks.map((week) => (
-                          <MemberCell key={`${member.id}-${week.weekId}`} member={member} week={week} members={members} draggingItem={draggingItem} assigningKey={assigningKey} onAssign={assignItem} onDragStart={setDraggingItem} />
+                          <MemberCell key={`${member.id}-${week.weekId}`} member={member} week={week} members={members} draggingItem={draggingItem} assigningKey={assigningKey} collapsed={collapsed} onAssign={assignItem} onDragStart={setDraggingItem} />
                         ))}
                       </tr>
-                    ))}
+                    );})}
                     {!members.length ? (
                       <tr>
                         <td colSpan={data.weeks.length + 1} className="px-4 py-12 text-center text-xs text-slate-600">Chưa có nhân sự ASC trong project.</td>
@@ -370,6 +432,6 @@ export function AssignmentBoard() {
           Đang chuẩn bị Resource Scheduling.
         </div>
       )}
-    </>
+    </div>
   );
 }

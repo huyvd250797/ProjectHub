@@ -111,11 +111,16 @@ export type IssueColumnId =
   | "status"
   | "customerStatus"
   | "priority"
+  | "stage"
   | "module"
   | "department"
+  | "requester"
   | "assignee"
   | "dueDate"
+  | "releaseDate"
   | "estimatedHours"
+  | "response"
+  | "notes"
   | "jira";
 
 export type IssueTagGroup = "status" | "customerStatus" | "priority" | "assignee";

@@ -5,8 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-const ALL_COLUMNS: IssueColumnId[] = ["issueNo","content","status","customerStatus","priority","module","department","assignee","dueDate","estimatedHours","jira"];
-const DEFAULT_WIDTHS: Record<IssueColumnId, number> = { issueNo: 82, content: 420, status: 150, customerStatus: 130, priority: 96, module: 190, department: 170, assignee: 160, dueDate: 118, estimatedHours: 112, jira: 140 };
+const ALL_COLUMNS: IssueColumnId[] = ["issueNo","content","status","customerStatus","priority","stage","module","department","requester","assignee","dueDate","releaseDate","estimatedHours","response","notes","jira"];
+const NEW_DEFAULT_COLUMNS: IssueColumnId[] = ["stage", "requester", "releaseDate", "response", "notes"];
+const DEFAULT_WIDTHS: Record<IssueColumnId, number> = { issueNo: 82, content: 420, status: 150, customerStatus: 130, priority: 96, stage: 150, module: 190, department: 170, requester: 170, assignee: 160, dueDate: 118, releaseDate: 128, estimatedHours: 112, response: 280, notes: 240, jira: 140 };
 const TAG_GROUPS: IssueTagGroup[] = ["status", "customerStatus", "priority", "assignee"];
 const COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
@@ -49,7 +50,16 @@ function normalize(row?: Record<string, unknown> | null): IssueColumnPreferences
   const order = columnList(row?.column_order, ALL_COLUMNS);
   for (const id of ALL_COLUMNS) if (!order.includes(id)) order.push(id);
   return {
-    visibleColumns: columnList(row?.visible_columns, ALL_COLUMNS),
+    visibleColumns: (() => {
+      const visible = columnList(row?.visible_columns, ALL_COLUMNS);
+      const storedOrder = Array.isArray(row?.column_order) ? row.column_order : [];
+      const storedVisible = Array.isArray(row?.visible_columns) ? row.visible_columns : [];
+      const legacyPreference = (storedOrder.length > 0 || storedVisible.length > 0) && NEW_DEFAULT_COLUMNS.some((id) => !storedOrder.includes(id) && !storedVisible.includes(id));
+      if (legacyPreference) {
+        for (const id of NEW_DEFAULT_COLUMNS) if (!visible.includes(id)) visible.push(id);
+      }
+      return visible;
+    })(),
     columnOrder: order,
     columnWidths: widths,
     pinnedColumns: columnList(row?.pinned_columns, ["issueNo", "content"]),

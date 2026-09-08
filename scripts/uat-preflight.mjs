@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "2.6.0" ? pass("Package version", "2.6.0") : fail("Package version", `Expected 2.6.0, got ${pkg.version}`);
+pkg.version === "2.6.1" ? pass("Package version", "2.6.1") : fail("Package version", `Expected 2.6.1, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -208,6 +208,8 @@ for (const rel of [
   "supabase/migrations/202609070002_v260_resource_scheduling_assignment_board.sql",
   "docs/V2.6.0-SCOPE.md",
   "docs/V2.6.0-VALIDATION.md",
+  "docs/V2.6.1-SCOPE.md",
+  "docs/V2.6.1-VALIDATION.md",
   "components/ui/date-input.tsx",
   "components/ui/global-grid-enhancer.tsx",
 ]) {
@@ -754,6 +756,26 @@ const assignmentBoardV260 = fs.readFileSync(path.join(root, "components/resource
 for (const token of ["AssignmentBoard", "Unassigned Work Queue", "Weekly Assignment Board", "draggable", "onDrop", "DateInput", "DD/MM/YYYY", "/api/resource-scheduling"]) {
   assignmentBoardV260.includes(token) ? pass(`V2.6.0 Assignment Board UI: ${token}`) : fail(`V2.6.0 Assignment Board UI: ${token}`);
 }
+for (const token of ["data-allocation-fullscreen", "Full Screen", "collapsedMemberIds", "Thu gọn tất cả", "Mở rộng tất cả", "sticky left-0 top-0", "min-w-[280px]"]) {
+  assignmentBoardV260.includes(token) ? pass(`V2.6.1 Allocation Board UX: ${token}`) : fail(`V2.6.1 Allocation Board UX: ${token}`);
+}
+
+const issueTypesV261 = fs.readFileSync(path.join(root, "lib/issues/types.ts"), "utf8");
+const issuePanelsV261 = fs.readFileSync(path.join(root, "components/issues/productivity-panels.tsx"), "utf8");
+const issueWorkspaceV261 = fs.readFileSync(path.join(root, "components/issues/issue-workspace.tsx"), "utf8");
+const issuePreferencesV261 = fs.readFileSync(path.join(root, "app/api/issues/preferences/route.ts"), "utf8");
+for (const token of ["\"stage\"", "\"requester\"", "\"releaseDate\"", "\"response\"", "\"notes\""]) {
+  issueTypesV261.includes(token) ? pass(`V2.6.1 ISSUE column type: ${token}`) : fail(`V2.6.1 ISSUE column type: ${token}`);
+}
+for (const token of ["Giai đoạn", "Nhân sự yêu cầu", "Ngày release", "ASC phản hồi", "Ghi chú"]) {
+  issuePanelsV261.includes(token) ? pass(`V2.6.1 ISSUE column catalog: ${token}`) : fail(`V2.6.1 ISSUE column catalog: ${token}`);
+}
+for (const token of ["issue.stageCode", "issue.requesterId", "issue.releaseDate", "issue.response", "issue.notes"]) {
+  issueWorkspaceV261.includes(token) ? pass(`V2.6.1 ISSUE grid render: ${token}`) : fail(`V2.6.1 ISSUE grid render: ${token}`);
+}
+for (const token of ["NEW_DEFAULT_COLUMNS", "stage", "requester", "releaseDate", "response", "notes"]) {
+  issuePreferencesV261.includes(token) ? pass(`V2.6.1 ISSUE preferences migration-safe: ${token}`) : fail(`V2.6.1 ISSUE preferences migration-safe: ${token}`);
+}
 
 const navigationV260 = fs.readFileSync(path.join(root, "lib/navigation.ts"), "utf8");
 for (const token of ["Phân bổ", "/resource-scheduling", "CalendarClock"]) {
@@ -763,9 +785,10 @@ for (const token of ["Phân bổ", "/resource-scheduling", "CalendarClock"]) {
 preferencesV240.includes("\"/resource-scheduling\"") ? pass("V2.6.0 Resource scheduling navbar preference") : fail("V2.6.0 Resource scheduling navbar preference");
 
 const migrationV260 = fs.readFileSync(path.join(root, "supabase/migrations/202609070002_v260_resource_scheduling_assignment_board.sql"), "utf8");
-for (const token of ["resource_assignment_events", "item_type in ('issue', 'task')", "resource_assignment_events_select_member_v260", "resource_assignment_events_insert_pm_v260"]) {
+for (const token of ["resource_assignment_events", "item_type in ('issue', 'task')", "resource_assignment_events_select_member_v260", "resource_assignment_events_insert_pm_v260", "public.is_project_member(project_id)", "public.has_project_role(project_id, array['admin','pm'])"]) {
   migrationV260.includes(token) ? pass(`V2.6.0 Migration: ${token}`) : fail(`V2.6.0 Migration: ${token}`);
 }
+!migrationV260.includes("_v090(") ? pass("V2.6.0 Migration RLS helper names", "No non-existent _v090 helper calls") : fail("V2.6.0 Migration RLS helper names", "Remove _v090 helper calls");
 
 for (const token of ["resource_scheduling", "Resource Scheduling & Assignment Board", "resource_assignment_events"]) {
   readinessV250.includes(token) ? pass(`V2.6.0 Readiness: ${token}`) : fail(`V2.6.0 Readiness: ${token}`);
@@ -786,7 +809,7 @@ for (const token of ["node_type = 'function'", "contract_detail_project_function
   migrationV220.includes(token) ? pass(`V2.2.0 Migration: ${token}`) : fail(`V2.2.0 Migration: ${token}`);
 }
 
-console.log("\nASC WORKING V2.6.0 - Resource Scheduling & Assignment Board Preflight\n");
+console.log("\nASC WORKING V2.6.1 - Allocation Board UX & ISSUE Columns Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

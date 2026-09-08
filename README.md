@@ -1,4 +1,15 @@
-# ASC WORKING — V2.6.0
+# ASC WORKING — V2.6.1
+
+## V2.6.1 có gì mới?
+
+Allocation Board UX & ISSUE Columns
+
+- Màn **Allocation** có nút **Full Screen** để quản lý phân bổ với không gian rộng hơn.
+- Bảng phân bổ cố định cột **Nhân sự** khi kéo ngang qua các tuần.
+- Có thể thu gọn/mở rộng từng nhân sự, hoặc dùng **Thu gọn tất cả / Mở rộng tất cả** để xem tổng quan khi một người có nhiều ISSUE/task.
+- Dòng nhân sự khi thu gọn vẫn hiển thị capacity, allocation %, số việc từng tuần và cảnh báo quá tải.
+- ISSUE grid bổ sung đủ cột theo form thêm/sửa ISSUE: **Giai đoạn**, **Nhân sự yêu cầu**, **Ngày release**, **ASC phản hồi**, **Ghi chú**.
+- Không có migration mới cho V2.6.1.
 
 ## V2.6.0 có gì mới?
 
@@ -13,6 +24,8 @@ Resource Scheduling & Assignment Board
 - Ghi audit nhẹ vào `resource_assignment_events` khi PM/Admin thay đổi phân công.
 
 Chạy migration mới: `supabase/migrations/202609070002_v260_resource_scheduling_assignment_board.sql`.
+
+Ghi chú SQL-Fix: migration V2.6.0 đã được sửa để dùng đúng helper RLS hiện có `public.is_project_member(...)` và `public.has_project_role(...)`, không còn gọi các function `_v090` không tồn tại.
 
 ## V2.5.0 có gì mới?
 
