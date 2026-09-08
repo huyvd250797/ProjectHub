@@ -22,6 +22,7 @@ import { PageHeader } from "@/components/page-header";
 import { useProject } from "@/components/project-context";
 import { cn } from "@/lib/utils";
 import type { WorkloadApiResponse, WorkloadData, WorkloadLevel, WorkloadMember } from "@/lib/workload/types";
+import { fetchJsonCached, invalidateClientCache } from "@/lib/performance/client-cache";
 
 const levelClass: Record<WorkloadLevel, string> = {
   low: "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-200",
@@ -190,7 +191,7 @@ function MemberIssueModal({ member, onClose }: { member: WorkloadMember; onClose
             </thead>
             <tbody className="divide-y divide-white/[0.055]">
               {filteredIssues.map((issue) => (
-                <tr key={issue.id} className="align-top hover:bg-white/[0.018]">
+                <tr key={issue.id} className="asc-large-data-row align-top hover:bg-white/[0.018]">
                   <td className="px-4 py-4 text-xs font-semibold text-cyan-300">{issue.issueNo ? `#${issue.issueNo}` : "—"}</td>
                   <td className="max-w-[520px] whitespace-normal break-words px-4 py-4 text-sm font-semibold leading-6 text-slate-100">{issue.content}</td>
                   <td className="max-w-[260px] whitespace-normal break-words px-4 py-4 text-xs text-slate-400">{issue.moduleName ?? "—"}</td>
@@ -234,21 +235,17 @@ export function WorkloadDashboard() {
 
   useEffect(() => {
     let cancelled = false;
-    const controller = new AbortController();
     async function load() {
       setLoading(true);
       setError("");
       try {
-        const response = await fetch(`/api/workload?projectId=${encodeURIComponent(selectedProject.id)}`, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        const body = (await response.json()) as WorkloadApiResponse;
+        if (reloadKey) invalidateClientCache("/api/workload?");
+        const body = await fetchJsonCached<WorkloadApiResponse>(`/api/workload?projectId=${encodeURIComponent(selectedProject.id)}`, { ttlMs: 8_000, force: reloadKey > 0 });
         if (cancelled) return;
         if (!body.ok) throw new Error(body.message);
         setData(body.data);
       } catch (reason) {
-        if (!cancelled && !controller.signal.aborted) setError(reason instanceof Error ? reason.message : "Không tải được Workload & Capacity Planning.");
+        if (!cancelled) setError(reason instanceof Error ? reason.message : "Không tải được Workload & Capacity Planning.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -256,7 +253,6 @@ export function WorkloadDashboard() {
     void load();
     return () => {
       cancelled = true;
-      controller.abort();
     };
   }, [selectedProject.id, reloadKey]);
 
@@ -342,7 +338,7 @@ export function WorkloadDashboard() {
                   </thead>
                   <tbody className="divide-y divide-white/[0.055]">
                     {visibleMembers.map((member) => (
-                      <tr key={member.id} className="align-top hover:bg-white/[0.018]">
+                      <tr key={member.id} className="asc-large-data-row align-top hover:bg-white/[0.018]">
                         <td className="px-4 py-4">
                           <button type="button" onClick={() => setSelectedMemberId(member.id)} className="text-left font-semibold text-cyan-100 underline-offset-4 hover:text-cyan-200 hover:underline" title="Xem danh sách ISSUE đang phụ trách">
                             {member.name}

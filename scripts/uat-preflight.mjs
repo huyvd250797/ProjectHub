@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "3.3.0" ? pass("Package version", "3.3.0") : fail("Package version", `Expected 3.3.0, got ${pkg.version}`);
+pkg.version === "3.4.0" ? pass("Package version", "3.4.0") : fail("Package version", `Expected 3.4.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -240,6 +240,11 @@ for (const rel of [
   "docs/V3.3.0-SCOPE.md",
   "docs/V3.3.0-VALIDATION.md",
   "docs/UAT_V330_DATA_INTEGRITY_CHECKLIST.md",
+  "lib/performance/client-cache.ts",
+  "supabase/migrations/202609080003_v340_performance_large_data_indexes.sql",
+  "docs/V3.4.0-SCOPE.md",
+  "docs/V3.4.0-VALIDATION.md",
+  "docs/UAT_V340_PERFORMANCE_CHECKLIST.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -886,7 +891,7 @@ for (const token of ["project_financial_control", "project_financial_months", "P
 }
 
 const healthV310 = fs.readFileSync(path.join(root, "app/api/health/route.ts"), "utf8");
-for (const token of ["APP_VERSION", "APP_RELEASE", "data-integrity", "source-of-truth-audit", "timelinePro", "criticalPath"]) {
+for (const token of ["APP_VERSION", "APP_RELEASE", "large-data-optimization", "performance-client-cache", "performance-db-indexes", "data-integrity", "source-of-truth-audit", "timelinePro", "criticalPath"]) {
   healthV310.includes(token) ? pass(`V3.1.0 Health metadata: ${token}`) : fail(`V3.1.0 Health metadata: ${token}`);
 }
 
@@ -916,7 +921,7 @@ for (const token of ["baseline_start_date", "baseline_end_date", "baseline_due_d
 }
 
 const dataIntegrityApiV330 = fs.readFileSync(path.join(root, "app/api/data-integrity/route.ts"), "utf8");
-for (const token of ["loadDataIntegrityReport", "DATA_SOURCE_REQUIRED", "no-store", "không thêm migration mới"]) {
+for (const token of ["loadDataIntegrityReport", "DATA_SOURCE_REQUIRED", "no-store", "không thay đổi schema nghiệp vụ"]) {
   dataIntegrityApiV330.includes(token) ? pass(`V3.3.0 Data Integrity API: ${token}`) : fail(`V3.3.0 Data Integrity API: ${token}`);
 }
 
@@ -930,12 +935,44 @@ for (const token of ["Integrity Score", "Catalog / PLHĐ", "Chạy lại", "Mở
   dataIntegrityUiV330.includes(token) ? pass(`V3.3.0 Data Integrity UI: ${token}`) : fail(`V3.3.0 Data Integrity UI: ${token}`);
 }
 
+const performanceCacheV340 = fs.readFileSync(path.join(root, "lib/performance/client-cache.ts"), "utf8");
+for (const token of ["fetchJsonCached", "inFlight", "expiresAt", "invalidateClientCache"]) {
+  performanceCacheV340.includes(token) ? pass(`V3.4.0 Client cache: ${token}`) : fail(`V3.4.0 Client cache: ${token}`);
+}
+
+const performanceCssV340 = fs.readFileSync(path.join(root, "app/globals.css"), "utf8");
+for (const token of [".asc-large-data-row", "content-visibility: auto", "contain-intrinsic-size"]) {
+  performanceCssV340.includes(token) ? pass(`V3.4.0 Large data CSS: ${token}`) : fail(`V3.4.0 Large data CSS: ${token}`);
+}
+
+const performanceMigrationV340 = fs.readFileSync(path.join(root, "supabase/migrations/202609080003_v340_performance_large_data_indexes.sql"), "utf8");
+for (const token of ["issues_project_active_issue_no_idx", "contract_items_project_tree_idx", "people_project_active_lookup_idx", "project_plan_tasks_project_stage_due_idx", "project_financial_months_project_month_idx", "resource_assignment_events_project_item_idx", "changed_at desc", "if not exists"]) {
+  performanceMigrationV340.toLowerCase().includes(token.toLowerCase()) ? pass(`V3.4.0 Performance index: ${token}`) : fail(`V3.4.0 Performance index: ${token}`);
+}
+
+const issuesApiV340 = fs.readFileSync(path.join(root, "app/api/issues/route.ts"), "utf8");
+for (const token of ["private, max-age=5", "range(start, end)", "allRows && total > 1000"]) {
+  issuesApiV340.includes(token) ? pass(`V3.4.0 ISSUE performance: ${token}`) : fail(`V3.4.0 ISSUE performance: ${token}`);
+}
+
+const performanceUiV340 = [
+  fs.readFileSync(path.join(root, "components/issues/issue-workspace.tsx"), "utf8"),
+  fs.readFileSync(path.join(root, "components/contract-view.tsx"), "utf8"),
+  fs.readFileSync(path.join(root, "components/workload/workload-dashboard.tsx"), "utf8"),
+  fs.readFileSync(path.join(root, "components/resource-scheduling/assignment-board.tsx"), "utf8"),
+  fs.readFileSync(path.join(root, "lib/workload/server.ts"), "utf8"),
+  fs.readFileSync(path.join(root, "lib/resource-scheduling/server.ts"), "utf8"),
+].join("\n");
+for (const token of ["fetchJsonCached", "invalidateClientCache", "asc-large-data-row", "ISSUE_WORKLOAD_SELECT"]) {
+  performanceUiV340.includes(token) ? pass(`V3.4.0 Performance UI: ${token}`) : fail(`V3.4.0 Performance UI: ${token}`);
+}
+
 const readinessV330 = fs.readFileSync(path.join(root, "app/api/readiness/route.ts"), "utf8");
 for (const token of ["loadDataIntegrityReport", "data_integrity", "Data Integrity & Source of Truth", "APP_VERSION"]) {
   readinessV330.includes(token) ? pass(`V3.3.0 Readiness: ${token}`) : fail(`V3.3.0 Readiness: ${token}`);
 }
 
-console.log("\nASC WORKING V3.3.0 - Data Integrity & Source of Truth Preflight\n");
+console.log("\nASC WORKING V3.4.0 - Performance & Large Data Optimization Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

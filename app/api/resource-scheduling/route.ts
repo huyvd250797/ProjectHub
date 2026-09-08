@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const data = await loadResourceScheduleData(supabase, projectId, role, startDate);
-    return NextResponse.json({ ok: true, data } satisfies ResourceScheduleApiResponse, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ ok: true, data } satisfies ResourceScheduleApiResponse, { headers: { "Cache-Control": "private, max-age=8, stale-while-revalidate=20", Vary: "Cookie" } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Không tải được Resource Scheduling.";
     const missing = resourceSchedulingMigrationMissing(message);

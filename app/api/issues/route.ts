@@ -219,7 +219,7 @@ export async function GET(request: NextRequest) {
       lookups,
     },
   };
-  return NextResponse.json(body);
+  return NextResponse.json(body, { headers: { "Cache-Control": "private, max-age=5, stale-while-revalidate=15", Vary: "Cookie" } });
 }
 
 export async function POST(request: NextRequest) {

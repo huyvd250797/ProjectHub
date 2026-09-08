@@ -12,6 +12,16 @@ export const ISSUE_SELECT = `
   assignee:people!issues_assignee_person_id_fkey(id, full_name, email)
 `;
 
+// Narrow projection for workload/allocation aggregation. Keeping this separate
+// avoids transferring form-only fields for every open ISSUE on large Projects.
+export const ISSUE_WORKLOAD_SELECT = `
+  id, issue_no, content, status_code, customer_status_code, priority_code, stage_code,
+  jira_url, due_date, estimated_hours, actual_hours, module_id, department_id,
+  assignee_person_id,
+  module:contract_items!issues_module_id_fkey(id, code, name),
+  department:departments!issues_department_id_fkey(id, code, name)
+`;
+
 function relation(value: unknown): Record<string, unknown> | null {
   if (!value) return null;
   if (Array.isArray(value)) return (value[0] as Record<string, unknown> | undefined) ?? null;

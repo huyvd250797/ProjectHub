@@ -63,6 +63,7 @@ import type {
   SelectOption,
 } from "@/lib/issues/types";
 import { cn } from "@/lib/utils";
+import { fetchJsonCached, invalidateClientCache } from "@/lib/performance/client-cache";
 
 function formatNumber(value: number) { return new Intl.NumberFormat("vi-VN").format(value); }
 function formatDate(value: string | null) {
@@ -207,8 +208,7 @@ export function IssueWorkspace() {
   useEffect(() => {
     let cancelled = false;
     setPreferencesReady(false);
-    fetch(`/api/issues/preferences?projectId=${encodeURIComponent(selectedProject.id)}`, { cache: "no-store" })
-      .then(async (response) => (await response.json()) as IssuePreferencesApiResponse)
+    fetchJsonCached<IssuePreferencesApiResponse>(`/api/issues/preferences?projectId=${encodeURIComponent(selectedProject.id)}`, { ttlMs: 30_000 })
       .then((body) => { if (!cancelled && body.ok) setPreferences(body.preferences); })
       .finally(() => { if (!cancelled) setPreferencesReady(true); });
     return () => { cancelled = true; };
@@ -216,8 +216,7 @@ export function IssueWorkspace() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/issues/views?projectId=${encodeURIComponent(selectedProject.id)}`, { cache: "no-store" })
-      .then(async (response) => (await response.json()) as IssueViewsApiResponse)
+    fetchJsonCached<IssueViewsApiResponse>(`/api/issues/views?projectId=${encodeURIComponent(selectedProject.id)}`, { ttlMs: 30_000 })
       .then((body) => { if (!cancelled && body.ok) setSavedViews(body.views); })
       .catch(() => undefined);
     return () => { cancelled = true; };
@@ -236,23 +235,22 @@ export function IssueWorkspace() {
   }, [preferences, preferencesReady, data?.source, selectedProject.id]);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let cancelled = false;
     setLoading(true); setError("");
     const params = new URLSearchParams(searchParams.toString());
     params.set("projectId", selectedProject.id);
     params.set("pageSize", String(preferences.pageSize));
-    fetch(`/api/issues?${params.toString()}`, { cache: "no-store", signal: controller.signal })
-      .then(async (response) => {
-        const body = (await response.json()) as IssuesApiResponse;
+    if (reloadKey) invalidateClientCache("/api/issues?");
+    fetchJsonCached<IssuesApiResponse>(`/api/issues?${params.toString()}`, { ttlMs: 5_000, force: reloadKey > 0 })
+      .then((body) => {
         if (!body.ok) throw new Error(body.message);
-        if (!controller.signal.aborted) setData(body.data);
+        if (!cancelled) setData(body.data);
       })
       .catch((reason) => {
-        if (controller.signal.aborted) return;
-        setError(reason instanceof Error ? reason.message : "Không tải được ISSUE.");
+        if (!cancelled) setError(reason instanceof Error ? reason.message : "Không tải được ISSUE.");
       })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [selectedProject.id, queryString, reloadKey, preferences.pageSize]);
 
   useEffect(() => {
@@ -289,8 +287,8 @@ export function IssueWorkspace() {
     if (inPage) { setSelectedIssue(inPage); return; }
     if (!data || data.source === "demo") return;
     let cancelled = false;
-    fetch(`/api/issues/${encodeURIComponent(issueIdParam)}?projectId=${encodeURIComponent(selectedProject.id)}`, { cache: "no-store" })
-      .then(async (response) => { const body = (await response.json()) as IssueDetailApiResponse; if (!body.ok) throw new Error(body.message); if (!cancelled) setSelectedIssue(body.data.issue); })
+      fetchJsonCached<IssueDetailApiResponse>(`/api/issues/${encodeURIComponent(issueIdParam)}?projectId=${encodeURIComponent(selectedProject.id)}`, { ttlMs: 5_000 })
+      .then((body) => { if (!body.ok) throw new Error(body.message); if (!cancelled) setSelectedIssue(body.data.issue); })
       .catch(() => { if (!cancelled) replaceParams((params) => params.delete("issueId")); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps

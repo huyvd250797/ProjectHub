@@ -1,4 +1,16 @@
-# ASC WORKING - V3.3.0
+# ASC WORKING - V3.4.0
+
+## V3.4.0 có gì mới?
+
+### Performance & Large Data Optimization
+
+- ISSUE tiếp tục dùng phân trang server; truy vấn có index theo Project, trạng thái active, người phụ trách, Module, phòng ban và hạn xử lý.
+- PLHĐ, Workload và Allocation dùng cache client ngắn hạn có chống gọi trùng request.
+- Các dòng dữ liệu ngoài viewport được browser tối ưu paint bằng `content-visibility`, vẫn giữ nguyên nội dung xuống hàng đầy đủ.
+- API dữ liệu lớn có cache private ngắn hạn và `stale-while-revalidate` để thao tác chuyển màn nhanh hơn.
+- Thêm migration index cộng thêm, không thay đổi/xóa dữ liệu.
+
+Migration khuyến nghị: `supabase/migrations/202609080003_v340_performance_large_data_indexes.sql`.
 
 ## V3.3.0 có gì mới?
 

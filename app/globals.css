@@ -431,6 +431,24 @@ html:not([data-theme="light"]) .text-emerald-300 { color: #77e6c2 !important; }
 html:not([data-theme="light"]) .text-violet-200,
 html:not([data-theme="light"]) .text-violet-300 { color: #bbb8ff !important; }
 
+/* ASC WORKING V3.4.0 — Large data rendering hints. The browser skips paint for
+   rows outside the viewport while preserving their full wrapped layout. */
+.asc-large-data-row {
+  content-visibility: auto;
+  contain: layout paint style;
+  contain-intrinsic-size: 0 72px;
+}
+
+.asc-data-grid tbody > tr {
+  content-visibility: auto;
+  contain: layout paint style;
+  contain-intrinsic-size: 0 72px;
+}
+
+.asc-large-data-panel {
+  contain: layout paint;
+}
+
 /* ASC WORKING V1.3.0 — Executive Report print/PDF */
 @media print {
   body * {

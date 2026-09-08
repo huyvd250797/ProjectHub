@@ -27,6 +27,7 @@ import type { ProjectCatalogMutationResponse } from "@/lib/catalog/types";
 import type { ContractApiResponse, ContractData, ContractDetailItem, ContractOverviewItem } from "@/lib/contract/types";
 import { cn } from "@/lib/utils";
 import { APP_VERSION_LABEL } from "@/lib/app-meta";
+import { fetchJsonCached, invalidateClientCache } from "@/lib/performance/client-cache";
 
 type PlhdNodeKind = "root" | "subsystem" | "module" | "function";
 type PlhdNode = {
@@ -402,32 +403,33 @@ export function ContractView() {
   const viewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let cancelled = false;
     setLoading(true);
     setError("");
     setData(null);
     setSearch("");
     setSelectedNode(null);
 
-    fetch(`/api/contract?projectId=${encodeURIComponent(selectedProject.id)}`, { cache: "no-store", signal: controller.signal })
-      .then(async (response) => {
-        const body = (await response.json()) as ContractApiResponse;
-        if (!response.ok || !body.ok) throw new Error(body.ok ? "Không tải được PLHĐ." : body.message);
+    if (reloadKey) invalidateClientCache("/api/contract?");
+    fetchJsonCached<ContractApiResponse>(`/api/contract?projectId=${encodeURIComponent(selectedProject.id)}`, { ttlMs: 10_000, force: reloadKey > 0 })
+      .then((body) => {
+        if (!body.ok) throw new Error(body.message);
         return body.data;
       })
       .then((contractData) => {
+        if (cancelled) return;
         setData(contractData);
         setExpanded(new Set(defaultExpandedKeys(contractData)));
       })
       .catch((reason: unknown) => {
-        if (controller.signal.aborted) return;
+        if (cancelled) return;
         setError(reason instanceof Error ? reason.message : "Không tải được PLHĐ.");
       })
       .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!cancelled) setLoading(false);
       });
 
-    return () => controller.abort();
+    return () => { cancelled = true; };
   }, [selectedProject.id, reloadKey]);
 
   useEffect(() => {
@@ -595,7 +597,7 @@ export function ContractView() {
         </div>
       ) : null}
 
-      <div className="tech-panel overflow-hidden rounded-2xl">
+      <div className="tech-panel asc-large-data-panel overflow-hidden rounded-2xl">
         <div className="flex flex-col gap-3 border-b border-white/[0.06] p-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold text-cyan-100"><Network className="size-4 text-cyan-300/70" /> Cấu trúc PLHĐ</div>
@@ -652,7 +654,7 @@ export function ContractView() {
                   tabIndex={0}
                   onClick={() => setSelectedNode(item)}
                   onKeyDown={(event) => { if (event.key === "Enter") setSelectedNode(item); }}
-                  className={cn("grid min-h-[56px] items-start border-b border-white/[0.035] px-3 py-3 text-left text-xs transition hover:bg-white/[0.025]", item.kind === "root" && "bg-cyan-300/[0.025]", item.kind === "subsystem" && "bg-violet-300/[0.018]")}
+                  className={cn("asc-large-data-row grid min-h-[56px] items-start border-b border-white/[0.035] px-3 py-3 text-left text-xs transition hover:bg-white/[0.025]", item.kind === "root" && "bg-cyan-300/[0.025]", item.kind === "subsystem" && "bg-violet-300/[0.018]")}
                   style={{ gridTemplateColumns }}
                 >
                   {columnOrder.map((id) => {

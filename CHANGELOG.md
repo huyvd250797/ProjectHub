@@ -1,5 +1,18 @@
 # Changelog
 
+## V3.4.0 - Performance & Large Data Optimization
+
+### Added
+
+- Client query cache TTL ngắn và chống gọi trùng cho ISSUE, PLHĐ, Workload và Allocation.
+- Browser render hint cho các dòng lưới lớn, giảm chi phí paint/re-render ngoài viewport.
+- Bộ index truy vấn theo Project cho ISSUE, PLHĐ, Plan, Finance, Workload và Assignment Board.
+
+### Safety
+
+- Không đổi nghiệp vụ, không tự động sửa dữ liệu.
+- Migration chỉ tạo index `IF NOT EXISTS`, không xóa hoặc archive bản ghi.
+
 ## V3.3.0 - Data Integrity & Source of Truth
 
 ### Added

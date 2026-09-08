@@ -162,5 +162,5 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: normalizeContract(data as Record<string, unknown>, projectId, role),
   };
-  return NextResponse.json(body);
+  return NextResponse.json(body, { headers: { "Cache-Control": "private, max-age=10, stale-while-revalidate=30", Vary: "Cookie" } });
 }

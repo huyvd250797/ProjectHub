@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ISSUE_SELECT, normalizeIssue } from "@/lib/issues/server";
+import { ISSUE_WORKLOAD_SELECT, normalizeIssue } from "@/lib/issues/server";
 import type { IssueRow, ProjectRole } from "@/lib/issues/types";
 import { loadProjectPlan } from "@/lib/planning/server";
 import type { ProjectMilestone, ProjectPlanReminder, ProjectPlanTask } from "@/lib/planning/types";
@@ -384,7 +384,7 @@ export async function loadWorkloadData(
     supabase.from("departments").select("id,name").eq("project_id", projectId).eq("is_active", true),
     supabase
       .from("issues")
-      .select(ISSUE_SELECT)
+      .select(ISSUE_WORKLOAD_SELECT)
       .eq("project_id", projectId)
       .is("archived_at", null)
       .limit(5000),

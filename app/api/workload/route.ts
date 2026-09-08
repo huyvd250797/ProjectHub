@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const data = await loadWorkloadData(supabase, projectId, role);
-    return NextResponse.json({ ok: true, data } satisfies WorkloadApiResponse, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ ok: true, data } satisfies WorkloadApiResponse, { headers: { "Cache-Control": "private, max-age=8, stale-while-revalidate=20", Vary: "Cookie" } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Không tải được Workload & Capacity Planning.";
     const missing = isPlanningMigrationMissing(message);

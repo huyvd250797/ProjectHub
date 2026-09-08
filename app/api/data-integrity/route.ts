@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ok: false,
       code: missing ? "DATA_SOURCE_REQUIRED" : "DATA_INTEGRITY_QUERY_FAILED",
-      message: missing ? "Data Integrity cần schema dữ liệu hiện có đến V3.2.3; bản V3.3.0 không thêm migration mới." : message,
+      message: missing ? "Data Integrity cần schema dữ liệu hiện có đến V3.3.0; bản V3.4.0 không thay đổi schema nghiệp vụ." : message,
     } satisfies DataIntegrityApiResponse, { status: missing ? 503 : 500 });
   }
 }

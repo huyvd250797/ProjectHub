@@ -21,6 +21,7 @@ import { PageHeader } from "@/components/page-header";
 import { useProject } from "@/components/project-context";
 import { DateInput, formatDateDisplay } from "@/components/ui/date-input";
 import { cn } from "@/lib/utils";
+import { fetchJsonCached, invalidateClientCache } from "@/lib/performance/client-cache";
 import type {
   ResourceScheduleApiResponse,
   ResourceScheduleAssignResponse,
@@ -92,7 +93,7 @@ function WorkItemCard({
     <div
       draggable
       onDragStart={() => onDragStart(item)}
-      className="group rounded-xl border border-white/[0.065] bg-[#0e1d31] p-3 shadow-sm transition hover:border-cyan-300/18 hover:bg-[#11243c]"
+      className="asc-large-data-row group rounded-xl border border-white/[0.065] bg-[#0e1d31] p-3 shadow-sm transition hover:border-cyan-300/18 hover:bg-[#11243c]"
     >
       <div className="flex items-start gap-2">
         <GripVertical className="mt-0.5 size-4 shrink-0 cursor-grab text-slate-700 group-hover:text-cyan-300/60" />
@@ -211,19 +212,18 @@ export function AssignmentBoard() {
 
   useEffect(() => {
     let cancelled = false;
-    const controller = new AbortController();
     async function load() {
       setLoading(true);
       setError("");
       try {
         const params = new URLSearchParams({ projectId: selectedProject.id, startDate });
-        const response = await fetch(`/api/resource-scheduling?${params.toString()}`, { cache: "no-store", signal: controller.signal });
-        const body = (await response.json()) as ResourceScheduleApiResponse;
+        if (reloadKey) invalidateClientCache("/api/resource-scheduling?");
+        const body = await fetchJsonCached<ResourceScheduleApiResponse>(`/api/resource-scheduling?${params.toString()}`, { ttlMs: 8_000, force: reloadKey > 0 });
         if (cancelled) return;
         if (!body.ok) throw new Error(body.message);
         setData(body.data);
       } catch (reason) {
-        if (!cancelled && !controller.signal.aborted) setError(reason instanceof Error ? reason.message : "Không tải được Resource Scheduling.");
+        if (!cancelled) setError(reason instanceof Error ? reason.message : "Không tải được Resource Scheduling.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -231,7 +231,6 @@ export function AssignmentBoard() {
     void load();
     return () => {
       cancelled = true;
-      controller.abort();
     };
   }, [selectedProject.id, startDate, reloadKey]);
 
