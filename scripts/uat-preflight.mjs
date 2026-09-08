@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "3.3.0" ? pass("Package version", "3.3.0") : fail("Package version", `Expected 3.3.0, got ${pkg.version}`);
+pkg.version === "3.2.3" ? pass("Package version", "3.2.3") : fail("Package version", `Expected 3.2.3, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -22,12 +22,6 @@ for (const rel of [
   "lib/workload/types.ts",
   "lib/workload/server.ts",
   "lib/workload/demo.ts",
-  "app/(workspace)/copilot/page.tsx",
-  "app/api/copilot/route.ts",
-  "components/copilot/ai-project-copilot.tsx",
-  "lib/copilot/types.ts",
-  "lib/copilot/server.ts",
-  "lib/copilot/demo.ts",
   "app/api/readiness/route.ts",
   "app/(workspace)/settings/uat/page.tsx",
   "app/(workspace)/settings/projects/page.tsx",
@@ -237,8 +231,6 @@ for (const rel of [
   "docs/V3.2.2-VALIDATION.md",
   "docs/V3.2.3-SCOPE.md",
   "docs/V3.2.3-VALIDATION.md",
-  "docs/V3.3.0-SCOPE.md",
-  "docs/V3.3.0-VALIDATION.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -885,7 +877,7 @@ for (const token of ["project_financial_control", "project_financial_months", "P
 }
 
 const healthV310 = fs.readFileSync(path.join(root, "app/api/health/route.ts"), "utf8");
-for (const token of ["version: \"3.3.0\"", "AI Project Copilot", "timelinePro", "criticalPath"]) {
+for (const token of ["version: \"3.2.3\"", "Finance Chart Series Fix", "timelinePro", "criticalPath"]) {
   healthV310.includes(token) ? pass(`V3.1.0 Health metadata: ${token}`) : fail(`V3.1.0 Health metadata: ${token}`);
 }
 
@@ -897,43 +889,6 @@ for (const token of ["latestForecastPercent", "latestActualPercent", "forecastPe
 for (const token of ["financeChartSeries", "bg-cyan-300", "bg-amber-300", "bg-emerald-300", "finance-distinct-chart-series"]) {
   const lookup = token === "finance-distinct-chart-series" ? healthV310 : financeUiV310;
   lookup.includes(token) ? pass(`V3.2.3 Finance chart: ${token}`) : fail(`V3.2.3 Finance chart: ${token}`);
-}
-
-const navigationV330 = fs.readFileSync(path.join(root, "lib/navigation.ts"), "utf8");
-for (const token of ["AI Copilot", "/copilot", "Bot"]) {
-  navigationV330.includes(token) ? pass(`V3.3.0 Copilot navigation: ${token}`) : fail(`V3.3.0 Copilot navigation: ${token}`);
-}
-
-const preferencesV330 = fs.readFileSync(path.join(root, "lib/workspace-preferences.ts"), "utf8");
-preferencesV330.includes("\"/copilot\"") ? pass("V3.3.0 Copilot navbar preference") : fail("V3.3.0 Copilot navbar preference");
-
-const copilotTypesV330 = fs.readFileSync(path.join(root, "lib/copilot/types.ts"), "utf8");
-for (const token of ["CopilotData", "CopilotRisk", "CopilotAction", "CopilotReportSection", "CopilotApiResponse"]) {
-  copilotTypesV330.includes(token) ? pass(`V3.3.0 Copilot types: ${token}`) : fail(`V3.3.0 Copilot types: ${token}`);
-}
-
-const copilotServerV330 = fs.readFileSync(path.join(root, "lib/copilot/server.ts"), "utf8");
-for (const token of ["loadProjectCopilotData", "buildProjectCopilotData", "loadProjectPlan", "loadWorkloadData", "loadFinancialData", "buildExecutiveSummary", "buildActions", "buildRisks"]) {
-  copilotServerV330.includes(token) ? pass(`V3.3.0 Copilot server: ${token}`) : fail(`V3.3.0 Copilot server: ${token}`);
-}
-
-const copilotApiV330 = fs.readFileSync(path.join(root, "app/api/copilot/route.ts"), "utf8");
-for (const token of ["createDemoProjectCopilot", "loadProjectCopilotData", "COPILOT_SOURCE_REQUIRED", "export async function GET"]) {
-  copilotApiV330.includes(token) ? pass(`V3.3.0 Copilot API: ${token}`) : fail(`V3.3.0 Copilot API: ${token}`);
-}
-
-const copilotUiV330 = fs.readFileSync(path.join(root, "components/copilot/ai-project-copilot.tsx"), "utf8");
-for (const token of ["AI Project Copilot", "Next Best Actions", "Risk Radar", "Report Writer", "Prompt Templates", "/api/copilot", "copyReport"]) {
-  copilotUiV330.includes(token) ? pass(`V3.3.0 Copilot UI: ${token}`) : fail(`V3.3.0 Copilot UI: ${token}`);
-}
-
-const readinessV330 = fs.readFileSync(path.join(root, "app/api/readiness/route.ts"), "utf8");
-for (const token of ["ai_project_copilot", "executive summary", "next best actions", "risk radar", "report draft"]) {
-  readinessV330.includes(token) ? pass(`V3.3.0 Copilot readiness: ${token}`) : fail(`V3.3.0 Copilot readiness: ${token}`);
-}
-
-for (const token of ["ai-project-copilot", "executive-ai-summary", "next-best-actions", "copilot-risk-radar", "ai-report-writer", "copilot-prompt-templates"]) {
-  healthV310.includes(token) ? pass(`V3.3.0 Copilot health feature: ${token}`) : fail(`V3.3.0 Copilot health feature: ${token}`);
 }
 
 const timelinePro = fs.readFileSync(path.join(root, "components/planning/plan-timeline.tsx"), "utf8");
@@ -951,7 +906,7 @@ for (const token of ["baseline_start_date", "baseline_end_date", "baseline_due_d
   timelineMigration.includes(token) ? pass(`V3.2.0 Timeline Pro migration: ${token}`) : fail(`V3.2.0 Timeline Pro migration: ${token}`);
 }
 
-console.log("\nASC WORKING V3.3.0 - AI Project Copilot Preflight\n");
+console.log("\nASC WORKING V3.2.3 - Finance Chart Series Fix Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

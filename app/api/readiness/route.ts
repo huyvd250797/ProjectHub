@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "3.3.0",
+        version: "3.2.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "3.3.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "3.2.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -279,16 +279,6 @@ export async function GET(request: NextRequest) {
     timelineProSchema.durationMs,
   ));
 
-  checks.push(check(
-    "ai_project_copilot",
-    "AI Project Copilot",
-    planningSchemaError || workloadSchemaError || financialSchemaError || timelineProSchemaError ? "fail" : "pass",
-    planningSchemaError || workloadSchemaError || financialSchemaError || timelineProSchemaError
-      ? "AI Project Copilot cần Plan, Workload, Finance và Timeline Pro sẵn sàng để tổng hợp."
-      : "Copilot có đủ nguồn dữ liệu để sinh executive summary, next best actions, risk radar và report draft.",
-    Math.max(planningSchema.durationMs, workloadSchema.durationMs, financialSchema.durationMs, timelineProSchema.durationMs),
-  ));
-
   const notificationsSchema = await timed(async () => Promise.all([
     supabase.from("activity_events").select("id", { count: "exact", head: true }).eq("project_id", projectId),
     supabase.from("notifications").select("id", { count: "exact", head: true }).eq("project_id", projectId).eq("user_id", user.id),
@@ -398,7 +388,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "3.3.0",
+      version: "3.2.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,
