@@ -1,5 +1,26 @@
 # Changelog
 
+## V2.6.0 — Resource Scheduling & Assignment Board
+
+### Added
+
+- Module `/resource-scheduling` cho Assignment Board theo tuần.
+- Queue ISSUE/task chưa phân công để PM kéo vào nhân sự phù hợp.
+- Drag/drop card ISSUE/task giữa các nhân sự và combobox gán nhanh ngay trên card.
+- Cảnh báo overload khi phân công vượt capacity tuần.
+- Date picker mới cho phép vừa nhập tay vừa bấm chọn lịch, giữ định dạng hiển thị `DD/MM/YYYY`.
+- API `/api/resource-scheduling` để load board và cập nhật assignee/owner.
+- Audit table `resource_assignment_events` cho lịch sử điều phối.
+
+### Changed
+
+- Navbar bổ sung module **Phân bổ** sau Workload.
+- Health/readiness/preflight nhận diện Resource Scheduling V2.6.0.
+
+### Database
+
+- Migration mới: `supabase/migrations/202609070002_v260_resource_scheduling_assignment_board.sql`.
+
 ## V2.5.0 — Resource Allocation Foundation
 
 ### Added

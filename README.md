@@ -1,4 +1,18 @@
-# ASC WORKING — V2.5.0
+# ASC WORKING — V2.6.0
+
+## V2.6.0 có gì mới?
+
+Resource Scheduling & Assignment Board
+
+- Module **Phân bổ** mới tại `/resource-scheduling` để điều phối nhân sự bằng bảng phân bổ theo tuần.
+- Board hiển thị 6 tuần, mỗi ô thể hiện planned hours, capacity, allocation %, available hours và overload hours.
+- Queue **Việc chưa phân công** gom ISSUE/task chưa có người phụ trách để kéo vào nhân sự phù hợp.
+- Hỗ trợ kéo thả card ISSUE/task giữa các nhân sự hoặc dùng combobox trên từng card để gán nhanh.
+- Cảnh báo trực tiếp khi thả việc vào ô tuần có nguy cơ vượt capacity.
+- Có date picker bắt đầu lịch: người dùng vừa nhập tay vừa bấm chọn lịch, hiển thị định dạng `DD/MM/YYYY`.
+- Ghi audit nhẹ vào `resource_assignment_events` khi PM/Admin thay đổi phân công.
+
+Chạy migration mới: `supabase/migrations/202609070002_v260_resource_scheduling_assignment_board.sql`.
 
 ## V2.5.0 có gì mới?
 

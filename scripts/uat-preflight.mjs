@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "2.5.0" ? pass("Package version", "2.5.0") : fail("Package version", `Expected 2.5.0, got ${pkg.version}`);
+pkg.version === "2.6.0" ? pass("Package version", "2.6.0") : fail("Package version", `Expected 2.6.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -199,6 +199,15 @@ for (const rel of [
   "supabase/migrations/202609070001_v250_resource_allocation_foundation.sql",
   "docs/V2.5.0-SCOPE.md",
   "docs/V2.5.0-VALIDATION.md",
+  "app/(workspace)/resource-scheduling/page.tsx",
+  "app/api/resource-scheduling/route.ts",
+  "components/resource-scheduling/assignment-board.tsx",
+  "lib/resource-scheduling/types.ts",
+  "lib/resource-scheduling/server.ts",
+  "lib/resource-scheduling/demo.ts",
+  "supabase/migrations/202609070002_v260_resource_scheduling_assignment_board.sql",
+  "docs/V2.6.0-SCOPE.md",
+  "docs/V2.6.0-VALIDATION.md",
   "components/ui/date-input.tsx",
   "components/ui/global-grid-enhancer.tsx",
 ]) {
@@ -647,7 +656,7 @@ for (const token of ["GlobalGridEnhancer", "MutationObserver", "moveColumn", "se
 }
 
 const globalCssV222 = fs.readFileSync(path.join(root, "app/globals.css"), "utf8");
-for (const token of ["ASC WORKING V2.5.0", ".asc-data-grid", "overflow-wrap: anywhere", "[class*=\"line-clamp\"]"]) {
+for (const token of ["ASC WORKING V2.6.0", ".asc-data-grid", "overflow-wrap: anywhere", "[class*=\"line-clamp\"]"]) {
   globalCssV222.includes(token) ? pass(`V2.5.0 Grid CSS: ${token}`) : fail(`V2.5.0 Grid CSS: ${token}`);
 }
 
@@ -699,7 +708,7 @@ for (const token of ["MemberIssueModal", "ISSUE Full Screen", "setSelectedMember
 }
 
 const dateInputV250 = fs.readFileSync(path.join(root, "components/ui/date-input.tsx"), "utf8");
-for (const token of ["DateInput", "DateTimeInput", "DateFormInput", "DD/MM/YYYY", "formatDateDisplay", "parseDateDisplay"]) {
+for (const token of ["DateInput", "DateTimeInput", "DateFormInput", "DD/MM/YYYY", "formatDateDisplay", "parseDateDisplay", "showPicker", "type=\"date\"", "type=\"datetime-local\""]) {
   dateInputV250.includes(token) ? pass(`V2.5.0 Date input: ${token}`) : fail(`V2.5.0 Date input: ${token}`);
 }
 
@@ -726,6 +735,42 @@ for (const token of ["resource_allocation", "capacity_hours_per_week", "allocati
 const commandCenterRouteV240 = fs.readFileSync(path.join(root, "app/api/command-center/route.ts"), "utf8");
 commandCenterRouteV240.includes("/workload") ? pass("V2.4.1 Command Center workload link") : fail("V2.4.1 Command Center workload link");
 
+const resourceSchedulingTypesV260 = fs.readFileSync(path.join(root, "lib/resource-scheduling/types.ts"), "utf8");
+for (const token of ["ResourceScheduleData", "ResourceScheduleMemberWeek", "ResourceScheduleItem", "unassignedItems", "overloadedSlots"]) {
+  resourceSchedulingTypesV260.includes(token) ? pass(`V2.6.0 Resource scheduling types: ${token}`) : fail(`V2.6.0 Resource scheduling types: ${token}`);
+}
+
+const resourceSchedulingServerV260 = fs.readFileSync(path.join(root, "lib/resource-scheduling/server.ts"), "utf8");
+for (const token of ["loadResourceScheduleData", "assignResourceScheduleItem", "buildWeeks", "assignee_person_id", "owner_person_id", "resource_assignment_events", "RESOURCE_SCHEDULING_SOURCE_TABLES"]) {
+  resourceSchedulingServerV260.includes(token) ? pass(`V2.6.0 Resource scheduling server: ${token}`) : fail(`V2.6.0 Resource scheduling server: ${token}`);
+}
+
+const resourceSchedulingApiV260 = fs.readFileSync(path.join(root, "app/api/resource-scheduling/route.ts"), "utf8");
+for (const token of ["createDemoResourceSchedule", "loadResourceScheduleData", "assignResourceScheduleItem", "export async function PATCH", "V260_MIGRATION_REQUIRED"]) {
+  resourceSchedulingApiV260.includes(token) ? pass(`V2.6.0 Resource scheduling API: ${token}`) : fail(`V2.6.0 Resource scheduling API: ${token}`);
+}
+
+const assignmentBoardV260 = fs.readFileSync(path.join(root, "components/resource-scheduling/assignment-board.tsx"), "utf8");
+for (const token of ["AssignmentBoard", "Unassigned Work Queue", "Weekly Assignment Board", "draggable", "onDrop", "DateInput", "DD/MM/YYYY", "/api/resource-scheduling"]) {
+  assignmentBoardV260.includes(token) ? pass(`V2.6.0 Assignment Board UI: ${token}`) : fail(`V2.6.0 Assignment Board UI: ${token}`);
+}
+
+const navigationV260 = fs.readFileSync(path.join(root, "lib/navigation.ts"), "utf8");
+for (const token of ["Phân bổ", "/resource-scheduling", "CalendarClock"]) {
+  navigationV260.includes(token) ? pass(`V2.6.0 Resource scheduling navigation: ${token}`) : fail(`V2.6.0 Resource scheduling navigation: ${token}`);
+}
+
+preferencesV240.includes("\"/resource-scheduling\"") ? pass("V2.6.0 Resource scheduling navbar preference") : fail("V2.6.0 Resource scheduling navbar preference");
+
+const migrationV260 = fs.readFileSync(path.join(root, "supabase/migrations/202609070002_v260_resource_scheduling_assignment_board.sql"), "utf8");
+for (const token of ["resource_assignment_events", "item_type in ('issue', 'task')", "resource_assignment_events_select_member_v260", "resource_assignment_events_insert_pm_v260"]) {
+  migrationV260.includes(token) ? pass(`V2.6.0 Migration: ${token}`) : fail(`V2.6.0 Migration: ${token}`);
+}
+
+for (const token of ["resource_scheduling", "Resource Scheduling & Assignment Board", "resource_assignment_events"]) {
+  readinessV250.includes(token) ? pass(`V2.6.0 Readiness: ${token}`) : fail(`V2.6.0 Readiness: ${token}`);
+}
+
 const projectDeleteApiV220 = fs.readFileSync(path.join(root, "app/api/master/projects/[projectId]/route.ts"), "utf8");
 for (const token of ["export async function DELETE", "createServiceClient", "project hard delete", "SERVICE_ROLE_REQUIRED"]) {
   projectDeleteApiV220.includes(token) ? pass(`V2.2.0 Project delete API: ${token}`) : fail(`V2.2.0 Project delete API: ${token}`);
@@ -741,7 +786,7 @@ for (const token of ["node_type = 'function'", "contract_detail_project_function
   migrationV220.includes(token) ? pass(`V2.2.0 Migration: ${token}`) : fail(`V2.2.0 Migration: ${token}`);
 }
 
-console.log("\nASC WORKING V2.5.0 - Resource Allocation Foundation Preflight\n");
+console.log("\nASC WORKING V2.6.0 - Resource Scheduling & Assignment Board Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

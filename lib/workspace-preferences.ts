@@ -4,6 +4,7 @@ export const DEFAULT_NAV_ORDER = [
   "/portfolio",
   "/plan",
   "/workload",
+  "/resource-scheduling",
   "/analytics",
   "/reports",
   "/contract",

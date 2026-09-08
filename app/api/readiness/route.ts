@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       ok: true,
       data: {
         app: "ASC WORKING",
-        version: "2.5.0",
+        version: "2.6.0",
         projectId,
         generatedAt: new Date().toISOString(),
         overall: "attention",
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     const body: ReadinessApiResponse = {
       ok: true,
       data: {
-        app: "ASC WORKING", version: "2.5.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
+        app: "ASC WORKING", version: "2.6.0", projectId, generatedAt: new Date().toISOString(), overall: "blocked", checks,
         metrics: { issues: 0, modules: 0, departments: 0, resources: 0, missingAssignee: 0, missingModule: 0, missingDepartment: 0, overdue: 0 },
       },
     };
@@ -232,6 +232,22 @@ export async function GET(request: NextRequest) {
     workloadSchema.durationMs,
   ));
 
+  const resourceSchedulingSchema = await timed(async () => Promise.all([
+    supabase.from("issues").select("id,assignee_person_id,due_date,estimated_hours", { count: "exact", head: true }).eq("project_id", projectId).is("archived_at", null),
+    supabase.from("project_plan_tasks").select("id,owner_person_id,due_date,estimated_hours", { count: "exact", head: true }).eq("project_id", projectId),
+    supabase.from("resource_assignment_events").select("id,item_type,item_id,assignee_person_id", { count: "exact", head: true }).eq("project_id", projectId),
+  ]));
+  const resourceSchedulingSchemaError = resourceSchedulingSchema.error || resourceSchedulingSchema.value?.find((result) => result.error)?.error;
+  checks.push(check(
+    "resource_scheduling",
+    "Resource Scheduling & Assignment Board",
+    resourceSchedulingSchemaError ? "fail" : "pass",
+    resourceSchedulingSchemaError
+      ? "Không đọc được dữ liệu assignment board hoặc audit trail; chạy migration V2.6.0."
+      : "Assignment Board có đủ nguồn dữ liệu để xếp tuần, kéo thả phân công và ghi lịch sử điều phối.",
+    resourceSchedulingSchema.durationMs,
+  ));
+
   const notificationsSchema = await timed(async () => Promise.all([
     supabase.from("activity_events").select("id", { count: "exact", head: true }).eq("project_id", projectId),
     supabase.from("notifications").select("id", { count: "exact", head: true }).eq("project_id", projectId).eq("user_id", user.id),
@@ -341,7 +357,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       app: "ASC WORKING",
-      version: "2.5.0",
+      version: "2.6.0",
       projectId,
       generatedAt: new Date().toISOString(),
       overall,

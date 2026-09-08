@@ -201,9 +201,9 @@ export async function GET(request: NextRequest) {
       quickLinks: [
         { label: "Master Plan", href: "/plan", description: "Điều phối stage, timeline, task, milestone, reminder" },
         { label: "Workload", href: "/workload", description: "Xem tải việc nhân sự và gợi ý điều phối capacity" },
+        { label: "Phân bổ nhân sự", href: "/resource-scheduling", description: "Kéo thả ISSUE/task vào người còn capacity theo tuần" },
         { label: "ISSUE Control", href: "/issues", description: "Xử lý backlog, overdue và trạng thái khách hàng" },
         { label: "PLHĐ Scope", href: "/contract", description: "Đối chiếu phạm vi module và chi tiết PLHĐ" },
-        { label: "Portfolio", href: "/portfolio", description: "Nhìn sức khỏe toàn bộ project có quyền truy cập" },
       ],
     };
 

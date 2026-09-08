@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { CalendarDays } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { InputHTMLAttributes } from "react";
 
 type DateInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "onChange" | "min" | "max"> & {
@@ -71,7 +72,15 @@ function parseDateTimeDisplay(value: string) {
   return parsed.toISOString();
 }
 
+function toDateTimePickerValue(value: string | null | undefined) {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
+}
+
 export function DateInput({ value, onChange, className, placeholder, min, max, onBlur, ...props }: DateInputProps) {
+  const pickerRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(formatDateDisplay(value));
   const invalid = useMemo(() => parseDateDisplay(draft) === null, [draft]);
 
@@ -83,33 +92,63 @@ export function DateInput({ value, onChange, className, placeholder, min, max, o
     else setDraft(formatDateDisplay(value));
   }
 
+  function openPicker() {
+    const picker = pickerRef.current;
+    if (!picker || props.disabled || props.readOnly) return;
+    if ("showPicker" in picker && typeof picker.showPicker === "function") picker.showPicker();
+    else picker.click();
+  }
+
   return (
-    <input
-      {...props}
-      type="text"
-      inputMode="numeric"
-      value={draft}
-      placeholder={placeholder ?? "DD/MM/YYYY"}
-      pattern="\d{1,2}/\d{1,2}/\d{4}"
-      aria-invalid={invalid || undefined}
-      title={`Nhập ngày dạng DD/MM/YYYY${min ? `, từ ${formatDateDisplay(min)}` : ""}${max ? `, đến ${formatDateDisplay(max)}` : ""}`}
-      className={className}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={(event) => {
-        commit();
-        onBlur?.(event);
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") {
-          event.currentTarget.blur();
-        }
-        props.onKeyDown?.(event);
-      }}
-    />
+    <div className="relative w-full">
+      <input
+        {...props}
+        type="text"
+        inputMode="numeric"
+        value={draft}
+        placeholder={placeholder ?? "DD/MM/YYYY"}
+        pattern="\d{1,2}/\d{1,2}/\d{4}"
+        aria-invalid={invalid || undefined}
+        title={`Nhập ngày dạng DD/MM/YYYY${min ? `, từ ${formatDateDisplay(min)}` : ""}${max ? `, đến ${formatDateDisplay(max)}` : ""}`}
+        className={`${className ?? ""} pr-10`}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={(event) => {
+          commit();
+          onBlur?.(event);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.currentTarget.blur();
+          }
+          props.onKeyDown?.(event);
+        }}
+      />
+      <input
+        ref={pickerRef}
+        aria-hidden="true"
+        tabIndex={-1}
+        type="date"
+        value={value ? value.slice(0, 10) : ""}
+        min={min}
+        max={max}
+        onChange={(event) => onChange(event.target.value)}
+        className="pointer-events-none absolute right-2 top-1/2 size-1 -translate-y-1/2 opacity-0"
+      />
+      <button
+        type="button"
+        disabled={props.disabled}
+        onClick={openPicker}
+        className="absolute right-2 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-lg text-slate-500 transition hover:bg-white/[0.05] hover:text-cyan-200 disabled:pointer-events-none disabled:opacity-40"
+        aria-label="Chọn ngày"
+      >
+        <CalendarDays className="size-3.5" />
+      </button>
+    </div>
   );
 }
 
 export function DateTimeInput({ value, onChange, className, placeholder, onBlur, ...props }: DateTimeInputProps) {
+  const pickerRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(formatDateTimeDisplay(value));
   const invalid = useMemo(() => parseDateTimeDisplay(draft) === null, [draft]);
 
@@ -121,28 +160,55 @@ export function DateTimeInput({ value, onChange, className, placeholder, onBlur,
     else setDraft(formatDateTimeDisplay(value));
   }
 
+  function openPicker() {
+    const picker = pickerRef.current;
+    if (!picker || props.disabled || props.readOnly) return;
+    if ("showPicker" in picker && typeof picker.showPicker === "function") picker.showPicker();
+    else picker.click();
+  }
+
   return (
-    <input
-      {...props}
-      type="text"
-      inputMode="numeric"
-      value={draft}
-      placeholder={placeholder ?? "DD/MM/YYYY HH:mm"}
-      aria-invalid={invalid || undefined}
-      title="Nhập ngày giờ dạng DD/MM/YYYY HH:mm"
-      className={className}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={(event) => {
-        commit();
-        onBlur?.(event);
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") {
-          event.currentTarget.blur();
-        }
-        props.onKeyDown?.(event);
-      }}
-    />
+    <div className="relative w-full">
+      <input
+        {...props}
+        type="text"
+        inputMode="numeric"
+        value={draft}
+        placeholder={placeholder ?? "DD/MM/YYYY HH:mm"}
+        aria-invalid={invalid || undefined}
+        title="Nhập ngày giờ dạng DD/MM/YYYY HH:mm"
+        className={`${className ?? ""} pr-10`}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={(event) => {
+          commit();
+          onBlur?.(event);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.currentTarget.blur();
+          }
+          props.onKeyDown?.(event);
+        }}
+      />
+      <input
+        ref={pickerRef}
+        aria-hidden="true"
+        tabIndex={-1}
+        type="datetime-local"
+        value={toDateTimePickerValue(value)}
+        onChange={(event) => onChange(event.target.value ? new Date(event.target.value).toISOString() : "")}
+        className="pointer-events-none absolute right-2 top-1/2 size-1 -translate-y-1/2 opacity-0"
+      />
+      <button
+        type="button"
+        disabled={props.disabled}
+        onClick={openPicker}
+        className="absolute right-2 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-lg text-slate-500 transition hover:bg-white/[0.05] hover:text-cyan-200 disabled:pointer-events-none disabled:opacity-40"
+        aria-label="Chọn ngày giờ"
+      >
+        <CalendarDays className="size-3.5" />
+      </button>
+    </div>
   );
 }
 
