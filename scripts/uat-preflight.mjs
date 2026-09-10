@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "3.4.0" ? pass("Package version", "3.4.0") : fail("Package version", `Expected 3.4.0, got ${pkg.version}`);
+pkg.version === "3.4.1" ? pass("Package version", "3.4.1") : fail("Package version", `Expected 3.4.1, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -245,6 +245,8 @@ for (const rel of [
   "docs/V3.4.0-SCOPE.md",
   "docs/V3.4.0-VALIDATION.md",
   "docs/UAT_V340_PERFORMANCE_CHECKLIST.md",
+  "docs/V3.4.1-SCOPE.md",
+  "docs/UAT_V341_DOCUMENT_DRIVE_LINK_CHECKLIST.md",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -440,8 +442,8 @@ for (const [rel, tokens] of [
 }
 
 const documentsUi = fs.readFileSync(path.join(root, "components/documents/project-documents.tsx"), "utf8");
-for (const token of ["Project Documents", "XMLHttpRequest", "upload.onprogress", "Lưu trữ", "250 MB"]) {
-  documentsUi.includes(token) ? pass(`V1.4.0 Documents UI: ${token}`) : fail(`V1.4.0 Documents UI: ${token}`);
+for (const token of ["Thêm tài liệu", "driveUrl", "Link Google Drive", "Xem file", "target=\"_blank\"", "Chỉ lưu thông tin và link Google Drive"]) {
+  documentsUi.includes(token) ? pass(`V3.4.1 Documents link UI: ${token}`) : fail(`V3.4.1 Documents link UI: ${token}`);
 }
 
 const driveServer = fs.readFileSync(path.join(root, "lib/documents/google-drive.ts"), "utf8");
@@ -457,6 +459,21 @@ for (const token of ["project_document_folders", "project_document_upload_sessio
 const uploadRoute = fs.readFileSync(path.join(root, "app/api/documents/upload-session/route.ts"), "utf8");
 for (const token of ["MAX_DOCUMENT_SIZE", "BLOCKED_EXTENSIONS", "createUploadToken", "createResumableUploadSession", "viewer"]) {
   uploadRoute.includes(token) ? pass(`V1.4.0 Upload guard: ${token}`) : fail(`V1.4.0 Upload guard: ${token}`);
+}
+
+const documentsRouteV341 = fs.readFileSync(path.join(root, "app/api/documents/route.ts"), "utf8");
+for (const token of ["export async function POST", "cleanDriveUrl", "drive_file_id: driveUrl", "drive_folder_id: \"external-drive-link\"", "driveReady: true"]) {
+  documentsRouteV341.includes(token) ? pass(`V3.4.1 Documents link API: ${token}`) : fail(`V3.4.1 Documents link API: ${token}`);
+}
+
+const documentsPatchV341 = fs.readFileSync(path.join(root, "app/api/documents/[documentId]/route.ts"), "utf8");
+for (const token of ["cleanDriveUrl", "payload.drive_file_id = driveUrl", "Link Google Drive không hợp lệ"]) {
+  documentsPatchV341.includes(token) ? pass(`V3.4.1 Documents edit link: ${token}`) : fail(`V3.4.1 Documents edit link: ${token}`);
+}
+
+const documentsReadinessV341 = fs.readFileSync(path.join(root, "app/api/readiness/route.ts"), "utf8");
+for (const token of ["Project Documents / Drive Link", "metadata nhẹ và link Google Drive trực tiếp"]) {
+  documentsReadinessV341.includes(token) ? pass(`V3.4.1 Documents readiness: ${token}`) : fail(`V3.4.1 Documents readiness: ${token}`);
 }
 
 const issuePersonalization = fs.readFileSync(path.join(root, "components/issues/issue-workspace.tsx"), "utf8");
@@ -972,7 +989,7 @@ for (const token of ["loadDataIntegrityReport", "data_integrity", "Data Integrit
   readinessV330.includes(token) ? pass(`V3.3.0 Readiness: ${token}`) : fail(`V3.3.0 Readiness: ${token}`);
 }
 
-console.log("\nASC WORKING V3.4.0 - Performance & Large Data Optimization Preflight\n");
+console.log("\nASC WORKING V3.4.1 - Document Drive Link Simplification Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

@@ -25,6 +25,18 @@ export function sanitizeFileName(value: string) {
   return (cleaned || "document.bin").slice(0, 220);
 }
 
+export function cleanDriveUrl(value: unknown) {
+  const cleaned = cleanText(value, 2000);
+  if (!cleaned) return null;
+  try {
+    const url = new URL(cleaned);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 export function createUploadToken() {
   const token = randomBytes(32).toString("base64url");
   return { token, hash: hashUploadToken(token) };
@@ -57,6 +69,7 @@ export function normalizeDocument(row: Record<string, unknown>): ProjectDocument
     mimeType: String(row.mime_type ?? "application/octet-stream"),
     sizeBytes: Number(row.size_bytes ?? 0),
     driveFileId: String(row.drive_file_id ?? ""),
+    driveUrl: String(row.drive_url ?? row.drive_file_id ?? ""),
     versionNo: Number(row.version_no ?? 1),
     uploadedBy: row.uploaded_by ? String(row.uploaded_by) : null,
     uploadedByName: profile?.display_name || profile?.email || null,

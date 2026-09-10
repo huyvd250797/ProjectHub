@@ -5,7 +5,6 @@ import { securityEnvironmentReady } from "@/lib/resources/server";
 import { getGlobalRole, getEffectiveProjectRole } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { googleDriveReady } from "@/lib/documents/google-drive";
 import { isDataIntegritySourceMissing, loadDataIntegrityReport } from "@/lib/data-integrity/server";
 import { APP_VERSION } from "@/lib/app-meta";
 
@@ -349,13 +348,11 @@ export async function GET(request: NextRequest) {
   const documentSchemaError = documentSchema.error || documentSchema.value?.error;
   checks.push(check(
     "project_documents",
-    "Project Documents / Google Drive",
-    documentSchemaError ? "fail" : googleDriveReady() ? "pass" : "warn",
+    "Project Documents / Drive Link",
+    documentSchemaError ? "fail" : "pass",
     documentSchemaError
       ? "Không đọc được project_documents; chạy migration V1.4.0."
-      : googleDriveReady()
-        ? "Schema tài liệu và Google Drive OAuth đã sẵn sàng."
-        : "Schema đã sẵn sàng nhưng còn thiếu Google Drive OAuth environment.",
+      : "Schema tài liệu sẵn sàng; Document dùng metadata nhẹ và link Google Drive trực tiếp.",
     documentSchema.durationMs,
   ));
 

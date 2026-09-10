@@ -19,6 +19,7 @@ export type ProjectDocument = {
   mimeType: string;
   sizeBytes: number;
   driveFileId: string;
+  driveUrl: string;
   versionNo: number;
   uploadedBy: string | null;
   uploadedByName: string | null;

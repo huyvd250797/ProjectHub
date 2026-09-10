@@ -24,7 +24,6 @@ import { PageHeader } from "@/components/page-header";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { isMasterUser } from "@/lib/access";
-import { googleDriveReady } from "@/lib/documents/google-drive";
 import { APP_RELEASE, APP_VERSION_LABEL } from "@/lib/app-meta";
 
 export const metadata = { title: "Thiết lập" };
@@ -34,8 +33,6 @@ export default async function SettingsPage() {
   const supabase = await createClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
   const master = Boolean(supabase && user && await isMasterUser(supabase, user.id));
-  const driveReady = googleDriveReady();
-
   const checks = [
     { label: "Next.js App Router", text: "Framework nền tảng", ok: true, icon: Code2 },
     { label: "Vercel deployment", text: "Output Directory để Default", ok: true, icon: GitBranch },
@@ -48,7 +45,7 @@ export default async function SettingsPage() {
     { label: "Remote Server Security", text: "AES-256-GCM + Reveal/Copy permission + Audit", ok: true, icon: ServerCog },
     { label: "Hardening + UAT", text: "Readiness checks + Regression checklist + Security headers", ok: true, icon: ClipboardCheck },
     { label: "Notifications & Activity", text: "Bell inbox + Activity Feed + Due Reminder + Preferences", ok: true, icon: Activity },
-    { label: "Project Documents", text: driveReady ? "Google Drive OAuth + private proxy" : "Cần cấu hình Google Drive OAuth", ok: driveReady, icon: FolderOpen },
+    { label: "Project Documents", text: "Metadata nhẹ + link Google Drive trực tiếp", ok: true, icon: FolderOpen },
     { label: "Master Plan", text: "Stage Từ ngày–Đến ngày + Timeline + Milestones", ok: true, icon: Map },
     { label: "Data Integrity", text: "Source-of-truth audit cho Plan, ISSUE, PLHĐ, Finance và Workload", ok: true, icon: DatabaseZap },
   ];

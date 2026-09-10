@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEffectiveProjectRole } from "@/lib/access";
 import { createDemoDocumentList } from "@/lib/documents/demo";
-import { googleDriveReady } from "@/lib/documents/google-drive";
-import { normalizeDocument } from "@/lib/documents/server";
-import type { DocumentApiResponse } from "@/lib/documents/types";
+import { cleanDriveUrl, cleanText, isCategory, isLinkType, logDocumentActivity, normalizeDocument } from "@/lib/documents/server";
+import type { DocumentApiResponse, DocumentMutationResponse } from "@/lib/documents/types";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -67,7 +66,7 @@ export async function GET(request: NextRequest) {
         role,
         canUpload: role !== "viewer",
         canManage: role === "admin" || role === "pm",
-        driveReady: googleDriveReady(),
+        driveReady: true,
         summary: {
           total: rows.length,
           minutes: rows.filter((row) => row.category === "minutes").length,
@@ -79,5 +78,75 @@ export async function GET(request: NextRequest) {
       },
     } satisfies DocumentApiResponse,
     { headers: { "Cache-Control": "no-store" } },
+  );
+}
+
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  if (!supabase) {
+    return NextResponse.json(
+      { ok: false, code: "DEMO_READONLY", message: "Demo Mode không ghi dữ liệu." } satisfies DocumentMutationResponse,
+      { status: 409 },
+    );
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json(
+      { ok: false, code: "UNAUTHORIZED", message: "Phiên đăng nhập đã hết hạn." } satisfies DocumentMutationResponse,
+      { status: 401 },
+    );
+  }
+
+  let raw: Record<string, unknown> = {};
+  try { raw = await request.json(); } catch {}
+
+  const projectId = cleanText(raw.projectId, 80);
+  const title = cleanText(raw.title, 240);
+  const driveUrl = cleanDriveUrl(raw.driveUrl);
+  if (!projectId || !title || !driveUrl) {
+    return NextResponse.json(
+      { ok: false, code: "VALIDATION_FAILED", message: "Nhập tiêu đề và link Google Drive hợp lệ." } satisfies DocumentMutationResponse,
+      { status: 400 },
+    );
+  }
+
+  const role = await getEffectiveProjectRole(supabase, projectId, user.id);
+  if (!role || role === "viewer") {
+    return NextResponse.json(
+      { ok: false, code: "FORBIDDEN", message: "Bạn không có quyền thêm tài liệu cho project này." } satisfies DocumentMutationResponse,
+      { status: 403 },
+    );
+  }
+
+  const payload = {
+    project_id: projectId,
+    title,
+    original_file_name: title,
+    category: isCategory(raw.category) ? raw.category : "other",
+    description: cleanText(raw.description, 4000),
+    linked_entity_type: isLinkType(raw.linkType) ? raw.linkType : "project",
+    linked_entity_id: null,
+    linked_entity_label: cleanText(raw.linkedEntityLabel, 300),
+    mime_type: "text/uri-list",
+    size_bytes: 0,
+    drive_file_id: driveUrl,
+    drive_folder_id: "external-drive-link",
+    uploaded_by: user.id,
+    version_no: 1,
+  };
+
+  const { data, error } = await supabase.from("project_documents").insert(payload).select("*").single();
+  if (error || !data) {
+    return NextResponse.json(
+      { ok: false, code: "CREATE_FAILED", message: `Không thêm được tài liệu: ${error?.message ?? "unknown"}` } satisfies DocumentMutationResponse,
+      { status: 500 },
+    );
+  }
+
+  await logDocumentActivity({ projectId, userId: user.id, documentId: String(data.id), title: String(data.title), action: "upload" });
+  return NextResponse.json(
+    { ok: true, document: normalizeDocument(data), message: "Đã thêm tài liệu và link Google Drive." } satisfies DocumentMutationResponse,
+    { status: 201 },
   );
 }

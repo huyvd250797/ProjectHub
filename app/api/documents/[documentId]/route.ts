@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEffectiveProjectRole } from "@/lib/access";
-import { cleanText, isCategory, isLinkType, logDocumentActivity, normalizeDocument, uuidOrNull } from "@/lib/documents/server";
+import { cleanDriveUrl, cleanText, isCategory, isLinkType, logDocumentActivity, normalizeDocument, uuidOrNull } from "@/lib/documents/server";
 import type { DocumentMutationResponse } from "@/lib/documents/types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -27,7 +27,20 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const payload: Record<string, unknown> = {};
   const title = cleanText(raw.title, 240);
-  if (title) payload.title = title;
+  if (title) {
+    payload.title = title;
+    payload.original_file_name = title;
+  }
+  if (typeof raw.driveUrl === "string") {
+    const driveUrl = cleanDriveUrl(raw.driveUrl);
+    if (!driveUrl) {
+      return NextResponse.json({ ok: false, code: "VALIDATION_FAILED", message: "Link Google Drive không hợp lệ." } satisfies DocumentMutationResponse, { status: 400 });
+    }
+    payload.drive_file_id = driveUrl;
+    payload.drive_folder_id = "external-drive-link";
+    payload.mime_type = "text/uri-list";
+    payload.size_bytes = 0;
+  }
   if (raw.description === null || typeof raw.description === "string") payload.description = cleanText(raw.description, 4000);
   if (isCategory(raw.category)) payload.category = raw.category;
   if (isLinkType(raw.linkType)) payload.linked_entity_type = raw.linkType;

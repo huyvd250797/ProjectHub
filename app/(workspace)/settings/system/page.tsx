@@ -23,7 +23,6 @@ import { APP_NAME, APP_RELEASE, APP_VERSION_LABEL } from "@/lib/app-meta";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { googleDriveReady } from "@/lib/documents/google-drive";
 
 export const metadata = { title: "System Information" };
 
@@ -39,7 +38,6 @@ export default async function SystemInformationPage() {
   const master = Boolean(supabase && user && await isMasterUser(supabase, user.id));
   const serviceRoleReady = Boolean(createServiceClient());
   const encryptionReady = readyEncryption();
-  const driveReady = googleDriveReady();
 
   let databaseReady = false;
   let databaseDetail = configured ? "Chưa xác nhận query database." : "Supabase chưa được cấu hình.";
@@ -114,7 +112,7 @@ export default async function SystemInformationPage() {
     { label: "Service Role", value: serviceRoleReady ? "Ready" : "Missing", detail: "SUPABASE_SERVICE_ROLE_KEY • server-only", ok: serviceRoleReady, icon: KeyRound },
     { label: "Encryption", value: encryptionReady ? "Ready" : "Missing", detail: "APP_ENCRYPTION_KEY • AES-256-GCM Resource Vault", ok: encryptionReady, icon: ServerCog },
     { label: "Excel Import", value: "Production", detail: "Template → Preview → Transaction Apply", ok: configured, icon: FileSpreadsheet },
-    { label: "Project Documents", value: driveReady ? "Google Drive Ready" : "OAuth required", detail: "Resumable upload • private app proxy • project-scoped access", ok: driveReady, icon: FolderOpen },
+    { label: "Project Documents", value: "Drive Link Ready", detail: "Metadata nhẹ • mở link Google Drive trực tiếp", ok: true, icon: FolderOpen },
     { label: "Appearance", value: "Dark / Light", detail: "Preference lưu trên browser; mặc định theo system theme.", ok: true, icon: Palette },
     { label: "Analytics / Health", value: analyticsReady ? "Ready" : "Migration required", detail: analyticsDetail, ok: analyticsReady, icon: BarChart3 },
     { label: "Executive Reports", value: reportsReady ? "Ready" : "Migration required", detail: reportsDetail, ok: reportsReady, icon: FileText },

@@ -1,5 +1,19 @@
 # Changelog
 
+## V3.4.1 - Document Drive Link Simplification
+
+### Changed
+
+- Document chuyển từ upload/proxy Google Drive sang lưu metadata nhẹ kèm link Google Drive.
+- Form thêm/sửa tài liệu chỉ yêu cầu thông tin tài liệu và `driveUrl`.
+- Lưới tài liệu hiển thị nút **Xem file** để mở link Drive trực tiếp.
+- Settings và Readiness không còn yêu cầu OAuth Google Drive cho luồng Document mới.
+
+### Safety
+
+- Không xóa luồng upload cũ khỏi codebase để tránh phá dữ liệu cũ.
+- Không yêu cầu migration mới; link được lưu bằng metadata tài liệu hiện có.
+
 ## V3.4.0 - Performance & Large Data Optimization
 
 ### Added

@@ -1,4 +1,14 @@
-# ASC WORKING - V3.4.0
+# ASC WORKING - V3.4.1
+
+## V3.4.1 có gì mới?
+
+### Document Drive Link Simplification
+
+- Màn **Tài liệu dự án** chuyển sang dạng thêm mới metadata nhẹ: tiêu đề, loại tài liệu, liên kết nghiệp vụ, mô tả và link Google Drive.
+- Không cần cấu hình Google Drive OAuth để thêm tài liệu ở màn này.
+- Lưới tài liệu có nút **Xem file** mở trực tiếp link Drive/Docs/Sheets đã nhập.
+- Readiness và Settings không còn cảnh báo thiếu OAuth cho Document.
+- Không bắt buộc chạy migration mới; tiếp tục dùng bảng metadata tài liệu hiện có.
 
 ## V3.4.0 có gì mới?
 
