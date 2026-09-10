@@ -5,6 +5,7 @@ import type { Dispatch, ReactNode, SetStateAction } from "react";
 import {
   Archive,
   CheckCircle2,
+  Copy,
   ExternalLink,
   FileText,
   FolderOpen,
@@ -30,6 +31,7 @@ import type {
 const CATEGORY_LABELS: Record<DocumentCategory, string> = {
   minutes: "Biên bản",
   contract: "Hợp đồng",
+  form: "Biểu mẫu",
   guide: "Hướng dẫn",
   requirement: "Yêu cầu",
   report: "Báo cáo",
@@ -85,6 +87,7 @@ export function ProjectDocuments() {
   const [linkType, setLinkType] = useState<DocumentLinkType | "all">("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [editDocument, setEditDocument] = useState<ProjectDocument | null>(null);
+  const [copyDocument, setCopyDocument] = useState<ProjectDocument | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -112,7 +115,7 @@ export function ProjectDocuments() {
       if (category !== "all" && row.category !== category) return false;
       if (linkType !== "all" && row.linkType !== linkType) return false;
       if (!query) return true;
-      return [row.title, row.description, row.linkedEntityLabel, row.uploadedByName, row.driveUrl]
+      return [row.title, row.description, row.linkedEntityLabel, row.uploadedByName]
         .filter(Boolean)
         .some((value) => String(value).toLocaleLowerCase("vi-VN").includes(query));
     });
@@ -152,7 +155,7 @@ export function ProjectDocuments() {
           <div className="flex flex-1 flex-col gap-2 sm:flex-row">
             <label className="relative min-w-0 flex-1 xl:max-w-md">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
-              <input className="field pl-9" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm tên tài liệu, mô tả, link Drive..." />
+              <input className="field pl-9" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm tên tài liệu, mô tả, người tạo..." />
             </label>
             <select className="field sm:w-44" value={category} onChange={(event) => setCategory(event.target.value as DocumentCategory | "all")}>
               <option value="all">Tất cả loại</option>
@@ -197,7 +200,6 @@ export function ProjectDocuments() {
                     <td className="max-w-[360px] px-4 py-4 align-top">
                       <div className="font-semibold text-slate-100">{document.title}</div>
                       {document.description ? <div className="mt-1 whitespace-normal text-xs leading-5 text-slate-400">{document.description}</div> : null}
-                      <div className="mt-2 break-all text-[11px] text-cyan-200/70">{documentUrl(document)}</div>
                     </td>
                     <td className="px-4 py-4 align-top">
                       <span className="inline-flex rounded-md border border-violet-300/15 bg-violet-300/[0.055] px-2 py-1 text-[10px] font-medium text-violet-200">{CATEGORY_LABELS[document.category]}</span>
@@ -212,6 +214,7 @@ export function ProjectDocuments() {
                       <div className="flex items-center justify-end gap-1.5">
                         <a className="secure-btn px-2.5" href={documentUrl(document)} target="_blank" rel="noreferrer" title="Xem file trên Google Drive"><ExternalLink className="size-3.5" /><span className="hidden xl:inline">Xem file</span></a>
                         {data?.canManage ? <button type="button" className="secure-btn px-2.5" onClick={() => setEditDocument(document)} title="Sửa thông tin"><Pencil className="size-3.5" /></button> : null}
+                        {data?.canUpload ? <button type="button" className="secure-btn px-2.5" onClick={() => setCopyDocument(document)} title="Sao chép dòng"><Copy className="size-3.5" /></button> : null}
                         {data?.canManage ? <button type="button" className="secure-btn px-2.5 hover:border-rose-300/20 hover:text-rose-200" onClick={() => void archiveDocument(document)} title="Lưu trữ"><Archive className="size-3.5" /></button> : null}
                       </div>
                     </td>
@@ -229,6 +232,7 @@ export function ProjectDocuments() {
 
       {createOpen ? <DocumentModal projectId={selectedProject.id} onClose={() => setCreateOpen(false)} onDone={async (text) => { setCreateOpen(false); setMessage({ type: "success", text }); await load(); }} /> : null}
       {editDocument ? <DocumentModal document={editDocument} projectId={selectedProject.id} onClose={() => setEditDocument(null)} onDone={async (text) => { setEditDocument(null); setMessage({ type: "success", text }); await load(); }} /> : null}
+      {copyDocument ? <DocumentModal copyFrom={copyDocument} projectId={selectedProject.id} onClose={() => setCopyDocument(null)} onDone={async (text) => { setCopyDocument(null); setMessage({ type: "success", text }); await load(); }} /> : null}
     </div>
   );
 }
@@ -238,14 +242,15 @@ function SummaryCard({ label, value, helper, icon: Icon, tone }: { label: string
   return <div className="tech-panel rounded-2xl p-4"><div className="flex items-start justify-between"><div><div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div><div className="mt-2 text-2xl font-semibold tracking-tight text-white">{value}</div></div><div className={cn("grid size-9 place-items-center rounded-xl border", tones[tone])}><Icon className="size-[18px]" /></div></div><div className="mt-2 truncate text-[10px] text-slate-600">{helper}</div></div>;
 }
 
-function DocumentModal({ projectId, document, onClose, onDone }: { projectId: string; document?: ProjectDocument; onClose: () => void; onDone: (message: string) => void }) {
+function DocumentModal({ projectId, document, copyFrom, onClose, onDone }: { projectId: string; document?: ProjectDocument; copyFrom?: ProjectDocument; onClose: () => void; onDone: (message: string) => void }) {
+  const source = document ?? copyFrom;
   const [form, setForm] = useState<DocumentForm>({
-    title: document?.title ?? "",
-    category: document?.category ?? "other",
-    description: document?.description ?? "",
-    linkType: document?.linkType ?? "project",
-    linkedEntityLabel: document?.linkedEntityLabel ?? "",
-    driveUrl: document ? documentUrl(document) : "",
+    title: source?.title ?? "",
+    category: source?.category ?? "other",
+    description: source?.description ?? "",
+    linkType: source?.linkType ?? "project",
+    linkedEntityLabel: source?.linkedEntityLabel ?? "",
+    driveUrl: source ? documentUrl(source) : "",
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -268,7 +273,7 @@ function DocumentModal({ projectId, document, onClose, onDone }: { projectId: st
     }
   }
 
-  return <Modal title={document ? "Cập nhật tài liệu" : "Thêm tài liệu"} subtitle="Nhập thông tin tài liệu và dán link Google Drive để mở xem nhanh." onClose={busy ? undefined : onClose}>
+  return <Modal title={document ? "Cập nhật tài liệu" : copyFrom ? "Sao chép tài liệu" : "Thêm tài liệu"} subtitle={copyFrom ? "Thông tin đã được fill từ dòng đang sao chép. Chỉnh lại nội dung rồi lưu để tạo dòng mới." : "Nhập thông tin tài liệu và dán link Google Drive để mở xem nhanh."} onClose={busy ? undefined : onClose}>
     <DocumentFields form={form} setForm={setForm} disabled={busy} />
     {error ? <div className="mt-4 rounded-xl border border-rose-300/20 bg-rose-300/[0.055] px-4 py-3 text-sm text-rose-200">{error}</div> : null}
     <div className="mt-5 flex justify-end gap-2">

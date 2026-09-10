@@ -1,4 +1,15 @@
-# ASC WORKING - V3.4.1
+# ASC WORKING - V3.4.2
+
+## V3.4.2 có gì mới?
+
+### Document Catalog Copy Polish
+
+- Ẩn link Google Drive khỏi lưới tài liệu; người dùng chỉ bấm **Xem file** để mở tài liệu.
+- Bổ sung loại tài liệu **Biểu mẫu**.
+- Bổ sung nút sao chép dòng tài liệu; modal sao chép mở giống thêm mới và fill sẵn dữ liệu dòng gốc.
+- Lưu từ modal sao chép sẽ tạo dòng tài liệu mới, không sửa dòng cũ.
+
+Migration nhỏ nếu dùng DB hiện hữu: `supabase/migrations/202609100001_v342_document_form_category.sql` để thêm loại **Biểu mẫu** và cho phép sao chép nhiều dòng dùng chung một link Drive.
 
 ## V3.4.1 có gì mới?
 

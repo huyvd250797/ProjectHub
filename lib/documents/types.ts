@@ -1,6 +1,6 @@
 import type { ProjectRole } from "@/lib/issues/types";
 
-export const DOCUMENT_CATEGORIES = ["minutes", "contract", "guide", "requirement", "report", "other"] as const;
+export const DOCUMENT_CATEGORIES = ["minutes", "contract", "form", "guide", "requirement", "report", "other"] as const;
 export type DocumentCategory = (typeof DOCUMENT_CATEGORIES)[number];
 
 export const DOCUMENT_LINK_TYPES = ["project", "issue", "contract_item", "department", "resource", "other"] as const;

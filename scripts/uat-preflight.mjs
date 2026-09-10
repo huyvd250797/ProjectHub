@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "3.4.1" ? pass("Package version", "3.4.1") : fail("Package version", `Expected 3.4.1, got ${pkg.version}`);
+pkg.version === "3.4.2" ? pass("Package version", "3.4.2") : fail("Package version", `Expected 3.4.2, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -247,6 +247,9 @@ for (const rel of [
   "docs/UAT_V340_PERFORMANCE_CHECKLIST.md",
   "docs/V3.4.1-SCOPE.md",
   "docs/UAT_V341_DOCUMENT_DRIVE_LINK_CHECKLIST.md",
+  "docs/V3.4.2-SCOPE.md",
+  "docs/UAT_V342_DOCUMENT_COPY_CHECKLIST.md",
+  "supabase/migrations/202609100001_v342_document_form_category.sql",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -442,9 +445,10 @@ for (const [rel, tokens] of [
 }
 
 const documentsUi = fs.readFileSync(path.join(root, "components/documents/project-documents.tsx"), "utf8");
-for (const token of ["Thêm tài liệu", "driveUrl", "Link Google Drive", "Xem file", "target=\"_blank\"", "Chỉ lưu thông tin và link Google Drive"]) {
-  documentsUi.includes(token) ? pass(`V3.4.1 Documents link UI: ${token}`) : fail(`V3.4.1 Documents link UI: ${token}`);
+for (const token of ["Thêm tài liệu", "driveUrl", "Link Google Drive", "Xem file", "target=\"_blank\"", "Biểu mẫu", "Sao chép tài liệu", "setCopyDocument(document)", "copyFrom"]) {
+  documentsUi.includes(token) ? pass(`V3.4.2 Documents UI: ${token}`) : fail(`V3.4.2 Documents UI: ${token}`);
 }
+!documentsUi.includes("break-all text-[11px] text-cyan-200/70") ? pass("V3.4.2 Documents UI hides raw Drive URL") : fail("V3.4.2 Documents UI hides raw Drive URL");
 
 const driveServer = fs.readFileSync(path.join(root, "lib/documents/google-drive.ts"), "utf8");
 for (const token of ["oauth2.googleapis.com/token", "uploadType", "resumable", "appProperties", "GOOGLE_DRIVE_REFRESH_TOKEN"]) {
@@ -474,6 +478,16 @@ for (const token of ["cleanDriveUrl", "payload.drive_file_id = driveUrl", "Link 
 const documentsReadinessV341 = fs.readFileSync(path.join(root, "app/api/readiness/route.ts"), "utf8");
 for (const token of ["Project Documents / Drive Link", "metadata nhẹ và link Google Drive trực tiếp"]) {
   documentsReadinessV341.includes(token) ? pass(`V3.4.1 Documents readiness: ${token}`) : fail(`V3.4.1 Documents readiness: ${token}`);
+}
+
+const documentTypesV342 = fs.readFileSync(path.join(root, "lib/documents/types.ts"), "utf8") + "\n" + fs.readFileSync(path.join(root, "lib/documents/server.ts"), "utf8");
+for (const token of ["form", "DOCUMENT_CATEGORIES", "isCategory"]) {
+  documentTypesV342.includes(token) ? pass(`V3.4.2 Document category: ${token}`) : fail(`V3.4.2 Document category: ${token}`);
+}
+
+const documentMigrationV342 = fs.readFileSync(path.join(root, "supabase/migrations/202609100001_v342_document_form_category.sql"), "utf8");
+for (const token of ["project_documents_category_check", "'form'", "project_document_upload_sessions_category_check", "drop constraint if exists project_documents_drive_file_id_key"]) {
+  documentMigrationV342.includes(token) ? pass(`V3.4.2 Document migration: ${token}`) : fail(`V3.4.2 Document migration: ${token}`);
 }
 
 const issuePersonalization = fs.readFileSync(path.join(root, "components/issues/issue-workspace.tsx"), "utf8");
@@ -989,7 +1003,7 @@ for (const token of ["loadDataIntegrityReport", "data_integrity", "Data Integrit
   readinessV330.includes(token) ? pass(`V3.3.0 Readiness: ${token}`) : fail(`V3.3.0 Readiness: ${token}`);
 }
 
-console.log("\nASC WORKING V3.4.1 - Document Drive Link Simplification Preflight\n");
+console.log("\nASC WORKING V3.4.2 - Document Catalog Copy Polish Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

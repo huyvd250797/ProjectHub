@@ -47,7 +47,7 @@ export function hashUploadToken(token: string) {
 }
 
 export function isCategory(value: unknown): value is DocumentCategory {
-  return ["minutes", "contract", "guide", "requirement", "report", "other"].includes(String(value));
+  return ["minutes", "contract", "form", "guide", "requirement", "report", "other"].includes(String(value));
 }
 
 export function isLinkType(value: unknown): value is DocumentLinkType {

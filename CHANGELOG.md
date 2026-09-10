@@ -1,5 +1,17 @@
 # Changelog
 
+## V3.4.2 - Document Catalog Copy Polish
+
+### Changed
+
+- Ẩn URL Google Drive khỏi cột tài liệu trên lưới.
+- Thêm category **Biểu mẫu** cho Document.
+- Thêm thao tác **Sao chép dòng** để tạo tài liệu mới từ thông tin dòng hiện có.
+
+### Database
+
+- Migration mới mở rộng constraint category cho `project_documents` và `project_document_upload_sessions`, đồng thời bỏ unique cũ trên `drive_file_id` để hỗ trợ sao chép metadata dùng chung link Drive: `202609100001_v342_document_form_category.sql`.
+
 ## V3.4.1 - Document Drive Link Simplification
 
 ### Changed
