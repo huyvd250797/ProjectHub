@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "3.5.0" ? pass("Package version", "3.5.0") : fail("Package version", `Expected 3.5.0, got ${pkg.version}`);
+pkg.version === "3.6.0" ? pass("Package version", "3.6.0") : fail("Package version", `Expected 3.6.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -253,6 +253,9 @@ for (const rel of [
   "docs/V3.5.0-SCOPE.md",
   "docs/UAT_V350_DUE_DATE_NOTIFICATIONS_CHECKLIST.md",
   "supabase/migrations/202609110001_v350_due_date_notification_automation.sql",
+  "docs/V3.6.0-SCOPE.md",
+  "docs/UAT_V360_UIUX_PERFORMANCE_CHECKLIST.md",
+  "components/ui/performance-warmup.tsx",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -925,7 +928,7 @@ for (const token of ["GlobalModalScrollLock", "MutationObserver", "asc-modal-scr
 }
 
 const appShellV310 = fs.readFileSync(path.join(root, "components/app-shell.tsx"), "utf8");
-for (const token of ["GlobalModalScrollLock", "APP_RELEASE", "APP_VERSION_LABEL"]) {
+for (const token of ["GlobalModalScrollLock", "PerformanceWarmup", "asc-page-enter", "APP_RELEASE", "APP_VERSION_LABEL"]) {
   appShellV310.includes(token) ? pass(`V3.1.0 App shell: ${token}`) : fail(`V3.1.0 App shell: ${token}`);
 }
 
@@ -940,7 +943,7 @@ for (const token of ["project_financial_control", "project_financial_months", "P
 }
 
 const healthV310 = fs.readFileSync(path.join(root, "app/api/health/route.ts"), "utf8");
-for (const token of ["APP_VERSION", "APP_RELEASE", "due-date-notification-automation", "due-alerts-3d-1d", "task-issue-milestone-due-alerts", "large-data-optimization", "performance-client-cache", "performance-db-indexes", "data-integrity", "source-of-truth-audit", "timelinePro", "criticalPath"]) {
+for (const token of ["APP_VERSION", "APP_RELEASE", "uiux-performance-stabilization", "stale-while-revalidate-client-cache", "workspace-performance-warmup", "page-enter-motion", "global-grid-reset-layout", "shimmer-skeleton-loading", "due-date-notification-automation", "due-alerts-3d-1d", "task-issue-milestone-due-alerts", "large-data-optimization", "performance-client-cache", "performance-db-indexes", "data-integrity", "source-of-truth-audit", "timelinePro", "criticalPath"]) {
   healthV310.includes(token) ? pass(`V3.1.0 Health metadata: ${token}`) : fail(`V3.1.0 Health metadata: ${token}`);
 }
 
@@ -985,13 +988,28 @@ for (const token of ["Integrity Score", "Catalog / PLHĐ", "Chạy lại", "Mở
 }
 
 const performanceCacheV340 = fs.readFileSync(path.join(root, "lib/performance/client-cache.ts"), "utf8");
-for (const token of ["fetchJsonCached", "inFlight", "expiresAt", "invalidateClientCache"]) {
+for (const token of ["fetchJsonCached", "inFlight", "expiresAt", "staleUntil", "staleWhileRevalidate", "prefetchJson", "getClientCacheStats", "invalidateClientCache"]) {
   performanceCacheV340.includes(token) ? pass(`V3.4.0 Client cache: ${token}`) : fail(`V3.4.0 Client cache: ${token}`);
 }
 
 const performanceCssV340 = fs.readFileSync(path.join(root, "app/globals.css"), "utf8");
-for (const token of [".asc-large-data-row", "content-visibility: auto", "contain-intrinsic-size"]) {
+for (const token of [".asc-large-data-row", "content-visibility: auto", "contain-intrinsic-size", "asc-page-in", ".asc-skeleton", "asc-shimmer", ".asc-grid-reset-button", "prefers-reduced-motion"]) {
   performanceCssV340.includes(token) ? pass(`V3.4.0 Large data CSS: ${token}`) : fail(`V3.4.0 Large data CSS: ${token}`);
+}
+
+const performanceWarmupV360 = fs.readFileSync(path.join(root, "components/ui/performance-warmup.tsx"), "utf8");
+for (const token of ["PerformanceWarmup", "requestIdleCallback", "WARMUP_PATHS", "prefetchJson", "/api/issues/preferences", "/api/workload", "/api/notifications"]) {
+  performanceWarmupV360.includes(token) ? pass(`V3.6.0 performance warmup: ${token}`) : fail(`V3.6.0 performance warmup: ${token}`);
+}
+
+const globalGridEnhancerV360 = fs.readFileSync(path.join(root, "components/ui/global-grid-enhancer.tsx"), "utf8");
+for (const token of ["resetLayout", "asc-grid-reset-button", "Reset layout cột", "removeItem", "ascGridResetButton"]) {
+  globalGridEnhancerV360.includes(token) ? pass(`V3.6.0 grid reset: ${token}`) : fail(`V3.6.0 grid reset: ${token}`);
+}
+
+const workspaceLoadingV360 = fs.readFileSync(path.join(root, "app/(workspace)/loading.tsx"), "utf8");
+for (const token of ["asc-skeleton", "Đang chuẩn bị Project Workspace"]) {
+  workspaceLoadingV360.includes(token) ? pass(`V3.6.0 workspace loading: ${token}`) : fail(`V3.6.0 workspace loading: ${token}`);
 }
 
 const performanceMigrationV340 = fs.readFileSync(path.join(root, "supabase/migrations/202609080003_v340_performance_large_data_indexes.sql"), "utf8");
@@ -1021,7 +1039,7 @@ for (const token of ["loadDataIntegrityReport", "data_integrity", "Data Integrit
   readinessV330.includes(token) ? pass(`V3.3.0 Readiness: ${token}`) : fail(`V3.3.0 Readiness: ${token}`);
 }
 
-console.log("\nASC WORKING V3.5.0 - Due Date Notification Automation Preflight\n");
+console.log("\nASC WORKING V3.6.0 - UI/UX Performance Stabilization Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

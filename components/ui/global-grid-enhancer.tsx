@@ -53,6 +53,24 @@ function saveLayout(table: HTMLTableElement) {
   window.localStorage.setItem(getStorageKey(table), JSON.stringify({ order: labels, widths }));
 }
 
+function resetLayout(table: HTMLTableElement) {
+  window.localStorage.removeItem(getStorageKey(table));
+  const originalLabels = (table.dataset.ascOriginalGridHeaders || "").split("|").filter(Boolean);
+  originalLabels.forEach((wantedLabel, targetIndex) => {
+    const currentLabels = getColumnLabels(table);
+    const currentIndex = currentLabels.indexOf(wantedLabel);
+    if (currentIndex >= 0 && currentIndex !== targetIndex) moveColumn(table, currentIndex, targetIndex);
+  });
+  for (const row of Array.from(table.rows)) {
+    for (const cell of Array.from(row.children)) {
+      const element = cell as HTMLElement;
+      element.style.width = "";
+      element.style.minWidth = "";
+      element.style.maxWidth = "";
+    }
+  }
+}
+
 function moveColumn(table: HTMLTableElement, from: number, to: number) {
   if (from === to || from < 0 || to < 0) return;
 
@@ -105,6 +123,17 @@ function enhanceTable(table: HTMLTableElement) {
 
   if (table.dataset.ascGridEnhanced === "true") return;
   table.dataset.ascGridEnhanced = "true";
+
+  if (table.parentElement && table.dataset.ascGridResetButton !== "true") {
+    table.dataset.ascGridResetButton = "true";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "asc-grid-reset-button";
+    button.textContent = "Reset layout cột";
+    button.title = "Đưa thứ tự và độ rộng cột về mặc định";
+    button.addEventListener("click", () => resetLayout(table));
+    table.parentElement.insertBefore(button, table);
+  }
 
   let draggedIndex = -1;
 

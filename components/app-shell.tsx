@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { GlobalGridEnhancer } from "@/components/ui/global-grid-enhancer";
 import { GlobalModalScrollLock } from "@/components/ui/modal-scroll-lock";
+import { PerformanceWarmup } from "@/components/ui/performance-warmup";
 import { ProjectProvider } from "@/components/project-context";
 import type { WorkspaceProject } from "@/lib/projects";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ export function AppShell({
     <ProjectProvider projects={projects} isMaster={isMaster}>
       <GlobalGridEnhancer />
       <GlobalModalScrollLock />
+      <PerformanceWarmup />
       <div className="min-h-screen">
         <Sidebar
           collapsed={collapsed}
@@ -60,7 +62,7 @@ export function AppShell({
             isMaster={isMaster}
             onOpenMobile={() => setMobileOpen(true)}
           />
-          <main key={`${pathname}-${navbarReloadKey}`} className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-6 md:py-7">
+          <main key={`${pathname}-${navbarReloadKey}`} className="asc-page-enter mx-auto w-full max-w-[1600px] px-4 py-6 md:px-6 md:py-7">
             {children}
           </main>
           <footer className="mx-auto flex w-full max-w-[1600px] flex-col gap-1 border-t border-white/[0.05] px-4 py-5 text-[10px] uppercase tracking-[0.14em] text-slate-700 md:flex-row md:items-center md:justify-between md:px-6">

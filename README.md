@@ -1,4 +1,15 @@
-# ASC WORKING - V3.5.0
+# ASC WORKING - V3.6.0
+
+## V3.6.0 có gì mới?
+
+### UI/UX Performance Stabilization
+
+- Client cache có stale-while-revalidate để các màn đã mở phản hồi nhanh hơn nhưng vẫn tự refresh nền.
+- Tự preload nhẹ các API hay dùng sau khi vào Project, không chặn màn hiện tại.
+- Bổ sung page enter animation và shimmer skeleton vừa đủ để giao diện mượt hơn.
+- Global grid có nút **Reset layout cột** để khôi phục thứ tự/độ rộng cột mặc định sau khi kéo chỉnh.
+- Tiếp tục tối ưu grid lớn bằng `content-visibility`, wrap nội dung và cache client.
+- Không có migration mới.
 
 ## V3.5.0 có gì mới?
 

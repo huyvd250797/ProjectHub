@@ -1,5 +1,23 @@
 # Changelog
 
+## V3.6.0 - UI/UX Performance Stabilization
+
+### Added
+
+- Client cache hỗ trợ stale-while-revalidate để giảm thời gian chờ khi quay lại các màn dữ liệu lớn.
+- `PerformanceWarmup` preload nhẹ các API hay dùng sau khi browser rảnh.
+- Page enter motion và shimmer skeleton chuẩn dùng chung cho workspace.
+- Global grid có nút **Reset layout cột** để khôi phục thứ tự/độ rộng cột mặc định.
+
+### Changed
+
+- Workspace loading chuyển từ pulse thô sang shimmer skeleton.
+- Health metadata và preflight được cập nhật đầy đủ cho V3.6.0.
+
+### Database
+
+- Không có migration mới.
+
 ## V3.5.0 - Due Date Notification Automation
 
 ### Added
