@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "3.4.2" ? pass("Package version", "3.4.2") : fail("Package version", `Expected 3.4.2, got ${pkg.version}`);
+pkg.version === "3.5.0" ? pass("Package version", "3.5.0") : fail("Package version", `Expected 3.5.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -250,6 +250,9 @@ for (const rel of [
   "docs/V3.4.2-SCOPE.md",
   "docs/UAT_V342_DOCUMENT_COPY_CHECKLIST.md",
   "supabase/migrations/202609100001_v342_document_form_category.sql",
+  "docs/V3.5.0-SCOPE.md",
+  "docs/UAT_V350_DUE_DATE_NOTIFICATIONS_CHECKLIST.md",
+  "supabase/migrations/202609110001_v350_due_date_notification_automation.sql",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -322,6 +325,21 @@ for (const token of ["Notifications & Activity Center", "Cài đặt thông báo
 const notificationMigration = fs.readFileSync(path.join(root, "supabase/migrations/202608250001_v110_notifications_activity.sql"), "utf8");
 for (const token of ["activity_events", "notifications", "notification_preferences", "sync_issue_due_notifications_v110", "capture_issue_activity_v110"]) {
   notificationMigration.includes(token) ? pass(`V1.1.0 migration: ${token}`) : fail(`V1.1.0 migration: ${token}`);
+}
+
+const dueDateMigrationV350 = fs.readFileSync(path.join(root, "supabase/migrations/202609110001_v350_due_date_notification_automation.sql"), "utf8");
+for (const token of ["sync_due_date_notifications_v350", "current_date + 3", "current_date + 1", "project_plan_tasks", "project_milestones", "due-v350", "notification_enabled_v110", "sync_issue_due_notifications_v110"]) {
+  dueDateMigrationV350.includes(token) ? pass(`V3.5.0 due notification migration: ${token}`) : fail(`V3.5.0 due notification migration: ${token}`);
+}
+
+const notificationServerV350 = fs.readFileSync(path.join(root, "lib/notifications/server.ts"), "utf8");
+for (const token of ["sync_due_date_notifications_v350", "sync_issue_due_notifications_v110", "missingV350", "V3.5.0 expands"]) {
+  notificationServerV350.includes(token) ? pass(`V3.5.0 notification server: ${token}`) : fail(`V3.5.0 notification server: ${token}`);
+}
+
+const notificationApiV350 = fs.readFileSync(path.join(root, "app/api/notifications/route.ts"), "utf8");
+for (const token of ["sync_due_date_notifications_v350", "V3.5.0"]) {
+  notificationApiV350.includes(token) ? pass(`V3.5.0 notification API: ${token}`) : fail(`V3.5.0 notification API: ${token}`);
 }
 
 const systemInfo = fs.readFileSync(path.join(root, "app/(workspace)/settings/system/page.tsx"), "utf8");
@@ -922,7 +940,7 @@ for (const token of ["project_financial_control", "project_financial_months", "P
 }
 
 const healthV310 = fs.readFileSync(path.join(root, "app/api/health/route.ts"), "utf8");
-for (const token of ["APP_VERSION", "APP_RELEASE", "large-data-optimization", "performance-client-cache", "performance-db-indexes", "data-integrity", "source-of-truth-audit", "timelinePro", "criticalPath"]) {
+for (const token of ["APP_VERSION", "APP_RELEASE", "due-date-notification-automation", "due-alerts-3d-1d", "task-issue-milestone-due-alerts", "large-data-optimization", "performance-client-cache", "performance-db-indexes", "data-integrity", "source-of-truth-audit", "timelinePro", "criticalPath"]) {
   healthV310.includes(token) ? pass(`V3.1.0 Health metadata: ${token}`) : fail(`V3.1.0 Health metadata: ${token}`);
 }
 
@@ -1003,7 +1021,7 @@ for (const token of ["loadDataIntegrityReport", "data_integrity", "Data Integrit
   readinessV330.includes(token) ? pass(`V3.3.0 Readiness: ${token}`) : fail(`V3.3.0 Readiness: ${token}`);
 }
 
-console.log("\nASC WORKING V3.4.2 - Document Catalog Copy Polish Preflight\n");
+console.log("\nASC WORKING V3.5.0 - Due Date Notification Automation Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

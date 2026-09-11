@@ -43,9 +43,18 @@ export async function getNotificationInbox(
   userId: string,
   limit = 12,
 ): Promise<NotificationInboxData> {
-  // V1.1.0 lazily generates due/overdue reminders for the current user.
-  // Missing migration is handled by the following table query and surfaced by the API.
-  await supabase.rpc("sync_issue_due_notifications_v110", { p_project_id: projectId });
+  // Lazily generates due-date reminders for the current user when the inbox opens.
+  // V3.5.0 expands this from ISSUE-only to ISSUE, Plan Task and Milestone.
+  const sync = await supabase.rpc("sync_due_date_notifications_v350", { p_project_id: projectId });
+  if (sync.error) {
+    const missingV350 = /sync_due_date_notifications_v350|function .* does not exist/i.test(sync.error.message);
+    if (missingV350) {
+      const legacySync = await supabase.rpc("sync_issue_due_notifications_v110", { p_project_id: projectId });
+      if (legacySync.error) throw new Error(legacySync.error.message);
+    } else {
+      throw new Error(sync.error.message);
+    }
+  }
 
   const [itemsResult, countResult] = await Promise.all([
     supabase

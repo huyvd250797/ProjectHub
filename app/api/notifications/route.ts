@@ -39,13 +39,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, data } satisfies NotificationInboxResponse, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Không tải được thông báo.";
-    const migrationMissing = /notifications|notification_preferences|sync_issue_due_notifications_v110|relation .* does not exist/i.test(message);
+    const migrationMissing = /notifications|notification_preferences|sync_due_date_notifications_v350|sync_issue_due_notifications_v110|relation .* does not exist/i.test(message);
     return NextResponse.json(
       {
         ok: false,
         code: migrationMissing ? "V110_MIGRATION_REQUIRED" : "NOTIFICATIONS_LOAD_FAILED",
         message: migrationMissing
-          ? "Notifications V1.1.0 cần chạy migration 202608250001_v110_notifications_activity.sql trên Supabase."
+          ? "Notifications cần migration V1.1.0 và V3.5.0 để đồng bộ cảnh báo due date."
           : message,
       } satisfies NotificationInboxResponse,
       { status: migrationMissing ? 503 : 500 },

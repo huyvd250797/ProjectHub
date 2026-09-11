@@ -1,4 +1,16 @@
-# ASC WORKING - V3.4.2
+# ASC WORKING - V3.5.0
+
+## V3.5.0 có gì mới?
+
+### Due Date Notification Automation
+
+- Tự động tạo cảnh báo vào **Thông báo** cho các đầu việc có due date liên quan đến cá nhân đang đăng nhập.
+- Áp dụng cho **ISSUE**, **Plan Task** và **Milestone** khi người phụ trách/owner gắn với tài khoản hiện tại.
+- Cảnh báo ở các mốc: trước 3 ngày, trước 1 ngày, đến hạn hôm nay và đã quá hạn.
+- Chống tạo trùng thông báo khi mở Notification Center nhiều lần.
+- Tôn trọng cấu hình bật/tắt **Due Reminder** trong notification preferences.
+
+Migration cần chạy: `supabase/migrations/202609110001_v350_due_date_notification_automation.sql`.
 
 ## V3.4.2 có gì mới?
 

@@ -1,5 +1,18 @@
 # Changelog
 
+## V3.5.0 - Due Date Notification Automation
+
+### Added
+
+- Tự động đồng bộ cảnh báo due date vào Notification Center cho ISSUE, Plan Task và Milestone của user hiện tại.
+- Hỗ trợ mốc cảnh báo trước 3 ngày, trước 1 ngày, đến hạn hôm nay và đã quá hạn.
+- Chống trùng notification bằng key `due-v350:*`.
+- API notification gọi function V3.5.0 và fallback về function V1.1.0 nếu môi trường chưa chạy migration mới.
+
+### Database
+
+- Migration mới: `supabase/migrations/202609110001_v350_due_date_notification_automation.sql`.
+
 ## V3.4.2 - Document Catalog Copy Polish
 
 ### Changed
