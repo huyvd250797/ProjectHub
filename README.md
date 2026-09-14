@@ -1,4 +1,14 @@
-# ASC WORKING - V3.6.0
+# ASC WORKING - V3.6.1
+
+## V3.6.1 có gì mới?
+
+### Modal Save Close & Data Visibility Fix
+
+- Fix màn **ISSUE**: sau khi tạo/cập nhật ISSUE thành công, drawer đóng ngay và URL được clear `issueId`.
+- Lưới ISSUE tự reload dữ liệu sau khi lưu để thông tin vừa nhập hiển thị lại ở màn ngoài.
+- Rà các modal chính: Plan, Finance, Document, Resource, Project, Navbar manager và Import.
+- Bổ sung checklist UAT kiểm tra "lưu xong đóng modal" và "field nhập vào có hiển thị ở lưới/chi tiết".
+- Không có migration mới.
 
 ## V3.6.0 có gì mới?
 

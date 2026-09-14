@@ -428,7 +428,14 @@ export function IssueWorkspace() {
 
   function openIssue(issue: IssueRow) { setCreateMode(false); setSelectedIssue(issue); replaceParams((params) => params.set("issueId", issue.id)); }
   function closeDrawer() { setCreateMode(false); setSelectedIssue(null); replaceParams((params) => params.delete("issueId")); }
-  function onSaved(issue: IssueRow) { setSelectedIssue(issue); setCreateMode(false); replaceParams((params) => params.set("issueId", issue.id)); setNotice(`Đã lưu ISSUE #${issue.issueNo ?? "—"}`); setReloadKey((key) => key + 1); }
+  function onSaved(issue: IssueRow) {
+    setData((current) => current ? { ...current, rows: current.rows.map((row) => row.id === issue.id ? issue : row) } : current);
+    setCreateMode(false);
+    setSelectedIssue(null);
+    replaceParams((params) => params.delete("issueId"));
+    setNotice(`Đã lưu ISSUE #${issue.issueNo ?? "—"}`);
+    setReloadKey((key) => key + 1);
+  }
   function onArchived(issueId: string) { if (selectedIssue?.id === issueId) closeDrawer(); setNotice("Đã xóa ISSUE khỏi danh sách hoạt động."); setSelectedIds((current) => { const next = new Set(current); next.delete(issueId); return next; }); setReloadKey((key) => key + 1); }
 
   function bulkOptions(): SelectOption[] {

@@ -1,5 +1,21 @@
 # Changelog
 
+## V3.6.1 - Modal Save Close & Data Visibility Fix
+
+### Fixed
+
+- ISSUE drawer không còn giữ modal mở sau khi lưu thành công.
+- Sau khi lưu ISSUE, màn ngoài clear `issueId`, đóng drawer và reload dữ liệu để tránh cảm giác thông tin chưa được lưu.
+
+### Audit
+
+- Đã rà các modal/form chính: Plan, Finance, Document, Resource, Master Project, Navbar manager, Quick Import và ISSUE.
+- Các form còn lại đã có luồng đóng modal hoặc là màn kết quả chủ động như Import Excel.
+
+### Database
+
+- Không có migration mới.
+
 ## V3.6.0 - UI/UX Performance Stabilization
 
 ### Added

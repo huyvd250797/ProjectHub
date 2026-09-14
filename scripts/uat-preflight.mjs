@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "3.6.0" ? pass("Package version", "3.6.0") : fail("Package version", `Expected 3.6.0, got ${pkg.version}`);
+pkg.version === "3.6.1" ? pass("Package version", "3.6.1") : fail("Package version", `Expected 3.6.1, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -255,6 +255,8 @@ for (const rel of [
   "supabase/migrations/202609110001_v350_due_date_notification_automation.sql",
   "docs/V3.6.0-SCOPE.md",
   "docs/UAT_V360_UIUX_PERFORMANCE_CHECKLIST.md",
+  "docs/V3.6.1-SCOPE.md",
+  "docs/UAT_V361_MODAL_SAVE_DATA_VISIBILITY_CHECKLIST.md",
   "components/ui/performance-warmup.tsx",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
@@ -1012,6 +1014,19 @@ for (const token of ["asc-skeleton", "Đang chuẩn bị Project Workspace"]) {
   workspaceLoadingV360.includes(token) ? pass(`V3.6.0 workspace loading: ${token}`) : fail(`V3.6.0 workspace loading: ${token}`);
 }
 
+const issueWorkspaceV361 = fs.readFileSync(path.join(root, "components/issues/issue-workspace.tsx"), "utf8");
+for (const token of ["setSelectedIssue(null)", "params.delete(\"issueId\")", "Đã lưu ISSUE", "setReloadKey((key) => key + 1)"]) {
+  issueWorkspaceV361.includes(token) ? pass(`V3.6.1 ISSUE modal close: ${token}`) : fail(`V3.6.1 ISSUE modal close: ${token}`);
+}
+
+const docsV361 = [
+  fs.readFileSync(path.join(root, "docs/V3.6.1-SCOPE.md"), "utf8"),
+  fs.readFileSync(path.join(root, "docs/UAT_V361_MODAL_SAVE_DATA_VISIBILITY_CHECKLIST.md"), "utf8"),
+].join("\n");
+for (const token of ["Modal Save Close", "Data Visibility", "ISSUE", "Document", "Finance", "Resource"]) {
+  docsV361.includes(token) ? pass(`V3.6.1 audit docs: ${token}`) : fail(`V3.6.1 audit docs: ${token}`);
+}
+
 const performanceMigrationV340 = fs.readFileSync(path.join(root, "supabase/migrations/202609080003_v340_performance_large_data_indexes.sql"), "utf8");
 for (const token of ["issues_project_active_issue_no_idx", "contract_items_project_tree_idx", "people_project_active_lookup_idx", "project_plan_tasks_project_stage_due_idx", "project_financial_months_project_month_idx", "resource_assignment_events_project_item_idx", "changed_at desc", "if not exists"]) {
   performanceMigrationV340.toLowerCase().includes(token.toLowerCase()) ? pass(`V3.4.0 Performance index: ${token}`) : fail(`V3.4.0 Performance index: ${token}`);
@@ -1039,7 +1054,7 @@ for (const token of ["loadDataIntegrityReport", "data_integrity", "Data Integrit
   readinessV330.includes(token) ? pass(`V3.3.0 Readiness: ${token}`) : fail(`V3.3.0 Readiness: ${token}`);
 }
 
-console.log("\nASC WORKING V3.6.0 - UI/UX Performance Stabilization Preflight\n");
+console.log("\nASC WORKING V3.6.1 - Modal Save Close & Data Visibility Fix Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);
