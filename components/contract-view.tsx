@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -385,6 +386,7 @@ function EmptyContract({ source }: { source: ContractData["source"] }) {
 
 export function ContractView() {
   const { selectedProject } = useProject();
+  const searchParams = useSearchParams();
   const [data, setData] = useState<ContractData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -409,7 +411,7 @@ export function ContractView() {
     setLoading(true);
     setError("");
     setData(null);
-    setSearch("");
+    setSearch(searchParams.get("search") ?? "");
     setSelectedNode(null);
 
     if (reloadKey) invalidateClientCache("/api/contract?");
@@ -432,7 +434,7 @@ export function ContractView() {
       });
 
     return () => { cancelled = true; };
-  }, [selectedProject.id, reloadKey]);
+  }, [selectedProject.id, reloadKey, searchParams]);
 
   useEffect(() => {
     const handleCatalogChanged = (event: Event) => {

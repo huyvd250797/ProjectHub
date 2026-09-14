@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import {
   Archive,
@@ -81,6 +82,7 @@ function documentUrl(document: ProjectDocument) {
 
 export function ProjectDocuments() {
   const { selectedProject } = useProject();
+  const searchParams = useSearchParams();
   const [data, setData] = useState<DocumentListData | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -90,6 +92,10 @@ export function ProjectDocuments() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editDocument, setEditDocument] = useState<ProjectDocument | null>(null);
   const [copyDocument, setCopyDocument] = useState<ProjectDocument | null>(null);
+
+  useEffect(() => {
+    setSearch(searchParams.get("search") ?? "");
+  }, [searchParams]);
 
   const load = useCallback(async () => {
     setLoading(true);

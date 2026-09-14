@@ -11,6 +11,7 @@ export type DashboardProject = {
   contractDate: string | null;
   startDate: string | null;
   dueDate: string | null;
+  completedDate: string | null;
   status: "active" | "paused" | "completed" | "archived";
 };
 
@@ -81,6 +82,7 @@ export type DashboardData = {
     elapsedDays: number | null;
     remainingDays: number | null;
     timeProgress: number | null;
+    delayDays: number;
     health: "on_track" | "near_deadline" | "overdue" | "not_scheduled";
   };
   stages: DashboardStage[];

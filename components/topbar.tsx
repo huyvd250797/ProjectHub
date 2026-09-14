@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, Command, Crown, LogOut, Menu, Search } from "lucide-react";
+import { ChevronDown, Command, Crown, LoaderCircle, LogOut, Menu, Search, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { MobileProjectChip, ProjectSwitcher } from "@/components/project-switcher";
+import { useProject } from "@/components/project-context";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 
@@ -36,9 +38,55 @@ export function Topbar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { selectedProject } = useProject();
+  const [search, setSearch] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [results, setResults] = useState<Array<{ id: string; module: string; title: string; subtitle: string; href: string; badge?: string }>>([]);
+  const searchTimer = useRef<number | null>(null);
   const pageName =
     Object.entries(pageNames).find(([key]) => pathname.startsWith(key))?.[1] ??
     "Workspace";
+
+  useEffect(() => {
+    if (searchTimer.current) window.clearTimeout(searchTimer.current);
+    const controller = new AbortController();
+    const query = search.trim();
+    if (query.length < 2) {
+      setResults([]);
+      setSearchOpen(false);
+      setSearching(false);
+      return;
+    }
+
+    searchTimer.current = window.setTimeout(() => {
+      setSearching(true);
+      fetch(`/api/search?projectId=${encodeURIComponent(selectedProject.id)}&q=${encodeURIComponent(query)}`, {
+        cache: "no-store",
+        signal: controller.signal,
+      })
+        .then((response) => response.json())
+        .then((body) => {
+          if (body?.ok) {
+            setResults(body.items ?? []);
+            setSearchOpen(true);
+          } else {
+            setResults([]);
+            setSearchOpen(false);
+          }
+        })
+        .catch(() => {
+          setResults([]);
+          setSearchOpen(false);
+        })
+        .finally(() => setSearching(false));
+    }, 1000);
+
+    return () => {
+      if (searchTimer.current) window.clearTimeout(searchTimer.current);
+      controller.abort();
+    };
+  }, [search, selectedProject.id]);
 
   async function handleLogout() {
     const supabase = createClient();
@@ -77,12 +125,67 @@ export function Topbar({
         <div className="relative hidden xl:block">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-600" />
           <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            onFocus={() => results.length && setSearchOpen(true)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && search.trim()) {
+                event.preventDefault();
+                router.push(`/issues?search=${encodeURIComponent(search.trim())}`);
+                setSearchOpen(false);
+              }
+              if (event.key === "Escape") setSearchOpen(false);
+            }}
             placeholder="Tìm ISSUE, Module, Jira..."
             className="h-10 w-[260px] rounded-xl border border-white/[0.07] bg-white/[0.025] pl-9 pr-12 text-xs text-slate-200 outline-none placeholder:text-slate-600 focus:border-cyan-300/25 focus:bg-white/[0.035]"
           />
-          <span className="absolute right-2.5 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md border border-white/[0.07] bg-black/10 px-1.5 py-1 text-[9px] text-slate-600">
-            <Command className="size-2.5" /> K
-          </span>
+          {search ? (
+            <button
+              type="button"
+              onClick={() => { setSearch(""); setResults([]); setSearchOpen(false); }}
+              className="absolute right-2.5 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md border border-white/[0.07] bg-black/10 text-slate-600 hover:text-slate-300"
+              aria-label="Xóa tìm kiếm"
+            >
+              <X className="size-3" />
+            </button>
+          ) : (
+            <span className="absolute right-2.5 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md border border-white/[0.07] bg-black/10 px-1.5 py-1 text-[9px] text-slate-600">
+              <Command className="size-2.5" /> K
+            </span>
+          )}
+          {searchOpen ? (
+            <div className="absolute right-0 top-full z-[80] mt-2 w-[430px] overflow-hidden rounded-2xl border border-cyan-300/12 bg-[#081421]/95 shadow-[0_24px_80px_rgba(0,0,0,.45)] backdrop-blur-xl">
+              <div className="flex items-center justify-between border-b border-white/[0.06] px-3 py-2.5">
+                <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-cyan-300/65">Search Suggestions</span>
+                {searching ? <LoaderCircle className="size-3.5 animate-spin text-cyan-300/60" /> : <span className="text-[9px] text-slate-700">{results.length} kết quả</span>}
+              </div>
+              {results.length ? (
+                <div className="max-h-[360px] overflow-y-auto p-1.5">
+                  {results.map((result) => (
+                    <button
+                      key={result.id}
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        router.push(result.href);
+                        setSearchOpen(false);
+                      }}
+                      className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-white/[0.045]"
+                    >
+                      <span className="mt-0.5 rounded-lg border border-cyan-300/12 bg-cyan-300/[0.055] px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-cyan-200">{result.module}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-xs font-semibold text-slate-200">{result.title}</span>
+                        <span className="mt-1 line-clamp-2 block text-[10px] leading-4 text-slate-600">{result.subtitle}</span>
+                      </span>
+                      {result.badge ? <span className="max-w-[110px] truncate rounded-lg border border-white/[0.07] px-2 py-1 text-[9px] text-slate-500">{result.badge}</span> : null}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-4 py-8 text-center text-xs text-slate-600">{searching ? "Đang tìm dữ liệu gần đúng..." : "Không tìm thấy dữ liệu phù hợp."}</div>
+              )}
+            </div>
+          ) : null}
         </div>
 
         {demoMode ? (

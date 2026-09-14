@@ -12,6 +12,18 @@ function numberValue(value: unknown) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function dateOnly(value: unknown) {
+  if (!value) return null;
+  return String(value).slice(0, 10);
+}
+
+function diffDays(from: string, to: string) {
+  const start = new Date(`${from}T00:00:00Z`).getTime();
+  const end = new Date(`${to}T00:00:00Z`).getTime();
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return 0;
+  return Math.max(0, Math.floor((end - start) / 86_400_000));
+}
+
 function normalizeDashboard(raw: Record<string, unknown>): DashboardData {
   const project = (raw.project ?? {}) as Record<string, unknown>;
   const summary = (raw.summary ?? {}) as Record<string, unknown>;
@@ -38,6 +50,7 @@ function normalizeDashboard(raw: Record<string, unknown>): DashboardData {
       contractDate: project.contractDate ? String(project.contractDate) : null,
       startDate: project.startDate ? String(project.startDate) : null,
       dueDate: project.dueDate ? String(project.dueDate) : null,
+      completedDate: project.completedDate ? String(project.completedDate) : null,
       status: (project.status ?? "active") as DashboardData["project"]["status"],
     },
     summary: {
@@ -74,6 +87,7 @@ function normalizeDashboard(raw: Record<string, unknown>): DashboardData {
       elapsedDays: schedule.elapsedDays === null || schedule.elapsedDays === undefined ? null : numberValue(schedule.elapsedDays),
       remainingDays: schedule.remainingDays === null || schedule.remainingDays === undefined ? null : numberValue(schedule.remainingDays),
       timeProgress: schedule.timeProgress === null || schedule.timeProgress === undefined ? null : numberValue(schedule.timeProgress),
+      delayDays: numberValue(schedule.delayDays),
       health: (schedule.health ?? "not_scheduled") as DashboardData["schedule"]["health"],
     },
     stages: stages.map((item) => {
@@ -190,6 +204,28 @@ export async function GET(request: NextRequest) {
       status: stage.status ? String(stage.status) : null,
       progress: numberValue(stage.progress),
     }));
+  }
+
+  const completionResult = await supabase
+    .from("projects")
+    .select("status,start_date,due_date,completed_date")
+    .eq("id", projectId)
+    .maybeSingle();
+  if (!completionResult.error && completionResult.data) {
+    const projectRow = completionResult.data as Record<string, unknown>;
+    const status = String(projectRow.status ?? dashboard.project.status) as DashboardData["project"]["status"];
+    const dueDate = dateOnly(projectRow.due_date) ?? dashboard.project.dueDate;
+    const completedDate = dateOnly(projectRow.completed_date);
+    const today = new Date().toISOString().slice(0, 10);
+    const compareDate = status === "completed" ? completedDate : today;
+    const delayDays = dueDate && compareDate ? diffDays(dueDate, compareDate) : 0;
+
+    dashboard.project.status = status;
+    dashboard.project.startDate = dateOnly(projectRow.start_date) ?? dashboard.project.startDate;
+    dashboard.project.dueDate = dueDate;
+    dashboard.project.completedDate = completedDate;
+    dashboard.schedule.delayDays = delayDays;
+    if (status !== "completed" && delayDays > 0) dashboard.schedule.health = "overdue";
   }
 
   const body: DashboardApiResponse = { ok: true, data: dashboard };

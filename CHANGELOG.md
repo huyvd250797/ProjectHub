@@ -1,5 +1,23 @@
 # Changelog
 
+## V3.7.1 - Search, Modal & Deadline Fix
+
+### Added
+
+- Global Search API và dropdown gợi ý trên Topbar, debounce 1 giây sau khi người dùng dừng nhập.
+- Kết quả search có nhãn module, nội dung khớp và href điều hướng vào màn dữ liệu.
+- Project `completed_date` để ghi nhận ngày hoàn thành thực tế.
+
+### Changed
+
+- ISSUE search chỉ áp filter khi nhấn Enter, tránh reload lưới liên tục khi đang nhập.
+- Dashboard hiển thị số ngày trễ hạn cho Project chưa Complete và trạng thái hoàn thành đúng hạn/trễ hạn cho Project Completed.
+- Plan modal render bằng portal vào `document.body`, giữ modal đúng viewport và scroll trong modal.
+
+### Database
+
+- Migration mới: `supabase/migrations/202609140001_v371_search_modal_deadline_fix.sql`.
+
 ## V3.7.0 - Module Data Export
 
 ### Added

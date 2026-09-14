@@ -181,6 +181,17 @@ export function IssueWorkspace() {
     });
     if (!keepSearch) setSearchValue("");
   }
+  function applyIssueSearch() {
+    const nextSearch = searchValue.trim();
+    const currentSearch = searchParams.get("search") ?? "";
+    if (nextSearch === currentSearch) return;
+    replaceParams((params) => {
+      if (nextSearch) params.set("search", nextSearch);
+      else params.delete("search");
+      params.delete("page");
+      params.delete("issueId");
+    });
+  }
   function currentSavedViewParams() {
     const result: Record<string, string> = {};
     for (const key of savedViewKeys) { const value = searchParams.get(key); if (value) result[key] = value; }
@@ -195,15 +206,6 @@ export function IssueWorkspace() {
   }, [selectedProject.id, pathname, router]);
 
   useEffect(() => { setSearchValue(searchParams.get("search") ?? ""); }, [searchParams]);
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const current = searchParams.get("search") ?? "";
-      if (searchValue.trim() === current) return;
-      replaceParams((params) => { if (searchValue.trim()) params.set("search", searchValue.trim()); else params.delete("search"); params.delete("page"); });
-    }, 360);
-    return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchValue, queryString]);
 
   useEffect(() => {
     let cancelled = false;
@@ -550,7 +552,24 @@ export function IssueWorkspace() {
 
       <div className={cn("tech-panel overflow-visible rounded-2xl", fullScreen && "flex min-h-0 flex-1 flex-col overflow-hidden")}>
         <div className="flex flex-col gap-3 border-b border-white/[0.06] p-4 xl:flex-row xl:items-center">
-          <div className="relative min-w-0 flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-600" /><input value={searchValue} onChange={(e) => setSearchValue(e.target.value)} placeholder="Tìm nội dung, Jira, Module, phòng ban, người phụ trách..." className="h-10 w-full rounded-xl border border-white/[0.07] bg-black/10 pl-9 pr-3 text-xs text-slate-300 outline-none placeholder:text-slate-700 focus:border-cyan-300/20" /></div>
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-600" />
+            <input
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  applyIssueSearch();
+                }
+              }}
+              placeholder="Tìm nội dung, Jira, Module, phòng ban, người phụ trách rồi nhấn Enter..."
+              className="h-10 w-full rounded-xl border border-white/[0.07] bg-black/10 pl-9 pr-24 text-xs text-slate-300 outline-none placeholder:text-slate-700 focus:border-cyan-300/20"
+            />
+            {searchValue.trim() !== (searchParams.get("search") ?? "") ? (
+              <button type="button" onClick={applyIssueSearch} className="absolute right-2 top-1/2 h-7 -translate-y-1/2 rounded-lg border border-cyan-300/12 bg-cyan-300/[0.055] px-2.5 text-[9px] font-medium text-cyan-100">Enter</button>
+            ) : null}
+          </div>
           <div className="flex flex-wrap gap-2">
             <SavedViewsMenu views={savedViews} onApply={applySavedView} onDelete={deleteSavedView} disabled={data.source === "demo"} />
             <button type="button" onClick={() => setSaveViewOpen(true)} disabled={data.source === "demo"} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-slate-200 disabled:opacity-40"><Save className="size-3.5" /> Lưu View</button>

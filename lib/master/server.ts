@@ -3,7 +3,7 @@ import { isMasterUser } from "@/lib/access";
 import type { MasterProjectMember, MasterProjectRow } from "@/lib/master/types";
 import type { ProjectRole } from "@/lib/issues/types";
 
-export const MASTER_PROJECT_SELECT = "id,code,slug,name,description,organization_name,organization_code,organization_address,status,contract_no,contract_value,contract_date,start_date,due_date,contact_name,contact_title,contact_email,contact_phone,notes,created_at,updated_at" as const;
+export const MASTER_PROJECT_SELECT = "id,code,slug,name,description,organization_name,organization_code,organization_address,status,contract_no,contract_value,contract_date,start_date,due_date,completed_date,contact_name,contact_title,contact_email,contact_phone,notes,created_at,updated_at" as const;
 
 export async function requireMaster(supabase: SupabaseClient) {
   const { data: { user } } = await supabase.auth.getUser();
@@ -44,6 +44,7 @@ export function normalizeMasterProject(
     contractDate: row.contract_date ? String(row.contract_date) : null,
     startDate: row.start_date ? String(row.start_date) : null,
     dueDate: row.due_date ? String(row.due_date) : null,
+    completedDate: row.completed_date ? String(row.completed_date) : null,
     contactName: row.contact_name ? String(row.contact_name) : null,
     contactTitle: row.contact_title ? String(row.contact_title) : null,
     contactEmail: row.contact_email ? String(row.contact_email) : null,

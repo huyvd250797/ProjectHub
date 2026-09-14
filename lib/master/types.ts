@@ -17,6 +17,7 @@ export type MasterProjectRow = {
   contractDate: string | null;
   startDate: string | null;
   dueDate: string | null;
+  completedDate: string | null;
   contactName: string | null;
   contactTitle: string | null;
   contactEmail: string | null;

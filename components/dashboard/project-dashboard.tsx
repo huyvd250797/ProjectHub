@@ -225,7 +225,7 @@ export function ProjectDashboard() {
     exportCsvSections(`ASC-WORKING-${data.project.code}-Dashboard`, [
       {
         title: "Project Overview",
-        headers: ["Mã dự án", "Tên dự án", "Đơn vị", "Trạng thái", "Số hợp đồng", "Giá trị HĐ", "Ngày ký", "Ngày bắt đầu", "Ngày kết thúc", "Health"],
+        headers: ["Mã dự án", "Tên dự án", "Đơn vị", "Trạng thái", "Số hợp đồng", "Giá trị HĐ", "Ngày ký", "Ngày bắt đầu", "Ngày kết thúc", "Ngày hoàn thành", "Số ngày trễ", "Health"],
         rows: [{
           "Mã dự án": data.project.code,
           "Tên dự án": data.project.name,
@@ -236,6 +236,8 @@ export function ProjectDashboard() {
           "Ngày ký": formatDate(data.project.contractDate),
           "Ngày bắt đầu": formatDate(data.project.startDate),
           "Ngày kết thúc": formatDate(data.project.dueDate),
+          "Ngày hoàn thành": formatDate(data.project.completedDate),
+          "Số ngày trễ": data.schedule.delayDays,
           "Health": health.label,
         }],
       },
@@ -349,6 +351,7 @@ export function ProjectDashboard() {
                   ["Ngày ký", formatDate(data.project.contractDate)],
                   ["Ngày bắt đầu", formatDate(data.project.startDate)],
                   ["Ngày kết thúc", formatDate(data.project.dueDate)],
+                  ...(data.project.completedDate ? [["Ngày hoàn thành", formatDate(data.project.completedDate)] as const] : []),
                 ].map(([label, value]) => (
                   <div key={label}>
                     <div className="text-[9px] uppercase tracking-[0.14em] text-slate-700">{label}</div>
@@ -387,6 +390,16 @@ export function ProjectDashboard() {
                 <div className="h-2 overflow-hidden rounded-full bg-white/[0.05]">
                   <div className="h-full rounded-full bg-gradient-to-r from-cyan-300/75 to-violet-400/70" style={{ width: `${Math.min(100, data.schedule.timeProgress ?? 0)}%` }} />
                 </div>
+                {data.project.status !== "completed" && data.schedule.delayDays > 0 ? (
+                  <div className="mt-3 rounded-xl border border-rose-300/15 bg-rose-300/[0.055] px-3 py-2 text-[10px] font-medium text-rose-100">
+                    Project đang trễ {data.schedule.delayDays.toLocaleString("vi-VN")} ngày so với ngày kết thúc dự kiến.
+                  </div>
+                ) : null}
+                {data.project.status === "completed" ? (
+                  <div className={`mt-3 rounded-xl border px-3 py-2 text-[10px] font-medium ${data.schedule.delayDays > 0 ? "border-amber-300/15 bg-amber-300/[0.055] text-amber-100" : "border-emerald-300/15 bg-emerald-300/[0.055] text-emerald-100"}`}>
+                    {data.schedule.delayDays > 0 ? `Project hoàn thành trễ ${data.schedule.delayDays.toLocaleString("vi-VN")} ngày.` : "Project hoàn thành đúng hạn hoặc sớm hơn kế hoạch."}
+                  </div>
+                ) : null}
               </div>
 
               <div className="mt-6 grid grid-cols-3 divide-x divide-white/[0.06] border-t border-white/[0.06] pt-4 text-center">

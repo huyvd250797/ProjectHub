@@ -42,6 +42,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ proje
   const code = text(raw.code, 30)?.toUpperCase();
   const name = text(raw.name, 180);
   const status = text(raw.status, 20);
+  const completedDate = text(raw.completedDate, 10);
   const requestedSlug = text(raw.slug, 80);
 
   if (Object.prototype.hasOwnProperty.call(raw, "code")) {
@@ -62,19 +63,31 @@ export async function PATCH(request: Request, context: { params: Promise<{ proje
   setNullable(payload, raw, "contractDate", "contract_date", 10);
   setNullable(payload, raw, "startDate", "start_date", 10);
   setNullable(payload, raw, "dueDate", "due_date", 10);
+  setNullable(payload, raw, "completedDate", "completed_date", 10);
   setNullable(payload, raw, "contactName", "contact_name", 180);
   setNullable(payload, raw, "contactTitle", "contact_title", 180);
   setNullable(payload, raw, "contactEmail", "contact_email", 180);
   setNullable(payload, raw, "contactPhone", "contact_phone", 60);
   setNullable(payload, raw, "notes", "notes", 4000);
   if (Object.prototype.hasOwnProperty.call(raw, "slug")) payload.slug = requestedSlug ? slugify(requestedSlug) : undefined;
-  if (status && ["active", "paused", "completed", "archived"].includes(status)) payload.status = status;
+  if (status && ["active", "paused", "completed", "archived"].includes(status)) {
+    if (status === "completed" && !completedDate) {
+      return NextResponse.json({ ok: false, code: "COMPLETED_DATE_REQUIRED", message: "Khi chuyển Project sang Completed, bắt buộc nhập Ngày hoàn thành." } satisfies MasterProjectMutationResponse, { status: 400 });
+    }
+    payload.status = status;
+    // A completion date only has meaning for a completed Project. Clear stale
+    // dates whenever the Project moves back to an active/paused/archived state.
+    if (status !== "completed") payload.completed_date = null;
+  }
 
   Object.keys(payload).forEach((key) => payload[key] === undefined && delete payload[key]);
 
   const { data, error } = await supabase.from("projects").update(payload).eq("id", projectId)
     .select(MASTER_PROJECT_SELECT).single();
-  if (error || !data) return NextResponse.json({ ok: false, code: "UPDATE_FAILED", message: error?.message ?? "Không cập nhật được Project." } satisfies MasterProjectMutationResponse, { status: 500 });
+  if (error || !data) {
+    const missingCompletedDate = /completed_date|schema cache|column .* does not exist/i.test(error?.message ?? "");
+    return NextResponse.json({ ok: false, code: missingCompletedDate ? "V371_MIGRATION_REQUIRED" : "UPDATE_FAILED", message: missingCompletedDate ? "Cần chạy migration V3.7.1 để thêm cột completed_date trước khi lưu ngày hoàn thành Project." : error?.message ?? "Không cập nhật được Project." } satisfies MasterProjectMutationResponse, { status: missingCompletedDate ? 503 : 500 });
+  }
 
   const { count } = await supabase.from("people").select("id", { count: "exact", head: true }).eq("project_id", projectId).eq("person_type", "asc").eq("is_active", true);
   return NextResponse.json({ ok: true, project: normalizeMasterProject(data, count ?? 0) } satisfies MasterProjectMutationResponse);

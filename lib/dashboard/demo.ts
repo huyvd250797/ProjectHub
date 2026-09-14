@@ -16,6 +16,7 @@ export function createDemoDashboard(project: WorkspaceProject): DashboardData {
       contractDate: null,
       startDate: null,
       dueDate: null,
+      completedDate: null,
       status: project.status,
     },
     summary: {
@@ -52,6 +53,7 @@ export function createDemoDashboard(project: WorkspaceProject): DashboardData {
       elapsedDays: null,
       remainingDays: null,
       timeProgress: null,
+      delayDays: 0,
       health: "not_scheduled",
     },
     stages: [

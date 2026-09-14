@@ -1,7 +1,8 @@
 "use client";
 
 import { BellRing, CalendarClock, CalendarRange, Check, CheckSquare2, ClipboardList, Flag, Layers3, LoaderCircle, Save, Sparkles, Target, X } from "lucide-react";
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { DateInput, DateTimeInput } from "@/components/ui/date-input";
 import { createAutoPlanPreview } from "@/lib/planning/auto-generate";
@@ -158,10 +159,14 @@ function ModalShell({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   children: ReactNode;
 }) {
-  return (
-    <div className="fixed inset-0 z-[100] grid place-items-center p-3 md:p-6" role="dialog" aria-modal="true" aria-label={title}>
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[260] grid place-items-center overflow-hidden p-3 md:p-6" role="dialog" aria-modal="true" data-modal-lock="true" aria-label={title}>
       <button type="button" aria-label="Đóng modal" className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <form onSubmit={onSubmit} className="tech-panel relative z-10 flex max-h-[92vh] w-full max-w-[940px] flex-col overflow-hidden rounded-2xl border-cyan-300/15 shadow-[0_30px_100px_rgba(0,0,0,.55)]">
+      <form onSubmit={onSubmit} className="tech-panel relative z-10 flex max-h-[min(92dvh,820px)] w-full max-w-[940px] flex-col overflow-hidden rounded-2xl border-cyan-300/15 shadow-[0_30px_100px_rgba(0,0,0,.55)]">
         <div className="flex items-start gap-4 border-b border-white/[0.07] px-5 py-4 md:px-6 md:py-5">
           <div className="grid size-11 shrink-0 place-items-center rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] text-cyan-200">{icon}</div>
           <div className="min-w-0 flex-1">
@@ -177,7 +182,8 @@ function ModalShell({
           <button type="submit" disabled={saving} className="flex h-10 items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.1] px-4 text-xs font-medium text-cyan-100 hover:bg-cyan-300/[0.15] disabled:opacity-45">{saving ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />} {submitLabel}</button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

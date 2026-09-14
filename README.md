@@ -1,4 +1,17 @@
-# ASC WORKING - V3.7.0
+# ASC WORKING - V3.7.1
+
+## V3.7.1 có gì mới?
+
+### Search, Modal & Deadline Fix
+
+- Bổ sung Global Search trên Topbar: dừng nhập 1 giây mới gọi gợi ý, kết quả có màn hình và link đi đến dữ liệu.
+- Click kết quả ISSUE sẽ mở màn ISSUE với filter search tương ứng, ví dụ Jira code `HIUCR1-626`.
+- Màn ISSUE đổi hành vi search: nhập không reload ngay, nhấn Enter mới lọc và tải dữ liệu.
+- Dashboard dự án hiển thị số ngày trễ nếu Project chưa Completed và đã quá ngày kết thúc dự kiến.
+- Master Console bắt buộc nhập Ngày hoàn thành khi chuyển Project sang `Completed`.
+- Fix modal Plan bị lệch/tuột xuống bằng portal modal và scroll lock đúng viewport.
+
+Migration cần chạy: `supabase/migrations/202609140001_v371_search_modal_deadline_fix.sql`.
 
 ## V3.7.0 có gì mới?
 

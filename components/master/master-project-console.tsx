@@ -27,7 +27,7 @@ import {
   X,
 } from "lucide-react";
 import { ThemedSelect } from "@/components/ui/themed-select";
-import { DateFormInput } from "@/components/ui/date-input";
+import { DateFormInput, DateInput, formatDateDisplay, parseDateDisplay } from "@/components/ui/date-input";
 import { exportCsv } from "@/lib/export-data";
 import type {
   MasterProjectMember,
@@ -55,6 +55,13 @@ const roleOptions = [
 
 const inputClass = "h-10 w-full rounded-xl border border-white/[0.08] bg-[#081321] px-3 text-xs text-slate-200 outline-none placeholder:text-slate-700 focus:border-cyan-300/25";
 const textareaClass = "min-h-[96px] w-full resize-y rounded-xl border border-white/[0.08] bg-[#081321] px-3 py-2.5 text-xs leading-5 text-slate-200 outline-none placeholder:text-slate-700 focus:border-cyan-300/25";
+
+function normalizePromptDate(value: string | null) {
+  const raw = (value ?? "").trim();
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  return parseDateDisplay(raw) ?? "";
+}
 
 function Field({ label, children, hint, className = "" }: { label: string; children: React.ReactNode; hint?: string; className?: string }) {
   return (
@@ -115,7 +122,7 @@ export function MasterProjectConsole() {
   }), [projects]);
 
   function exportProjects() {
-    exportCsv("ASC-WORKING-Master-Projects", ["Mã Project", "Tên Project", "Đơn vị", "Trạng thái", "Số hợp đồng", "Giá trị HĐ", "Ngày ký", "Ngày bắt đầu", "Ngày kết thúc", "Đầu mối", "Email", "SĐT", "Thành viên"], filtered.map((project) => ({
+    exportCsv("ASC-WORKING-Master-Projects", ["Mã Project", "Tên Project", "Đơn vị", "Trạng thái", "Số hợp đồng", "Giá trị HĐ", "Ngày ký", "Ngày bắt đầu", "Ngày kết thúc", "Ngày hoàn thành", "Đầu mối", "Email", "SĐT", "Thành viên"], filtered.map((project) => ({
       "Mã Project": project.code,
       "Tên Project": project.name,
       "Đơn vị": project.organizationName ?? "",
@@ -125,6 +132,7 @@ export function MasterProjectConsole() {
       "Ngày ký": project.contractDate ?? "",
       "Ngày bắt đầu": project.startDate ?? "",
       "Ngày kết thúc": project.dueDate ?? "",
+      "Ngày hoàn thành": project.completedDate ?? "",
       "Đầu mối": project.contactName ?? "",
       "Email": project.contactEmail ?? "",
       "SĐT": project.contactPhone ?? "",
@@ -167,13 +175,25 @@ export function MasterProjectConsole() {
   }
 
   async function updateStatus(project: MasterProjectRow, status: string) {
+    let completedDate = project.completedDate ?? "";
+    if (status === "completed") {
+      const typedDate = window.prompt(
+        `Nhập ngày hoàn thành cho Project ${project.code} (DD/MM/YYYY).`,
+        project.completedDate ? formatDateDisplay(project.completedDate) : new Date().toLocaleDateString("vi-VN"),
+      );
+      completedDate = normalizePromptDate(typedDate);
+      if (!completedDate) {
+        setMessage("Khi chuyển Project sang Completed, bắt buộc nhập ngày hoàn thành đúng định dạng DD/MM/YYYY.");
+        return;
+      }
+    }
     const previous = projects;
-    setProjects((items) => items.map((item) => item.id === project.id ? { ...item, status: status as MasterProjectRow["status"] } : item));
+    setProjects((items) => items.map((item) => item.id === project.id ? { ...item, status: status as MasterProjectRow["status"], completedDate: status === "completed" ? completedDate : null } : item));
     try {
       const response = await fetch(`/api/master/projects/${project.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, completedDate: status === "completed" ? completedDate : null }),
       });
       const result = (await response.json()) as MasterProjectMutationResponse;
       if (!response.ok || !result.ok) throw new Error(result.ok ? "Không cập nhật được trạng thái." : result.message);
@@ -272,11 +292,11 @@ export function MasterProjectConsole() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1080px]">
             <thead className="bg-white/[0.02] text-left text-[9px] uppercase tracking-[0.14em] text-slate-600">
-              <tr>{["Project", "Trường / Đơn vị", "Trạng thái", "Thành viên", "Hợp đồng / Kế hoạch", ""].map((head) => <th key={head} className="border-b border-white/[0.06] px-4 py-3 font-semibold">{head}</th>)}</tr>
+              <tr>{["Project", "Trường / Đơn vị", "Trạng thái", "Thành viên", "Hợp đồng / Kế hoạch", "Hoàn thành", ""].map((head) => <th key={head} className="border-b border-white/[0.06] px-4 py-3 font-semibold">{head}</th>)}</tr>
             </thead>
             <tbody>
               {loading && !projects.length ? (
-                <tr><td colSpan={6} className="px-4 py-16 text-center text-xs text-slate-600"><LoaderCircle className="mx-auto mb-3 size-5 animate-spin text-cyan-300/60" />Đang tải toàn bộ Project...</td></tr>
+                <tr><td colSpan={7} className="px-4 py-16 text-center text-xs text-slate-600"><LoaderCircle className="mx-auto mb-3 size-5 animate-spin text-cyan-300/60" />Đang tải toàn bộ Project...</td></tr>
               ) : filtered.length ? filtered.map((project) => (
                 <tr key={project.id} className="border-b border-white/[0.04] text-xs hover:bg-white/[0.018]">
                   <td className="px-4 py-4"><div className="font-semibold text-slate-200">{project.code}</div><div className="mt-1 max-w-[300px] truncate text-[10px] text-slate-600">{project.name}</div></td>
@@ -284,10 +304,11 @@ export function MasterProjectConsole() {
                   <td className="px-4 py-4"><div className="w-[170px]"><ThemedSelect ariaLabel={`Trạng thái ${project.code}`} value={project.status} options={statusOptions} onChange={(value) => void updateStatus(project, value)} buttonClassName="h-9" /></div></td>
                   <td className="px-4 py-4"><span className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.025] px-2 py-1 text-[10px] text-slate-400"><UsersRound className="size-3" /> {project.memberCount}</span></td>
                   <td className="px-4 py-4"><div className="text-[10px] text-slate-500">{project.contractNo || "Chưa có HĐ"}</div><div className="mt-1 text-[9px] text-slate-700">{project.startDate || "—"} → {project.dueDate || "—"}</div></td>
+                  <td className="px-4 py-4"><div className="text-[10px] text-slate-500">{project.completedDate ? formatDateDisplay(project.completedDate) : "—"}</div></td>
                   <td className="px-4 py-4 text-right"><button onClick={() => setSelectedProject(project)} className="inline-flex items-center gap-2 rounded-lg border border-cyan-300/10 bg-cyan-300/[0.045] px-3 py-2 text-[10px] font-medium text-cyan-200/80 hover:bg-cyan-300/[0.08]"><Pencil className="size-3" /> Quản lý Project</button></td>
                 </tr>
               )) : (
-                <tr><td colSpan={6} className="px-4 py-14 text-center text-xs text-slate-600">Không tìm thấy Project phù hợp.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-14 text-center text-xs text-slate-600">Không tìm thấy Project phù hợp.</td></tr>
               )}
             </tbody>
           </table>
@@ -352,11 +373,16 @@ function ProjectDrawer({
 function ProjectProfileForm({ project, onUpdated }: { project: MasterProjectRow; onUpdated: (project: MasterProjectRow) => void }) {
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState(project.status);
+  const [completedDate, setCompletedDate] = useState(project.completedDate ?? "");
   const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    if (status === "completed" && !completedDate) {
+      setMessage({ type: "error", text: "Khi trạng thái là Completed, bắt buộc nhập Ngày hoàn thành." });
+      return;
+    }
     setSaving(true);
     setMessage(null);
     try {
@@ -377,6 +403,7 @@ function ProjectProfileForm({ project, onUpdated }: { project: MasterProjectRow;
           contractDate: form.get("contractDate"),
           startDate: form.get("startDate"),
           dueDate: form.get("dueDate"),
+          completedDate,
           contactName: form.get("contactName"),
           contactTitle: form.get("contactTitle"),
           contactEmail: form.get("contactEmail"),
@@ -405,6 +432,9 @@ function ProjectProfileForm({ project, onUpdated }: { project: MasterProjectRow;
           <Field label="Tên dự án *" className="md:col-span-2 xl:col-span-2"><input name="name" required maxLength={180} defaultValue={project.name} className={inputClass} /></Field>
           <Field label="Mô tả dự án" className="md:col-span-2 xl:col-span-3"><textarea name="description" maxLength={2000} defaultValue={project.description ?? ""} className={textareaClass} placeholder="Mục tiêu, phạm vi hoặc mô tả ngắn của dự án..." /></Field>
           <Field label="Trạng thái"><ThemedSelect ariaLabel="Trạng thái Project" value={status} onChange={(value) => setStatus(value as MasterProjectRow["status"])} options={statusOptions} /></Field>
+          <Field label={status === "completed" ? "Ngày hoàn thành *" : "Ngày hoàn thành"} hint="Bắt buộc khi Project chuyển sang Completed để tính đúng hạn/trễ hạn.">
+            <DateInput value={completedDate} onChange={setCompletedDate} className={inputClass} />
+          </Field>
         </div>
       </section>
 

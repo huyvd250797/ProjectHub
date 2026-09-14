@@ -33,7 +33,10 @@ export async function GET() {
     supabase.from("projects").select(MASTER_PROJECT_SELECT).order("created_at", { ascending: true }),
     supabase.from("people").select("project_id").eq("person_type", "asc").eq("is_active", true),
   ]);
-  if (projectsResult.error) return NextResponse.json({ ok: false, code: "PROJECTS_READ_FAILED", message: projectsResult.error.message } satisfies MasterProjectsResponse, { status: 500 });
+  if (projectsResult.error) {
+    const missingCompletedDate = /completed_date|schema cache|column .* does not exist/i.test(projectsResult.error.message);
+    return NextResponse.json({ ok: false, code: missingCompletedDate ? "V371_MIGRATION_REQUIRED" : "PROJECTS_READ_FAILED", message: missingCompletedDate ? "Cần chạy migration V3.7.1 để thêm cột completed_date cho Project." : projectsResult.error.message } satisfies MasterProjectsResponse, { status: missingCompletedDate ? 503 : 500 });
+  }
 
   const counts = new Map<string, number>();
   for (const row of (membersResult.data ?? []) as Array<{ project_id: unknown }>) {
@@ -76,6 +79,7 @@ export async function POST(request: Request) {
     contract_date: text(raw.contractDate, 10),
     start_date: text(raw.startDate, 10),
     due_date: text(raw.dueDate, 10),
+    completed_date: null,
     contact_name: text(raw.contactName, 180),
     contact_title: text(raw.contactTitle, 180),
     contact_email: text(raw.contactEmail, 180),
@@ -84,6 +88,9 @@ export async function POST(request: Request) {
     status: "active",
   }).select(MASTER_PROJECT_SELECT).single();
 
-  if (error || !data) return NextResponse.json({ ok: false, code: "CREATE_FAILED", message: error?.message ?? "Không tạo được Project." } satisfies MasterProjectMutationResponse, { status: 500 });
+  if (error || !data) {
+    const missingCompletedDate = /completed_date|schema cache|column .* does not exist/i.test(error?.message ?? "");
+    return NextResponse.json({ ok: false, code: missingCompletedDate ? "V371_MIGRATION_REQUIRED" : "CREATE_FAILED", message: missingCompletedDate ? "Cần chạy migration V3.7.1 để thêm cột completed_date trước khi tạo Project." : error?.message ?? "Không tạo được Project." } satisfies MasterProjectMutationResponse, { status: missingCompletedDate ? 503 : 500 });
+  }
   return NextResponse.json({ ok: true, project: normalizeMasterProject(data, 0) } satisfies MasterProjectMutationResponse);
 }
