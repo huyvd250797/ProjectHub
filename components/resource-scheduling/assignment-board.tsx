@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronRight,
   Clock3,
+  Download,
   GripVertical,
   LoaderCircle,
   Maximize2,
@@ -21,6 +22,7 @@ import { PageHeader } from "@/components/page-header";
 import { useProject } from "@/components/project-context";
 import { DateInput, formatDateDisplay } from "@/components/ui/date-input";
 import { cn } from "@/lib/utils";
+import { exportCsvSections } from "@/lib/export-data";
 import { fetchJsonCached, invalidateClientCache } from "@/lib/performance/client-cache";
 import type {
   ResourceScheduleApiResponse,
@@ -279,6 +281,49 @@ export function AssignmentBoard() {
     }
   }
 
+  function exportAssignmentBoard() {
+    if (!data) return;
+    exportCsvSections(`ASC-WORKING-${data.projectCode}-Allocation`, [
+      {
+        title: "Unassigned Work Queue",
+        headers: ["Mã", "Loại", "Tiêu đề", "Trạng thái", "Ưu tiên", "Due Date", "Est. Hours", "Module", "Phòng ban", "Stage"],
+        rows: visibleUnassigned.map((item) => ({
+          "Mã": item.code,
+          "Loại": item.type === "issue" ? "ISSUE" : "Task",
+          "Tiêu đề": item.title,
+          "Trạng thái": item.status ?? "",
+          "Ưu tiên": item.priority ?? "",
+          "Due Date": item.dueDate ? formatDateDisplay(item.dueDate) : "",
+          "Est. Hours": item.estimatedHours,
+          "Module": item.moduleName ?? "",
+          "Phòng ban": item.departmentName ?? "",
+          "Stage": item.stageName ?? "",
+        })),
+      },
+      {
+        title: "Weekly Assignment Board",
+        headers: ["Nhân sự", "Tuần", "Ngày bắt đầu", "Ngày kết thúc", "Level", "Allocation %", "Planned Hours", "Available Hours", "Overload Hours", "Mã việc", "Loại", "Tiêu đề", "Est. Hours", "Due Date"],
+        rows: data.members.flatMap((member) => member.weeks.flatMap((week) => {
+          const weekInfo = data.weeks.find((item) => item.id === week.weekId);
+          const base = {
+            "Nhân sự": member.name,
+            "Tuần": weekInfo?.label ?? week.weekId,
+            "Ngày bắt đầu": weekInfo?.startDate ? formatDateDisplay(weekInfo.startDate) : "",
+            "Ngày kết thúc": weekInfo?.endDate ? formatDateDisplay(weekInfo.endDate) : "",
+            "Level": levelLabel[week.level],
+            "Allocation %": week.allocationPercent,
+            "Planned Hours": week.plannedHours,
+            "Available Hours": week.availableHours,
+            "Overload Hours": week.overloadHours,
+          };
+          return week.items.length
+            ? week.items.map((item) => ({ ...base, "Mã việc": item.code, "Loại": item.type === "issue" ? "ISSUE" : "Task", "Tiêu đề": item.title, "Est. Hours": item.estimatedHours, "Due Date": item.dueDate ? formatDateDisplay(item.dueDate) : "" }))
+            : [{ ...base, "Mã việc": "", "Loại": "", "Tiêu đề": "", "Est. Hours": "", "Due Date": "" }];
+        })),
+      },
+    ]);
+  }
+
   return (
     <div className={cn(fullScreen && "fixed inset-0 z-[130] flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-[#07111f] p-3 md:p-4")} data-allocation-fullscreen={fullScreen ? "true" : "false"}>
       <PageHeader
@@ -295,6 +340,9 @@ export function AssignmentBoard() {
             </span>
             <button type="button" onClick={() => setReloadKey((value) => value + 1)} className="grid size-10 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-slate-500 hover:text-cyan-200" aria-label="Tải lại Assignment Board">
               <RefreshCw className={cn("size-4", loading && "animate-spin")} />
+            </button>
+            <button type="button" onClick={exportAssignmentBoard} disabled={!data} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-[10px] font-semibold text-slate-500 transition hover:text-cyan-200 disabled:opacity-40">
+              <Download className="size-3.5" /> Export
             </button>
             <button type="button" onClick={() => setFullScreen((value) => !value)} className={cn("flex h-10 items-center gap-2 rounded-xl border px-3 text-[10px] font-semibold transition", fullScreen ? "border-cyan-300/18 bg-cyan-300/[0.08] text-cyan-100" : "border-white/[0.08] bg-white/[0.025] text-slate-500 hover:text-cyan-200")} title={fullScreen ? "Thoát Full Screen (Esc)" : "Mở Allocation toàn màn hình"}>
               {fullScreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}

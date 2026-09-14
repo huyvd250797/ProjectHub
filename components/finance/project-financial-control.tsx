@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
   CalendarDays,
+  Download,
   DollarSign,
   Edit3,
   Loader2,
@@ -18,6 +19,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { useProject } from "@/components/project-context";
+import { exportCsv } from "@/lib/export-data";
 import type { FinancialApiResponse, FinancialData, FinancialDeleteResponse, FinancialMonth, FinancialMutationResponse } from "@/lib/finance/types";
 import { cn } from "@/lib/utils";
 
@@ -294,6 +296,24 @@ export function ProjectFinancialControl() {
     }
   }
 
+  function exportFinanceData() {
+    if (!data) return;
+    exportCsv(`ASC-WORKING-${data.project.code}-Finance`, ["Tháng", "Forecast %", "Forecast Amount", "Actual %", "Actual Amount", "Revenue", "Staff Cost", "Other Cost", "Total Cost", "Profit", "Margin %", "Ghi chú"], data.months.map((month) => ({
+      "Tháng": monthLabel(month.monthDate),
+      "Forecast %": month.forecastPercent,
+      "Forecast Amount": month.forecastAmount,
+      "Actual %": month.actualPercent,
+      "Actual Amount": month.actualAmount,
+      "Revenue": month.revenueAmount,
+      "Staff Cost": month.staffCostAmount,
+      "Other Cost": month.otherCostAmount,
+      "Total Cost": month.totalCostAmount,
+      "Profit": month.projectedProfitAmount,
+      "Margin %": month.projectedMarginPercent,
+      "Ghi chú": month.notes ?? "",
+    })));
+  }
+
   return (
     <>
       <PageHeader
@@ -307,6 +327,9 @@ export function ProjectFinancialControl() {
             </span>
             <button type="button" onClick={() => setReloadKey((value) => value + 1)} className="grid size-10 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-slate-500 hover:text-cyan-200" aria-label="Tải lại tài chính">
               <RefreshCw className={cn("size-4", loading && "animate-spin")} />
+            </button>
+            <button type="button" disabled={!data} onClick={exportFinanceData} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-cyan-200 disabled:opacity-40">
+              <Download className="size-3.5" /> Export
             </button>
             <button type="button" disabled={!data?.canEdit} onClick={() => { setModalError(""); setEditor(emptyForm); }} className="inline-flex h-10 items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.12] px-4 text-xs font-semibold text-cyan-100 disabled:opacity-40">
               <Plus className="size-4" /> Thêm tháng

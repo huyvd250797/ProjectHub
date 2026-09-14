@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   DatabaseZap,
+  Download,
   FileWarning,
   LoaderCircle,
   RefreshCw,
@@ -13,6 +14,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useProject } from "@/components/project-context";
+import { exportCsv } from "@/lib/export-data";
 import type {
   DataIntegrityApiResponse,
   DataIntegrityDomain,
@@ -118,6 +120,20 @@ export function DataIntegrityDashboard() {
       ? "from-rose-300/80 to-amber-300/80"
       : "from-amber-300/80 to-cyan-300/80";
 
+  function exportFindings() {
+    if (!data) return;
+    exportCsv(`ASC-WORKING-${selectedProject.code}-Data-Integrity`, ["Domain", "Severity", "Tiêu đề", "Chi tiết", "Entity", "Expected Source", "Gợi ý fix", "Link"], filteredFindings.map((finding) => ({
+      "Domain": DOMAIN_LABELS[finding.domain],
+      "Severity": SEVERITY_LABELS[finding.severity],
+      "Tiêu đề": finding.title,
+      "Chi tiết": finding.detail,
+      "Entity": finding.entityLabel ?? "",
+      "Expected Source": finding.expectedSource ?? "",
+      "Gợi ý fix": finding.fixHint ?? "",
+      "Link": finding.href ?? "",
+    })));
+  }
+
   return (
     <div className="space-y-4">
       <section className="tech-panel rounded-2xl p-5 md:p-6">
@@ -141,6 +157,10 @@ export function DataIntegrityDashboard() {
             <button type="button" onClick={() => void loadDataIntegrity()} disabled={loading} className="secure-btn">
               <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
               Chạy lại
+            </button>
+            <button type="button" onClick={exportFindings} disabled={!data || !filteredFindings.length} className="secure-btn">
+              <Download className="size-3.5" />
+              Export
             </button>
           </div>
         </div>

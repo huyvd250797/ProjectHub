@@ -12,6 +12,7 @@ import {
   CircleAlert,
   CircleGauge,
   Clock3,
+  Download,
   FilterX,
   Layers3,
   LoaderCircle,
@@ -27,6 +28,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useProject } from "@/components/project-context";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { APP_VERSION_LABEL } from "@/lib/app-meta";
+import { exportCsv } from "@/lib/export-data";
 import type {
   DepartmentRow,
   DepartmentsApiResponse,
@@ -489,6 +491,24 @@ export function DepartmentIntelligence({ initialDepartmentId = "" }: { initialDe
     router.replace("/departments", { scroll: false });
   }
 
+  function exportDepartments() {
+    exportCsv(`ASC-WORKING-${selectedProject.code}-Departments`, ["Mã phòng ban", "Tên phòng ban", "Tổng ISSUE", "Đã xử lý", "Đã Release", "Đã bàn giao", "Còn lại", "Quá hạn", "Gần hạn", "Thiếu phụ trách", "% bàn giao", "Stakeholder", "Module"], filteredRows.map((row) => ({
+      "Mã phòng ban": row.code || (row.isUnassigned ? "UNMAPPED" : ""),
+      "Tên phòng ban": row.name,
+      "Tổng ISSUE": row.total,
+      "Đã xử lý": row.resolved,
+      "Đã Release": row.released,
+      "Đã bàn giao": row.handedOver,
+      "Còn lại": row.notHandedOver,
+      "Quá hạn": row.overdue,
+      "Gần hạn": row.nearDue,
+      "Thiếu phụ trách": row.missingAssignee,
+      "% bàn giao": row.handoverProgress,
+      "Stakeholder": row.contacts.length,
+      "Module": row.modules.length,
+    })));
+  }
+
   if (loading) return <DepartmentsLoading />;
   if (error) return <DepartmentsError message={error} retry={() => setReloadKey((value) => value + 1)} />;
   if (!data) return null;
@@ -584,6 +604,14 @@ export function DepartmentIntelligence({ initialDepartmentId = "" }: { initialDe
               <FilterX className="size-3.5" /> Reset
             </button>
           ) : null}
+          <button
+            type="button"
+            onClick={exportDepartments}
+            disabled={!filteredRows.length}
+            className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-[10px] text-slate-500 transition hover:text-cyan-200 disabled:opacity-40"
+          >
+            <Download className="size-3.5" /> Export
+          </button>
         </div>
 
         <div className="overflow-x-auto">

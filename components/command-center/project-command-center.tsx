@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowRight, BellRing, CheckCircle2, Command, FileStack, Gauge, Layers3, ListTodo, RefreshCw, Route, ShieldAlert, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowRight, BellRing, CheckCircle2, Command, Download, FileStack, Gauge, Layers3, ListTodo, RefreshCw, Route, ShieldAlert, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { useProject } from "@/components/project-context";
+import { exportCsvSections } from "@/lib/export-data";
 import type { CommandCenterAction, CommandCenterApiResponse, CommandCenterData, CommandCenterMetric } from "@/lib/command-center/types";
 import { cn } from "@/lib/utils";
 
@@ -130,6 +131,32 @@ export function ProjectCommandCenter() {
   const cardIcons = useMemo(() => [Gauge, CheckCircle2, ListTodo, ShieldAlert, BellRing, FileStack], []);
   const scoreTone = data && data.health.score >= 80 ? "emerald" : data && data.health.score >= 60 ? "amber" : "rose";
 
+  function exportCommandCenter() {
+    if (!data) return;
+    exportCsvSections(`ASC-WORKING-${data.project.code}-Command-Center`, [
+      {
+        title: "Action Board",
+        headers: ["Loại", "Tiêu đề", "Chi tiết", "Due Date", "Phụ trách", "Mức độ", "Link"],
+        rows: data.actions.map((action) => ({ "Loại": action.type, "Tiêu đề": action.title, "Chi tiết": action.detail, "Due Date": formatDate(action.dueDate), "Phụ trách": action.ownerName ?? "", "Mức độ": action.severity, "Link": action.href })),
+      },
+      {
+        title: "Risk Radar",
+        headers: ["Tiêu đề", "Tóm tắt", "Mức độ", "Link"],
+        rows: data.risks.map((risk) => ({ "Tiêu đề": risk.title, "Tóm tắt": risk.summary, "Mức độ": risk.severity, "Link": risk.href })),
+      },
+      {
+        title: "Stages",
+        headers: ["Mã", "Stage", "Trạng thái", "Tiến độ", "Bắt đầu", "Kết thúc"],
+        rows: data.stages.map((stage) => ({ "Mã": stage.code, "Stage": stage.name, "Trạng thái": stage.status, "Tiến độ": stage.progress, "Bắt đầu": formatDate(stage.startDate), "Kết thúc": formatDate(stage.endDate) })),
+      },
+      {
+        title: "Milestones",
+        headers: ["Milestone", "Trạng thái", "Due Date", "Phụ trách"],
+        rows: data.milestones.map((milestone) => ({ "Milestone": milestone.title, "Trạng thái": milestone.status, "Due Date": formatDate(milestone.dueDate), "Phụ trách": milestone.ownerName ?? "" })),
+      },
+    ]);
+  }
+
   return (
     <>
       <PageHeader
@@ -143,6 +170,9 @@ export function ProjectCommandCenter() {
             </span>
             <button type="button" onClick={() => setReloadKey((value) => value + 1)} className="grid size-10 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-slate-500 hover:text-cyan-200" aria-label="Tải lại Command Center">
               <RefreshCw className={cn("size-4", loading && "animate-spin")} />
+            </button>
+            <button type="button" onClick={exportCommandCenter} disabled={!data} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-cyan-200 disabled:opacity-40">
+              <Download className="size-3.5" /> Export
             </button>
           </div>
         }

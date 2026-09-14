@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ChevronsDownUp,
   ChevronsUpDown,
+  Download,
   FileSearch,
   FilterX,
   GripVertical,
@@ -25,6 +26,7 @@ import { useProject } from "@/components/project-context";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import type { ProjectCatalogMutationResponse } from "@/lib/catalog/types";
 import type { ContractApiResponse, ContractData, ContractDetailItem, ContractOverviewItem } from "@/lib/contract/types";
+import { exportCsv } from "@/lib/export-data";
 import { cn } from "@/lib/utils";
 import { APP_VERSION_LABEL } from "@/lib/app-meta";
 import { fetchJsonCached, invalidateClientCache } from "@/lib/performance/client-cache";
@@ -481,6 +483,24 @@ export function ContractView() {
     viewportRef.current?.scrollTo({ top: 0 });
   }
 
+  function exportContractRows() {
+    exportCsv(`ASC-WORKING-${selectedProject.code}-PLHD`, ["Cấp", "Mã", "Tên", "Loại", "Phòng ban", "Trạng thái", "ISSUE", "Đã bàn giao", "Còn lại", "Tiến độ %", "Chi tiết", "Ghi chú", "Phân loại"], flatRows.map(({ item, depth }) => ({
+      "Cấp": depth + 1,
+      "Mã": item.code,
+      "Tên": item.name,
+      "Loại": kindLabel(item.kind),
+      "Phòng ban": item.ownerDepartmentName ?? "",
+      "Trạng thái": item.moduleStatusLabel ?? "",
+      "ISSUE": item.issueTotal,
+      "Đã bàn giao": item.handedOver,
+      "Còn lại": item.remaining,
+      "Tiến độ %": item.progress,
+      "Chi tiết": item.detailCount,
+      "Ghi chú": item.note ?? "",
+      "Phân loại": item.classification ?? "",
+    })));
+  }
+
   async function updateModuleStatus(item: PlhdNode, moduleStatusCode: string) {
     if (!data?.canManage || item.sourceType !== "item" || (item.kind !== "subsystem" && item.kind !== "module")) return;
     setStatusSavingKey(item.key);
@@ -619,6 +639,7 @@ export function ContractView() {
           <button type="button" onClick={() => setPendingOnly((value) => !value)} className={cn("rounded-lg border px-2.5 py-1.5 text-[10px] font-medium transition", pendingOnly ? "border-amber-300/20 bg-amber-300/[0.08] text-amber-200" : "border-white/[0.06] bg-white/[0.02] text-slate-600 hover:text-slate-300")}>Chỉ còn ISSUE chưa bàn giao</button>
           <button type="button" onClick={expandAll} className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5 text-[10px] text-slate-500 hover:text-slate-300"><ChevronsUpDown className="size-3.5" /> Mở rộng</button>
           <button type="button" onClick={collapseAll} className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5 text-[10px] text-slate-500 hover:text-slate-300"><ChevronsDownUp className="size-3.5" /> Thu gọn</button>
+          <button type="button" onClick={exportContractRows} disabled={!flatRows.length} className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5 text-[10px] text-slate-500 hover:text-cyan-200 disabled:opacity-40"><Download className="size-3.5" /> Export</button>
           <button type="button" onClick={resetFilters} className="ml-auto flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] text-slate-600 transition hover:bg-white/[0.03] hover:text-slate-300"><FilterX className="size-3.5" /> Xóa bộ lọc</button>
           <span className="text-[10px] text-slate-700">{formatNumber(flatRows.length)} dòng</span>
         </div>

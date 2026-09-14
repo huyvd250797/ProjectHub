@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowRight, BellRing, BriefcaseBusiness, CalendarClock, CheckCircle2, CircleGauge, FileStack, LoaderCircle, RefreshCw, TrendingUp } from "lucide-react";
+import { AlertTriangle, ArrowRight, BellRing, BriefcaseBusiness, CalendarClock, CheckCircle2, CircleGauge, Download, FileStack, LoaderCircle, RefreshCw, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { useProject } from "@/components/project-context";
+import { exportCsv } from "@/lib/export-data";
 import type { PortfolioApiResponse, PortfolioData, PortfolioHealth, PortfolioProjectRow } from "@/lib/portfolio/types";
 import { cn } from "@/lib/utils";
 
@@ -80,13 +81,42 @@ export function PortfolioDashboard() {
 
   const topRisks = useMemo(() => (data?.projects ?? []).filter((project) => project.alertScore > 0).slice(0, 5), [data?.projects]);
 
+  function exportPortfolio() {
+    if (!data) return;
+    exportCsv("ASC-WORKING-Portfolio", ["Project", "Tên dự án", "Đơn vị", "Trạng thái", "Health", "Giá trị hợp đồng", "Start", "Due", "Total ISSUE", "Open ISSUE", "Overdue ISSUE", "Modules", "Stages", "Stage Progress", "Milestones", "Overdue Milestones", "Tasks", "Blocked Tasks", "Overdue Tasks", "Open Reminders", "Overdue Reminders", "Alert Score", "Next Due"], data.projects.map((project) => ({
+      "Project": project.code,
+      "Tên dự án": project.name,
+      "Đơn vị": project.organizationName ?? "",
+      "Trạng thái": project.status,
+      "Health": healthMeta[project.health].label,
+      "Giá trị hợp đồng": project.contractValue ?? "",
+      "Start": date(project.startDate),
+      "Due": date(project.dueDate),
+      "Total ISSUE": project.totalIssues,
+      "Open ISSUE": project.openIssues,
+      "Overdue ISSUE": project.overdueIssues,
+      "Modules": project.modules,
+      "Stages": project.stages,
+      "Stage Progress": project.stageProgress,
+      "Milestones": project.milestones,
+      "Overdue Milestones": project.overdueMilestones,
+      "Tasks": project.tasks,
+      "Blocked Tasks": project.blockedTasks,
+      "Overdue Tasks": project.overdueTasks,
+      "Open Reminders": project.openReminders,
+      "Overdue Reminders": project.overdueReminders,
+      "Alert Score": project.alertScore,
+      "Next Due": date(project.nextDueDate),
+    })));
+  }
+
   return (
     <>
       <PageHeader
         eyebrow="Portfolio Command Center"
         title="Cross-Project Portfolio"
         description="Theo dõi sức khỏe, rủi ro timeline, ISSUE, task và reminder của toàn bộ project bạn có quyền truy cập."
-        actions={<div className="flex items-center gap-2">{data?.source === "demo" ? <span className="rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-amber-200">Demo data</span> : <span className="rounded-xl border border-emerald-300/15 bg-emerald-300/[0.06] px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-emerald-200">Live Supabase</span>}<button type="button" onClick={() => setReloadKey((value) => value + 1)} className="grid size-10 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-slate-500 hover:text-cyan-200"><RefreshCw className={cn("size-4", loading && "animate-spin")} /></button></div>}
+        actions={<div className="flex items-center gap-2">{data?.source === "demo" ? <span className="rounded-xl border border-amber-300/15 bg-amber-300/[0.06] px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-amber-200">Demo data</span> : <span className="rounded-xl border border-emerald-300/15 bg-emerald-300/[0.06] px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-emerald-200">Live Supabase</span>}<button type="button" onClick={() => setReloadKey((value) => value + 1)} className="grid size-10 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-slate-500 hover:text-cyan-200"><RefreshCw className={cn("size-4", loading && "animate-spin")} /></button><button type="button" onClick={exportPortfolio} disabled={!data?.projects.length} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-cyan-200 disabled:opacity-40"><Download className="size-3.5" /> Export</button></div>}
       />
 
       {error ? <div className="mb-4 rounded-xl border border-rose-300/15 bg-rose-300/[0.05] px-4 py-3 text-xs text-rose-200">{error}</div> : null}

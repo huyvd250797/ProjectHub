@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, Clipboard, Copy, Database, ExternalLink, Eye, EyeOff, FileKey2, FolderKanban, Globe2, KeyRound, LoaderCircle, LockKeyhole, Pencil, Plus, RefreshCcw, Search, ServerCog, ShieldCheck, Trash2, X } from "lucide-react";
+import { AlertTriangle, Check, Clipboard, Copy, Database, Download, ExternalLink, Eye, EyeOff, FileKey2, FolderKanban, Globe2, KeyRound, LoaderCircle, LockKeyhole, Pencil, Plus, RefreshCcw, Search, ServerCog, ShieldCheck, Trash2, X } from "lucide-react";
 import { useProject } from "@/components/project-context";
 import { ThemedSelect } from "@/components/ui/themed-select";
+import { exportCsv } from "@/lib/export-data";
 import type { ResourceActivity, ResourceApiResponse, ResourceData, ResourceDetailResponse, ResourceRow } from "@/lib/resources/types";
 import { cn } from "@/lib/utils";
 
@@ -143,6 +144,21 @@ export function ResourceVault() {
     } catch (e) { showToast(e instanceof Error ? e.message : "Thao tác bảo mật thất bại."); }
   }
 
+  function exportResources() {
+    exportCsv(`ASC-WORKING-${selectedProject.code}-Resources`, ["Tài nguyên", "Loại", "Môi trường", "URL / Host", "Remote Address", "Username", "Có credential", "Sensitive", "Ghi chú", "Cập nhật"], rows.map((row) => ({
+      "Tài nguyên": row.name,
+      "Loại": row.resourceType,
+      "Môi trường": row.environment ?? "",
+      "URL / Host": row.urlOrHost ?? "",
+      "Remote Address": row.remoteAddress ?? "",
+      "Username": row.username ?? "",
+      "Có credential": row.hasSecret ? "Có" : "Không",
+      "Sensitive": row.isSensitive ? "Có" : "Không",
+      "Ghi chú": row.notes ?? "",
+      "Cập nhật": formatTime(row.updatedAt),
+    })));
+  }
+
   if (loading) return <div className="tech-panel grid min-h-[360px] place-items-center rounded-2xl"><div className="flex items-center gap-3 text-xs text-slate-500"><LoaderCircle className="size-4 animate-spin text-cyan-300" /> Đang tải Resource Vault...</div></div>;
   if (error) return <div className="tech-panel rounded-2xl p-6"><div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 size-5 text-rose-300" /><div><div className="text-sm font-semibold text-rose-200">Không tải được Remote Server</div><p className="mt-1 text-xs text-slate-500">{error}</p><button onClick={() => void load()} className="mt-4 rounded-xl border border-white/[0.08] px-3 py-2 text-xs text-slate-300"><RefreshCcw className="mr-2 inline size-3.5" />Thử lại</button></div></div></div>;
   if (!data) return null;
@@ -159,6 +175,7 @@ export function ResourceVault() {
         <div className="relative flex-1"><Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-600"/><input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="Tìm tên, URL/host, username, ghi chú..." className="h-10 w-full rounded-xl border border-white/[0.07] bg-black/10 pl-9 pr-3 text-xs text-slate-300 outline-none placeholder:text-slate-700 focus:border-cyan-300/20"/></div>
         <ThemedSelect ariaLabel="Loại resource" value={type} onChange={setType} options={TYPE_OPTIONS} className="w-full xl:w-[180px]" />
         <ThemedSelect ariaLabel="Môi trường" value={environment} onChange={setEnvironment} options={ENV_OPTIONS} className="w-full xl:w-[190px]" />
+        <button type="button" onClick={exportResources} disabled={!rows.length} className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-cyan-200 disabled:opacity-40"><Download className="size-3.5" />Export</button>
         {data.canManage ? <button onClick={startCreate} className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 text-xs font-semibold text-[#07111f] hover:bg-cyan-200"><Plus className="size-4"/>Thêm tài nguyên</button> : null}
       </div>
 

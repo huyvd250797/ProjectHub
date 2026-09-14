@@ -1,4 +1,14 @@
-# ASC WORKING - V3.6.1
+# ASC WORKING - V3.7.0
+
+## V3.7.0 có gì mới?
+
+### Module Data Export
+
+- Bổ sung export CSV cho các module dữ liệu chính: Dashboard, Plan, Finance, PLHĐ/Contract, Department, ISSUE, Workload, Allocation, Analytics, Report, Document, Activity, Remote Server, Command Center, Portfolio, Master Console và Data Integrity.
+- Export theo dữ liệu đang hiển thị/đang lọc trên từng màn để người dùng tải đúng phạm vi đang thao tác.
+- File CSV có BOM để mở Excel không lỗi tiếng Việt.
+- Remote Server chỉ export metadata an toàn, không export secret/password.
+- Không có migration mới.
 
 ## V3.6.1 có gì mới?
 

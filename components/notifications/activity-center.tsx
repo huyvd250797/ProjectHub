@@ -8,6 +8,7 @@ import {
   ChevronRight,
   CircleAlert,
   Clock3,
+  Download,
   FileSpreadsheet,
   ListTodo,
   LoaderCircle,
@@ -22,6 +23,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useProject } from "@/components/project-context";
 import { PageHeader } from "@/components/page-header";
 import { DEFAULT_NOTIFICATION_PREFERENCES } from "@/lib/notifications/demo";
+import { exportCsv } from "@/lib/export-data";
 import type { ActivityApiResponse, ActivityData, ActivityEvent, NotificationPreferences, NotificationPreferencesResponse } from "@/lib/notifications/types";
 import { cn } from "@/lib/utils";
 
@@ -152,6 +154,20 @@ export function ActivityCenter() {
     }
   }
 
+  function exportActivity() {
+    const rows = data?.items ?? [];
+    exportCsv(`ASC-WORKING-${selectedProject.code}-Activity`, ["Tiêu đề", "Nhóm", "Entity Type", "Tóm tắt", "Người thao tác", "Email", "Thời gian", "Link"], rows.map((item) => ({
+      "Tiêu đề": item.title,
+      "Nhóm": eventMeta(item).label,
+      "Entity Type": item.entityType,
+      "Tóm tắt": item.summary ?? "",
+      "Người thao tác": item.actorName ?? "",
+      "Email": item.actorEmail ?? "",
+      "Thời gian": relativeTime(item.createdAt),
+      "Link": item.href ?? "",
+    })));
+  }
+
   return (
     <>
       <PageHeader
@@ -159,9 +175,12 @@ export function ActivityCenter() {
         title="Notifications & Activity Center"
         description={`Theo dõi thay đổi quan trọng của ${selectedProject.code}, xem ai đã thao tác gì và cấu hình những thông báo bạn muốn nhận.`}
         actions={
-          <div className="inline-flex rounded-xl border border-white/[0.07] bg-white/[0.025] p-1">
-            <button type="button" onClick={() => setMode("activity")} className={cn("flex h-8 items-center gap-2 rounded-lg px-3 text-[10px] transition", mode === "activity" ? "bg-cyan-300/[0.09] text-cyan-100" : "text-slate-500 hover:text-slate-300")}><Activity className="size-3.5" /> Hoạt động</button>
-            <button type="button" onClick={() => setMode("preferences")} className={cn("flex h-8 items-center gap-2 rounded-lg px-3 text-[10px] transition", mode === "preferences" ? "bg-cyan-300/[0.09] text-cyan-100" : "text-slate-500 hover:text-slate-300")}><Settings2 className="size-3.5" /> Cài đặt</button>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-xl border border-white/[0.07] bg-white/[0.025] p-1">
+              <button type="button" onClick={() => setMode("activity")} className={cn("flex h-8 items-center gap-2 rounded-lg px-3 text-[10px] transition", mode === "activity" ? "bg-cyan-300/[0.09] text-cyan-100" : "text-slate-500 hover:text-slate-300")}><Activity className="size-3.5" /> Hoạt động</button>
+              <button type="button" onClick={() => setMode("preferences")} className={cn("flex h-8 items-center gap-2 rounded-lg px-3 text-[10px] transition", mode === "preferences" ? "bg-cyan-300/[0.09] text-cyan-100" : "text-slate-500 hover:text-slate-300")}><Settings2 className="size-3.5" /> Cài đặt</button>
+            </div>
+            {mode === "activity" ? <button type="button" onClick={exportActivity} disabled={!data?.items.length} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-cyan-200 disabled:opacity-40"><Download className="size-3.5" /> Export</button> : null}
           </div>
         }
       />

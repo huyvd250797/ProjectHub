@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "3.6.1" ? pass("Package version", "3.6.1") : fail("Package version", `Expected 3.6.1, got ${pkg.version}`);
+pkg.version === "3.7.0" ? pass("Package version", "3.7.0") : fail("Package version", `Expected 3.7.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -257,7 +257,10 @@ for (const rel of [
   "docs/UAT_V360_UIUX_PERFORMANCE_CHECKLIST.md",
   "docs/V3.6.1-SCOPE.md",
   "docs/UAT_V361_MODAL_SAVE_DATA_VISIBILITY_CHECKLIST.md",
+  "docs/V3.7.0-SCOPE.md",
+  "docs/UAT_V370_MODULE_DATA_EXPORT_CHECKLIST.md",
   "components/ui/performance-warmup.tsx",
+  "lib/export-data.ts",
 ]) {
   exists(rel) ? pass(`Required file: ${rel}`) : fail(`Required file: ${rel}`);
 }
@@ -1027,6 +1030,39 @@ for (const token of ["Modal Save Close", "Data Visibility", "ISSUE", "Document",
   docsV361.includes(token) ? pass(`V3.6.1 audit docs: ${token}`) : fail(`V3.6.1 audit docs: ${token}`);
 }
 
+const exportHelperV370 = fs.readFileSync(path.join(root, "lib/export-data.ts"), "utf8");
+for (const token of ["exportCsv", "exportCsvSections", "\\uFEFF", "safeFilename"]) {
+  exportHelperV370.includes(token) ? pass(`V3.7.0 export helper: ${token}`) : fail(`V3.7.0 export helper: ${token}`);
+}
+
+const exportModulesV370 = [
+  "components/dashboard/project-dashboard.tsx",
+  "components/finance/project-financial-control.tsx",
+  "components/contract-view.tsx",
+  "components/departments/department-intelligence.tsx",
+  "components/workload/workload-dashboard.tsx",
+  "components/resource-scheduling/assignment-board.tsx",
+  "components/documents/project-documents.tsx",
+  "components/resources/resource-vault.tsx",
+  "components/command-center/project-command-center.tsx",
+  "components/portfolio/portfolio-dashboard.tsx",
+  "components/master/master-project-console.tsx",
+  "components/notifications/activity-center.tsx",
+  "components/data-integrity/data-integrity-dashboard.tsx",
+].map((rel) => fs.readFileSync(path.join(root, rel), "utf8")).join("\n");
+for (const token of ["Download", "Export", "exportCsv", "exportCsvSections", "resource-safe-metadata-export"]) {
+  const source = token === "resource-safe-metadata-export" ? fs.readFileSync(path.join(root, "app/api/health/route.ts"), "utf8") : exportModulesV370;
+  source.includes(token) ? pass(`V3.7.0 module export: ${token}`) : fail(`V3.7.0 module export: ${token}`);
+}
+
+const docsV370 = [
+  fs.readFileSync(path.join(root, "docs/V3.7.0-SCOPE.md"), "utf8"),
+  fs.readFileSync(path.join(root, "docs/UAT_V370_MODULE_DATA_EXPORT_CHECKLIST.md"), "utf8"),
+].join("\n");
+for (const token of ["Module Data Export", "Dashboard", "Finance", "PLHĐ", "Resource Vault", "không export secret/password"]) {
+  docsV370.includes(token) ? pass(`V3.7.0 export docs: ${token}`) : fail(`V3.7.0 export docs: ${token}`);
+}
+
 const performanceMigrationV340 = fs.readFileSync(path.join(root, "supabase/migrations/202609080003_v340_performance_large_data_indexes.sql"), "utf8");
 for (const token of ["issues_project_active_issue_no_idx", "contract_items_project_tree_idx", "people_project_active_lookup_idx", "project_plan_tasks_project_stage_due_idx", "project_financial_months_project_month_idx", "resource_assignment_events_project_item_idx", "changed_at desc", "if not exists"]) {
   performanceMigrationV340.toLowerCase().includes(token.toLowerCase()) ? pass(`V3.4.0 Performance index: ${token}`) : fail(`V3.4.0 Performance index: ${token}`);
@@ -1054,7 +1090,7 @@ for (const token of ["loadDataIntegrityReport", "data_integrity", "Data Integrit
   readinessV330.includes(token) ? pass(`V3.3.0 Readiness: ${token}`) : fail(`V3.3.0 Readiness: ${token}`);
 }
 
-console.log("\nASC WORKING V3.6.1 - Modal Save Close & Data Visibility Fix Preflight\n");
+console.log("\nASC WORKING V3.7.0 - Module Data Export Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

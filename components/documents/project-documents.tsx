@@ -6,6 +6,7 @@ import {
   Archive,
   CheckCircle2,
   Copy,
+  Download,
   ExternalLink,
   FileText,
   FolderOpen,
@@ -19,6 +20,7 @@ import {
 } from "lucide-react";
 import { useProject } from "@/components/project-context";
 import { cn } from "@/lib/utils";
+import { exportCsv } from "@/lib/export-data";
 import type {
   DocumentApiResponse,
   DocumentCategory,
@@ -134,6 +136,19 @@ export function ProjectDocuments() {
     }
   }
 
+  function exportDocuments() {
+    exportCsv(`ASC-WORKING-${selectedProject.code}-Documents`, ["Tài liệu", "Loại", "Liên kết", "Đối tượng liên kết", "Mô tả", "Người tạo", "Ngày tạo", "Có Drive Link"], filteredRows.map((document) => ({
+      "Tài liệu": document.title,
+      "Loại": CATEGORY_LABELS[document.category],
+      "Liên kết": LINK_LABELS[document.linkType],
+      "Đối tượng liên kết": document.linkedEntityLabel ?? "",
+      "Mô tả": document.description ?? "",
+      "Người tạo": document.uploadedByName ?? "Người dùng dự án",
+      "Ngày tạo": formatDate(document.createdAt),
+      "Có Drive Link": documentUrl(document) !== "#" ? "Có" : "Không",
+    })));
+  }
+
   return (
     <div className="space-y-5">
       {message ? (
@@ -168,6 +183,7 @@ export function ProjectDocuments() {
           </div>
           <div className="flex items-center gap-2">
             <button type="button" className="secure-btn" onClick={() => void load()} disabled={loading}><RefreshCw className={cn("size-3.5", loading && "animate-spin")} /> Làm mới</button>
+            <button type="button" className="secure-btn" onClick={exportDocuments} disabled={loading || !filteredRows.length}><Download className="size-3.5" /> Export</button>
             <button type="button" className="inline-flex h-9 items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.09] px-3 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/[0.14] disabled:cursor-not-allowed disabled:opacity-40" onClick={() => setCreateOpen(true)} disabled={!data?.canUpload}>
               <Plus className="size-4" /> Thêm tài liệu
             </button>

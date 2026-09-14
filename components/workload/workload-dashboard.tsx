@@ -8,6 +8,7 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   CheckCircle2,
+  Download,
   ExternalLink,
   Gauge,
   ListTodo,
@@ -21,6 +22,7 @@ import {
 import { PageHeader } from "@/components/page-header";
 import { useProject } from "@/components/project-context";
 import { cn } from "@/lib/utils";
+import { exportCsv } from "@/lib/export-data";
 import type { WorkloadApiResponse, WorkloadData, WorkloadLevel, WorkloadMember } from "@/lib/workload/types";
 import { fetchJsonCached, invalidateClientCache } from "@/lib/performance/client-cache";
 
@@ -141,6 +143,20 @@ function MemberIssueModal({ member, onClose }: { member: WorkloadMember; onClose
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  function exportMemberIssues() {
+    exportCsv(`ASC-WORKING-${member.name}-Workload-Issues`, ["Mã", "Nội dung", "Module", "Phòng ban", "Ưu tiên", "Due Date", "Est. Hours", "Trạng thái", "Jira"], filteredIssues.map((issue) => ({
+      "Mã": issue.issueNo ? `#${issue.issueNo}` : "",
+      "Nội dung": issue.content,
+      "Module": issue.moduleName ?? "",
+      "Phòng ban": issue.departmentName ?? "",
+      "Ưu tiên": issue.priorityCode ?? "",
+      "Due Date": formatDate(issue.dueDate),
+      "Est. Hours": issue.estimatedHours,
+      "Trạng thái": issue.statusCode ?? "",
+      "Jira": issue.jiraUrl ?? "",
+    })));
+  }
+
   return (
     <div className="fixed inset-0 z-[120] flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-[#07111f] p-3 md:p-4">
       <div className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border border-cyan-300/12 bg-[#0b1727] px-4 py-3 shadow-xl">
@@ -157,6 +173,9 @@ function MemberIssueModal({ member, onClose }: { member: WorkloadMember; onClose
           <span>Allocation <b className="text-cyan-200">{member.allocationPercent}%</b></span>
           <span>Planned <b className="text-cyan-200">{formatHours(member.plannedHours)}</b></span>
         </div>
+        <button type="button" onClick={exportMemberIssues} className="ml-2 flex h-9 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-[10px] text-slate-300 hover:border-cyan-300/20 hover:text-white" title="Export ISSUE của nhân sự">
+          <Download className="size-3.5" /> Export
+        </button>
         <button type="button" onClick={onClose} className="ml-2 flex h-9 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-[10px] text-slate-300 hover:border-cyan-300/20 hover:text-white" title="Đóng modal (Esc)">
           <X className="size-3.5" /> Đóng
         </button>
@@ -267,6 +286,28 @@ export function WorkloadDashboard() {
 
   const selectedMember = useMemo(() => data?.members.find((member) => member.id === selectedMemberId) ?? null, [data?.members, selectedMemberId]);
 
+  function exportWorkload() {
+    if (!data) return;
+    exportCsv(`ASC-WORKING-${data.projectCode}-Workload`, ["Nhân sự", "Chức danh", "Phòng ban", "Level", "Allocation %", "Capacity/Week", "Effective Capacity", "Planned Hours", "Available Hours", "Overload Hours", "Open ISSUE", "Overdue ISSUE", "Open Task", "Blocked Task", "Next Due", "Khuyến nghị"], visibleMembers.map((member) => ({
+      "Nhân sự": member.name,
+      "Chức danh": member.title ?? member.role ?? "",
+      "Phòng ban": member.departmentName ?? "",
+      "Level": levelLabel[member.level],
+      "Allocation %": member.allocationPercent,
+      "Capacity/Week": member.capacityHoursPerWeek,
+      "Effective Capacity": member.effectiveCapacityHours,
+      "Planned Hours": member.plannedHours,
+      "Available Hours": member.availableHours,
+      "Overload Hours": member.overloadHours,
+      "Open ISSUE": member.openIssues,
+      "Overdue ISSUE": member.overdueIssues,
+      "Open Task": member.openTasks,
+      "Blocked Task": member.blockedTasks,
+      "Next Due": formatDate(member.nextDueDate),
+      "Khuyến nghị": member.recommendation,
+    })));
+  }
+
   return (
     <>
       <PageHeader
@@ -280,6 +321,9 @@ export function WorkloadDashboard() {
             </span>
             <button type="button" onClick={() => setReloadKey((value) => value + 1)} className="grid size-10 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-slate-500 hover:text-cyan-200" aria-label="Tải lại Workload">
               <RefreshCw className={cn("size-4", loading && "animate-spin")} />
+            </button>
+            <button type="button" onClick={exportWorkload} disabled={!data || !visibleMembers.length} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-[10px] text-slate-500 hover:text-cyan-200 disabled:opacity-40">
+              <Download className="size-3.5" /> Export
             </button>
           </div>
         }

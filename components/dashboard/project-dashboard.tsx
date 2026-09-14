@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   CircleGauge,
   Clock3,
+  Download,
   Eye,
   EyeOff,
   FileStack,
@@ -24,6 +25,7 @@ import {
 } from "lucide-react";
 import { useProject } from "@/components/project-context";
 import { PageHeader } from "@/components/page-header";
+import { exportCsvSections } from "@/lib/export-data";
 import type { DashboardApiResponse, DashboardData } from "@/lib/dashboard/types";
 
 function formatDate(value: string | null) {
@@ -218,6 +220,48 @@ export function ProjectDashboard() {
     ] as const;
   }, [data]);
 
+  function exportDashboard() {
+    if (!data) return;
+    exportCsvSections(`ASC-WORKING-${data.project.code}-Dashboard`, [
+      {
+        title: "Project Overview",
+        headers: ["Mã dự án", "Tên dự án", "Đơn vị", "Trạng thái", "Số hợp đồng", "Giá trị HĐ", "Ngày ký", "Ngày bắt đầu", "Ngày kết thúc", "Health"],
+        rows: [{
+          "Mã dự án": data.project.code,
+          "Tên dự án": data.project.name,
+          "Đơn vị": data.project.organizationName,
+          "Trạng thái": status,
+          "Số hợp đồng": data.project.contractNo ?? "",
+          "Giá trị HĐ": data.project.contractValue ?? "",
+          "Ngày ký": formatDate(data.project.contractDate),
+          "Ngày bắt đầu": formatDate(data.project.startDate),
+          "Ngày kết thúc": formatDate(data.project.dueDate),
+          "Health": health.label,
+        }],
+      },
+      {
+        title: "Issue KPI",
+        headers: ["KPI", "Giá trị", "Ghi chú"],
+        rows: issueCards.map(([label, value, note]) => ({ "KPI": label, "Giá trị": value, "Ghi chú": note })),
+      },
+      {
+        title: "Project Stages",
+        headers: ["Mã", "Stage", "Bắt đầu", "Kết thúc", "Trạng thái", "Tiến độ %"],
+        rows: data.stages.map((stage) => ({ "Mã": stage.code, "Stage": stage.name, "Bắt đầu": formatDate(stage.startDate), "Kết thúc": formatDate(stage.endDate), "Trạng thái": stage.status ? stageStatusLabel[stage.status] ?? stage.status : "", "Tiến độ %": stage.progress })),
+      },
+      {
+        title: "Departments",
+        headers: ["Phòng ban", "Tổng ISSUE", "Đã xử lý", "Đã bàn giao", "Còn lại", "Tiến độ %"],
+        rows: data.departments.map((department) => ({ "Phòng ban": department.name, "Tổng ISSUE": department.total, "Đã xử lý": department.done, "Đã bàn giao": department.handedOver, "Còn lại": department.remaining, "Tiến độ %": department.progress })),
+      },
+      {
+        title: "Members",
+        headers: ["Nhân sự", "Assigned", "Completed", "Remaining", "Tiến độ %"],
+        rows: data.members.map((member) => ({ "Nhân sự": member.name, "Assigned": member.assigned, "Completed": member.completed, "Remaining": member.remaining, "Tiến độ %": member.progress })),
+      },
+    ]);
+  }
+
   return (
     <>
       <PageHeader
@@ -242,6 +286,14 @@ export function ProjectDashboard() {
               aria-label="Tải lại Dashboard"
             >
               <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+            </button>
+            <button
+              type="button"
+              onClick={exportDashboard}
+              disabled={!data}
+              className="flex h-9 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-[10px] text-slate-500 transition hover:text-cyan-200 disabled:opacity-40"
+            >
+              <Download className="size-3.5" /> Export
             </button>
           </div>
         }

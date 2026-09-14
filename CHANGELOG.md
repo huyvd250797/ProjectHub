@@ -1,5 +1,18 @@
 # Changelog
 
+## V3.7.0 - Module Data Export
+
+### Added
+
+- Thêm helper export CSV dùng chung cho toàn app.
+- Bổ sung nút Export cho Dashboard, Finance, PLHĐ/Contract, Department, Workload, Allocation, Document, Resource Vault, Command Center, Portfolio, Master Console, Activity và Data Integrity.
+- Giữ các export đã có ở ISSUE, Plan, Analytics và Report.
+
+### Safety
+
+- Resource Vault chỉ xuất metadata, không xuất credential secret.
+- Không có migration mới.
+
 ## V3.6.1 - Modal Save Close & Data Visibility Fix
 
 ### Fixed

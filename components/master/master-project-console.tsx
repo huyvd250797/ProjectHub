@@ -9,6 +9,7 @@ import {
   BriefcaseBusiness,
   CheckCircle2,
   ContactRound,
+  Download,
   FilePenLine,
   FileText,
   LoaderCircle,
@@ -27,6 +28,7 @@ import {
 } from "lucide-react";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { DateFormInput } from "@/components/ui/date-input";
+import { exportCsv } from "@/lib/export-data";
 import type {
   MasterProjectMember,
   MasterProjectRow,
@@ -111,6 +113,24 @@ export function MasterProjectConsole() {
     paused: projects.filter((item) => item.status === "paused").length,
     archived: projects.filter((item) => item.status === "archived").length,
   }), [projects]);
+
+  function exportProjects() {
+    exportCsv("ASC-WORKING-Master-Projects", ["Mã Project", "Tên Project", "Đơn vị", "Trạng thái", "Số hợp đồng", "Giá trị HĐ", "Ngày ký", "Ngày bắt đầu", "Ngày kết thúc", "Đầu mối", "Email", "SĐT", "Thành viên"], filtered.map((project) => ({
+      "Mã Project": project.code,
+      "Tên Project": project.name,
+      "Đơn vị": project.organizationName ?? "",
+      "Trạng thái": project.status,
+      "Số hợp đồng": project.contractNo ?? "",
+      "Giá trị HĐ": project.contractValue ?? "",
+      "Ngày ký": project.contractDate ?? "",
+      "Ngày bắt đầu": project.startDate ?? "",
+      "Ngày kết thúc": project.dueDate ?? "",
+      "Đầu mối": project.contactName ?? "",
+      "Email": project.contactEmail ?? "",
+      "SĐT": project.contactPhone ?? "",
+      "Thành viên": project.memberCount,
+    })));
+  }
 
   async function createProject(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -216,6 +236,7 @@ export function MasterProjectConsole() {
             <input value={search} onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)} placeholder="Tìm mã Project, trường/đơn vị, hợp đồng, đầu mối..." className="h-10 w-full rounded-xl border border-white/[0.07] bg-black/10 pl-9 pr-3 text-xs text-slate-300 outline-none placeholder:text-slate-700 focus:border-cyan-300/20" />
           </div>
           <button onClick={() => void loadProjects()} className="flex h-10 items-center justify-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-xs text-slate-400"><RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh</button>
+          <button onClick={exportProjects} disabled={!filtered.length} className="flex h-10 items-center justify-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-xs text-slate-400 hover:text-cyan-200 disabled:opacity-40"><Download className="size-3.5" /> Export</button>
           <button onClick={() => setShowCreate((value) => !value)} className="flex h-10 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 text-xs font-semibold text-[#07111f]"><Plus className="size-4" /> Project mới</button>
         </div>
 
