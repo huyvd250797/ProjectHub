@@ -109,7 +109,12 @@ function item(
   return { id, module, title, subtitle, href, badge };
 }
 
-async function safeQuery<T>(runner: () => Promise<{ data: T[] | null; error: { message: string } | null }>) {
+type SafeQueryResult<T> = {
+  data: T[] | null;
+  error: { message: string } | null;
+};
+
+async function safeQuery<T>(runner: () => PromiseLike<SafeQueryResult<T>>) {
   try {
     const result = await runner();
     if (result.error) return [] as T[];
@@ -156,15 +161,15 @@ export async function GET(request: NextRequest) {
   ].filter(Boolean).join(",");
 
   const [issues, contractItems, contractDetails, departments, stages, milestones, tasks, documents, resources] = await Promise.all([
-    safeQuery(() => supabase.from("issues").select("id,issue_no,content,jira_url,status_code").eq("project_id", projectId).is("archived_at", null).or(issueOr).order("updated_at", { ascending: false }).limit(6)),
-    safeQuery(() => supabase.from("contract_items").select("id,code,name,item_type,module_status_code").eq("project_id", projectId).or(`code.ilike.${pattern},name.ilike.${pattern},classification.ilike.${pattern}`).order("sort_order", { ascending: true }).limit(5)),
-    safeQuery(() => supabase.from("contract_detail_items").select("id,code,content,node_type,note").eq("project_id", projectId).or(`code.ilike.${pattern},content.ilike.${pattern},note.ilike.${pattern}`).order("sort_order", { ascending: true }).limit(5)),
-    safeQuery(() => supabase.from("departments").select("id,code,name").eq("project_id", projectId).eq("is_active", true).or(`code.ilike.${pattern},name.ilike.${pattern}`).order("name", { ascending: true }).limit(4)),
-    safeQuery(() => supabase.from("project_stages").select("id,code,name,status").eq("project_id", projectId).or(`code.ilike.${pattern},name.ilike.${pattern},status.ilike.${pattern}`).order("sort_order", { ascending: true }).limit(4)),
-    safeQuery(() => supabase.from("project_milestones").select("id,title,status,due_date").eq("project_id", projectId).or(`title.ilike.${pattern},description.ilike.${pattern},status.ilike.${pattern}`).order("due_date", { ascending: true }).limit(4)),
-    safeQuery(() => supabase.from("project_plan_tasks").select("id,title,status,due_date").eq("project_id", projectId).or(`title.ilike.${pattern},description.ilike.${pattern},status.ilike.${pattern}`).order("due_date", { ascending: true }).limit(4)),
-    safeQuery(() => supabase.from("project_documents").select("id,title,document_type,description").eq("project_id", projectId).or(`title.ilike.${pattern},description.ilike.${pattern},document_type.ilike.${pattern}`).order("updated_at", { ascending: false }).limit(4)),
-    safeQuery(() => supabase.from("remote_resources").select("id,name,resource_type,environment,url_or_host").eq("project_id", projectId).or(`name.ilike.${pattern},resource_type.ilike.${pattern},environment.ilike.${pattern},url_or_host.ilike.${pattern}`).order("updated_at", { ascending: false }).limit(4)),
+    safeQuery<IssueSearchRow>(() => supabase.from("issues").select("id,issue_no,content,jira_url,status_code").eq("project_id", projectId).is("archived_at", null).or(issueOr).order("updated_at", { ascending: false }).limit(6)),
+    safeQuery<ContractItemSearchRow>(() => supabase.from("contract_items").select("id,code,name,item_type,module_status_code").eq("project_id", projectId).or(`code.ilike.${pattern},name.ilike.${pattern},classification.ilike.${pattern}`).order("sort_order", { ascending: true }).limit(5)),
+    safeQuery<ContractDetailSearchRow>(() => supabase.from("contract_detail_items").select("id,code,content,node_type,note").eq("project_id", projectId).or(`code.ilike.${pattern},content.ilike.${pattern},note.ilike.${pattern}`).order("sort_order", { ascending: true }).limit(5)),
+    safeQuery<DepartmentSearchRow>(() => supabase.from("departments").select("id,code,name").eq("project_id", projectId).eq("is_active", true).or(`code.ilike.${pattern},name.ilike.${pattern}`).order("name", { ascending: true }).limit(4)),
+    safeQuery<PlanStageSearchRow>(() => supabase.from("project_stages").select("id,code,name,status").eq("project_id", projectId).or(`code.ilike.${pattern},name.ilike.${pattern},status.ilike.${pattern}`).order("sort_order", { ascending: true }).limit(4)),
+    safeQuery<PlanItemSearchRow>(() => supabase.from("project_milestones").select("id,title,status,due_date").eq("project_id", projectId).or(`title.ilike.${pattern},description.ilike.${pattern},status.ilike.${pattern}`).order("due_date", { ascending: true }).limit(4)),
+    safeQuery<PlanItemSearchRow>(() => supabase.from("project_plan_tasks").select("id,title,status,due_date").eq("project_id", projectId).or(`title.ilike.${pattern},description.ilike.${pattern},status.ilike.${pattern}`).order("due_date", { ascending: true }).limit(4)),
+    safeQuery<DocumentSearchRow>(() => supabase.from("project_documents").select("id,title,document_type,description").eq("project_id", projectId).or(`title.ilike.${pattern},description.ilike.${pattern},document_type.ilike.${pattern}`).order("updated_at", { ascending: false }).limit(4)),
+    safeQuery<ResourceSearchRow>(() => supabase.from("remote_resources").select("id,name,resource_type,environment,url_or_host").eq("project_id", projectId).or(`name.ilike.${pattern},resource_type.ilike.${pattern},environment.ilike.${pattern},url_or_host.ilike.${pattern}`).order("updated_at", { ascending: false }).limit(4)),
   ]);
 
   const items: SearchItem[] = [
