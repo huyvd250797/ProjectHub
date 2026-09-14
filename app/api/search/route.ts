@@ -19,6 +19,14 @@ type SearchResponse =
   | { ok: true; items: SearchItem[] }
   | { ok: false; code: string; message: string };
 
+type ResourceSearchRow = {
+  id: unknown;
+  name: unknown;
+  resource_type: unknown;
+  environment: unknown;
+  url_or_host: unknown;
+};
+
 function text(value: unknown) {
   return value === null || value === undefined ? "" : String(value);
 }
@@ -122,7 +130,7 @@ export async function GET(request: NextRequest) {
     ...milestones.map((row) => item(`milestone-${row.id}`, "Milestone", text(row.title), `${text(row.due_date) || "Chưa có due date"} • ${text(row.status) || "Chưa cập nhật"}`, `/plan?search=${encodeURIComponent(query)}`, "Milestone")),
     ...tasks.map((row) => item(`task-${row.id}`, "Execution Task", text(row.title), `${text(row.due_date) || "Chưa có due date"} • ${text(row.status) || "Chưa cập nhật"}`, `/plan?search=${encodeURIComponent(query)}`, "Task")),
     ...documents.map((row) => item(`document-${row.id}`, "Document", text(row.title), `${text(row.document_type) || "Tài liệu"} • ${text(row.description).slice(0, 90)}`, `/documents?search=${encodeURIComponent(query)}`, text(row.document_type) || undefined)),
-    ...resources.map((row) => item(`resource-${row.id}`, "Remote Server", text(row.name), `${text(row.resource_type) || "Resource"} • ${text(row.environment) || text(row.url_or_host)}`, `/resources?search=${encodeURIComponent(query)}`, text(row.environment) || undefined)),
+    ...(resources as ResourceSearchRow[]).map((row) => item(`resource-${row.id}`, "Remote Server", text(row.name), `${text(row.resource_type) || "Resource"} • ${text(row.environment) || text(row.url_or_host)}`, `/resources?search=${encodeURIComponent(query)}`, text(row.environment) || undefined)),
   ].filter((row) => row.title.trim()).slice(0, 10);
 
   return NextResponse.json({ ok: true, items } satisfies SearchResponse, {

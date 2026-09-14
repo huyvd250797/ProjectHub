@@ -22,7 +22,7 @@ import { PageHeader } from "@/components/page-header";
 import { useProject } from "@/components/project-context";
 import { DateInput, formatDateDisplay } from "@/components/ui/date-input";
 import { cn } from "@/lib/utils";
-import { exportCsvSections } from "@/lib/export-data";
+import { exportCsvSections, type CsvRow } from "@/lib/export-data";
 import { fetchJsonCached, invalidateClientCache } from "@/lib/performance/client-cache";
 import type {
   ResourceScheduleApiResponse,
@@ -283,6 +283,23 @@ export function AssignmentBoard() {
 
   function exportAssignmentBoard() {
     if (!data) return;
+    const weeklyRows: CsvRow[] = data.members.flatMap((member) => member.weeks.flatMap((week): CsvRow[] => {
+      const weekInfo = data.weeks.find((item) => item.id === week.weekId);
+      const base: CsvRow = {
+        "Nhân sự": member.name,
+        "Tuần": weekInfo?.label ?? week.weekId,
+        "Ngày bắt đầu": weekInfo?.startDate ? formatDateDisplay(weekInfo.startDate) : "",
+        "Ngày kết thúc": weekInfo?.endDate ? formatDateDisplay(weekInfo.endDate) : "",
+        "Level": levelLabel[week.level],
+        "Allocation %": week.allocationPercent,
+        "Planned Hours": week.plannedHours,
+        "Available Hours": week.availableHours,
+        "Overload Hours": week.overloadHours,
+      };
+      return week.items.length
+        ? week.items.map((item) => ({ ...base, "Mã việc": item.code, "Loại": item.type === "issue" ? "ISSUE" : "Task", "Tiêu đề": item.title, "Est. Hours": item.estimatedHours, "Due Date": item.dueDate ? formatDateDisplay(item.dueDate) : "" }))
+        : [{ ...base, "Mã việc": "", "Loại": "", "Tiêu đề": "", "Est. Hours": "", "Due Date": "" }];
+    }));
     exportCsvSections(`ASC-WORKING-${data.projectCode}-Allocation`, [
       {
         title: "Unassigned Work Queue",
@@ -303,23 +320,7 @@ export function AssignmentBoard() {
       {
         title: "Weekly Assignment Board",
         headers: ["Nhân sự", "Tuần", "Ngày bắt đầu", "Ngày kết thúc", "Level", "Allocation %", "Planned Hours", "Available Hours", "Overload Hours", "Mã việc", "Loại", "Tiêu đề", "Est. Hours", "Due Date"],
-        rows: data.members.flatMap((member) => member.weeks.flatMap((week) => {
-          const weekInfo = data.weeks.find((item) => item.id === week.weekId);
-          const base = {
-            "Nhân sự": member.name,
-            "Tuần": weekInfo?.label ?? week.weekId,
-            "Ngày bắt đầu": weekInfo?.startDate ? formatDateDisplay(weekInfo.startDate) : "",
-            "Ngày kết thúc": weekInfo?.endDate ? formatDateDisplay(weekInfo.endDate) : "",
-            "Level": levelLabel[week.level],
-            "Allocation %": week.allocationPercent,
-            "Planned Hours": week.plannedHours,
-            "Available Hours": week.availableHours,
-            "Overload Hours": week.overloadHours,
-          };
-          return week.items.length
-            ? week.items.map((item) => ({ ...base, "Mã việc": item.code, "Loại": item.type === "issue" ? "ISSUE" : "Task", "Tiêu đề": item.title, "Est. Hours": item.estimatedHours, "Due Date": item.dueDate ? formatDateDisplay(item.dueDate) : "" }))
-            : [{ ...base, "Mã việc": "", "Loại": "", "Tiêu đề": "", "Est. Hours": "", "Due Date": "" }];
-        })),
+        rows: weeklyRows,
       },
     ]);
   }
