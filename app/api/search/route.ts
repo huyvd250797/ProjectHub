@@ -19,6 +19,55 @@ type SearchResponse =
   | { ok: true; items: SearchItem[] }
   | { ok: false; code: string; message: string };
 
+type IssueSearchRow = {
+  id: unknown;
+  issue_no: unknown;
+  content: unknown;
+  jira_url: unknown;
+  status_code: unknown;
+};
+
+type ContractItemSearchRow = {
+  id: unknown;
+  code: unknown;
+  name: unknown;
+  item_type: unknown;
+};
+
+type ContractDetailSearchRow = {
+  id: unknown;
+  code: unknown;
+  content: unknown;
+  node_type: unknown;
+};
+
+type DepartmentSearchRow = {
+  id: unknown;
+  code: unknown;
+  name: unknown;
+};
+
+type PlanStageSearchRow = {
+  id: unknown;
+  code: unknown;
+  name: unknown;
+  status: unknown;
+};
+
+type PlanItemSearchRow = {
+  id: unknown;
+  title: unknown;
+  status: unknown;
+  due_date: unknown;
+};
+
+type DocumentSearchRow = {
+  id: unknown;
+  title: unknown;
+  document_type: unknown;
+  description: unknown;
+};
+
 type ResourceSearchRow = {
   id: unknown;
   name: unknown;
@@ -119,17 +168,17 @@ export async function GET(request: NextRequest) {
   ]);
 
   const items: SearchItem[] = [
-    ...issues.map((row) => {
+    ...(issues as IssueSearchRow[]).map((row) => {
       const jiraCode = jiraCodeFromUrl(row.jira_url);
       return item(`issue-${row.id}`, "ISSUE", `ISSUE ${jiraCode || `#${row.issue_no ?? "—"}`}`, text(row.content), issueHref(jiraCode || query), jiraCode || text(row.status_code) || undefined);
     }),
-    ...contractItems.map((row) => item(`contract-item-${row.id}`, "PLHĐ", text(row.name), `${text(row.code) || "—"} • ${text(row.item_type) || "module"}`, `/contract?search=${encodeURIComponent(query)}`, text(row.code) || undefined)),
-    ...contractDetails.map((row) => item(`contract-detail-${row.id}`, "PLHĐ chi tiết", text(row.content), `${text(row.code) || "—"} • ${text(row.node_type) || "function"}`, `/contract?search=${encodeURIComponent(query)}`, text(row.code) || undefined)),
-    ...departments.map((row) => item(`department-${row.id}`, "Phòng ban", text(row.name), text(row.code) || "Danh mục phòng ban", `/departments?search=${encodeURIComponent(query)}`, text(row.code) || undefined)),
-    ...stages.map((row) => item(`stage-${row.id}`, "Plan", text(row.name), `${text(row.code) || "Stage"} • ${text(row.status) || "Chưa cập nhật"}`, `/plan?search=${encodeURIComponent(query)}`, text(row.code) || undefined)),
-    ...milestones.map((row) => item(`milestone-${row.id}`, "Milestone", text(row.title), `${text(row.due_date) || "Chưa có due date"} • ${text(row.status) || "Chưa cập nhật"}`, `/plan?search=${encodeURIComponent(query)}`, "Milestone")),
-    ...tasks.map((row) => item(`task-${row.id}`, "Execution Task", text(row.title), `${text(row.due_date) || "Chưa có due date"} • ${text(row.status) || "Chưa cập nhật"}`, `/plan?search=${encodeURIComponent(query)}`, "Task")),
-    ...documents.map((row) => item(`document-${row.id}`, "Document", text(row.title), `${text(row.document_type) || "Tài liệu"} • ${text(row.description).slice(0, 90)}`, `/documents?search=${encodeURIComponent(query)}`, text(row.document_type) || undefined)),
+    ...(contractItems as ContractItemSearchRow[]).map((row) => item(`contract-item-${row.id}`, "PLHĐ", text(row.name), `${text(row.code) || "—"} • ${text(row.item_type) || "module"}`, `/contract?search=${encodeURIComponent(query)}`, text(row.code) || undefined)),
+    ...(contractDetails as ContractDetailSearchRow[]).map((row) => item(`contract-detail-${row.id}`, "PLHĐ chi tiết", text(row.content), `${text(row.code) || "—"} • ${text(row.node_type) || "function"}`, `/contract?search=${encodeURIComponent(query)}`, text(row.code) || undefined)),
+    ...(departments as DepartmentSearchRow[]).map((row) => item(`department-${row.id}`, "Phòng ban", text(row.name), text(row.code) || "Danh mục phòng ban", `/departments?search=${encodeURIComponent(query)}`, text(row.code) || undefined)),
+    ...(stages as PlanStageSearchRow[]).map((row) => item(`stage-${row.id}`, "Plan", text(row.name), `${text(row.code) || "Stage"} • ${text(row.status) || "Chưa cập nhật"}`, `/plan?search=${encodeURIComponent(query)}`, text(row.code) || undefined)),
+    ...(milestones as PlanItemSearchRow[]).map((row) => item(`milestone-${row.id}`, "Milestone", text(row.title), `${text(row.due_date) || "Chưa có due date"} • ${text(row.status) || "Chưa cập nhật"}`, `/plan?search=${encodeURIComponent(query)}`, "Milestone")),
+    ...(tasks as PlanItemSearchRow[]).map((row) => item(`task-${row.id}`, "Execution Task", text(row.title), `${text(row.due_date) || "Chưa có due date"} • ${text(row.status) || "Chưa cập nhật"}`, `/plan?search=${encodeURIComponent(query)}`, "Task")),
+    ...(documents as DocumentSearchRow[]).map((row) => item(`document-${row.id}`, "Document", text(row.title), `${text(row.document_type) || "Tài liệu"} • ${text(row.description).slice(0, 90)}`, `/documents?search=${encodeURIComponent(query)}`, text(row.document_type) || undefined)),
     ...(resources as ResourceSearchRow[]).map((row) => item(`resource-${row.id}`, "Remote Server", text(row.name), `${text(row.resource_type) || "Resource"} • ${text(row.environment) || text(row.url_or_host)}`, `/resources?search=${encodeURIComponent(query)}`, text(row.environment) || undefined)),
   ].filter((row) => row.title.trim()).slice(0, 10);
 
