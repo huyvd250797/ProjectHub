@@ -1,5 +1,22 @@
 # Changelog
 
+## V3.9.0 - Task Insights & Modal Stability
+
+### Added
+
+- Dashboard thống kê Task theo trạng thái, deadline, phân công và estimate.
+- Analytics bổ sung Task summary, phân bổ trạng thái/ưu tiên và export các chỉ số Task.
+- Health metadata cho Task Insights và chuẩn modal theo viewport.
+
+### Fixed
+
+- Parser giờ ước tính nhận đúng payload dạng số từ form Task, tránh ghi `estimated_hours = null`.
+- Modal chính dùng chiều cao động `100dvh`, safe-area, body cuộn độc lập và header/footer không co lại.
+
+### Database
+
+- Không có migration mới; tiếp tục dùng schema Execution Task Grid V3.8.0.
+
 ## V3.8.0 - Execution Task Grid
 
 ### Added

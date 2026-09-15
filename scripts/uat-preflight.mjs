@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "3.8.0" ? pass("Package version", "3.8.0") : fail("Package version", `Expected 3.8.0, got ${pkg.version}`);
+pkg.version === "3.9.0" ? pass("Package version", "3.9.0") : fail("Package version", `Expected 3.9.0, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -267,6 +267,8 @@ for (const rel of [
   "supabase/migrations/202609150001_v380_execution_task_grid.sql",
   "docs/V3.8.0-SCOPE.md",
   "docs/UAT_V380_EXECUTION_TASK_GRID_CHECKLIST.md",
+  "docs/V3.9.0-SCOPE.md",
+  "docs/UAT_V390_TASK_INSIGHTS_MODAL_CHECKLIST.md",
   "components/ui/performance-warmup.tsx",
   "lib/export-data.ts",
 ]) {
@@ -1113,6 +1115,31 @@ for (const token of ["task_no", "estimated_hours", "row_number()", "pg_advisory_
   migrationV380.toLowerCase().includes(token.toLowerCase()) ? pass(`V3.8.0 migration: ${token}`) : fail(`V3.8.0 migration: ${token}`);
 }
 
+const taskInsightsV390 = [
+  fs.readFileSync(path.join(root, "app/api/dashboard/route.ts"), "utf8"),
+  fs.readFileSync(path.join(root, "components/dashboard/project-dashboard.tsx"), "utf8"),
+  fs.readFileSync(path.join(root, "app/api/analytics/route.ts"), "utf8"),
+  fs.readFileSync(path.join(root, "components/analytics/project-analytics.tsx"), "utf8"),
+].join("\n");
+for (const token of ["taskKpis", "taskSummary", "project_plan_tasks", "Task Analytics", "totalEstimatedHours", "remainingEstimatedHours", "estimateCoverage", "completionRate"]) {
+  taskInsightsV390.includes(token) ? pass(`V3.9.0 Task Insights: ${token}`) : fail(`V3.9.0 Task Insights: ${token}`);
+}
+
+const estimateValidationV390 = fs.readFileSync(path.join(root, "lib/planning/validation.ts"), "utf8");
+for (const token of ['typeof value === "number"', "Math.round(parsed * 100) / 100", "const estimatedHours = parseOptionalHours"]) {
+  estimateValidationV390.includes(token) ? pass(`V3.9.0 Estimate validation: ${token}`) : fail(`V3.9.0 Estimate validation: ${token}`);
+}
+
+const modalStabilityV390 = [
+  fs.readFileSync(path.join(root, "app/globals.css"), "utf8"),
+  fs.readFileSync(path.join(root, "components/issues/issue-drawer.tsx"), "utf8"),
+  fs.readFileSync(path.join(root, "components/planning/plan-modals.tsx"), "utf8"),
+  fs.readFileSync(path.join(root, "components/catalog/project-master-data-modal.tsx"), "utf8"),
+].join("\n");
+for (const token of ["asc-modal-viewport", "asc-modal-panel", "asc-modal-scroll", "100dvh", "safe-area-inset", "scrollbar-gutter"]) {
+  modalStabilityV390.includes(token) ? pass(`V3.9.0 Modal stability: ${token}`) : fail(`V3.9.0 Modal stability: ${token}`);
+}
+
 const performanceMigrationV340 = fs.readFileSync(path.join(root, "supabase/migrations/202609080003_v340_performance_large_data_indexes.sql"), "utf8");
 for (const token of ["issues_project_active_issue_no_idx", "contract_items_project_tree_idx", "people_project_active_lookup_idx", "project_plan_tasks_project_stage_due_idx", "project_financial_months_project_month_idx", "resource_assignment_events_project_item_idx", "changed_at desc", "if not exists"]) {
   performanceMigrationV340.toLowerCase().includes(token.toLowerCase()) ? pass(`V3.4.0 Performance index: ${token}`) : fail(`V3.4.0 Performance index: ${token}`);
@@ -1140,7 +1167,7 @@ for (const token of ["loadDataIntegrityReport", "data_integrity", "Data Integrit
   readinessV330.includes(token) ? pass(`V3.3.0 Readiness: ${token}`) : fail(`V3.3.0 Readiness: ${token}`);
 }
 
-console.log("\nASC WORKING V3.8.0 - Execution Task Grid Preflight\n");
+console.log("\nASC WORKING V3.9.0 - Task Insights & Modal Stability Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

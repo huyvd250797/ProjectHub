@@ -324,10 +324,10 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
   const allVisibleDetailsSelected = filteredDetails.length > 0 && filteredDetails.every((row) => selectedDetails.includes(row.id));
 
   return (
-    <div className="fixed inset-0 z-[230] flex items-center justify-center p-3 md:p-6">
+    <div className="asc-modal-viewport fixed inset-0 z-[230] flex items-center justify-center" role="dialog" aria-modal="true" data-modal-lock="true">
       <button type="button" aria-label="Đóng danh mục Project" onClick={onClose} className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
-      <section className="relative flex h-[min(90dvh,920px)] w-full max-w-[1340px] flex-col overflow-hidden rounded-3xl border border-white/[0.09] bg-[#081421] shadow-[0_28px_100px_rgba(0,0,0,.55)]">
-        <header className="flex items-start gap-4 border-b border-white/[0.06] px-5 py-4 md:px-6">
+      <section className="asc-modal-panel relative flex h-[920px] w-full max-w-[1340px] flex-col rounded-3xl border border-white/[0.09] bg-[#081421] shadow-[0_28px_100px_rgba(0,0,0,.55)]">
+        <header className="asc-modal-header flex items-start gap-4 border-b border-white/[0.06] px-5 py-4 md:px-6">
           <div className="grid size-11 shrink-0 place-items-center rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.05]"><Settings2 className="size-4.5 text-cyan-200/80" /></div>
           <div className="min-w-0 flex-1">
           <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/60">Project Master Data • {APP_VERSION_LABEL}</div>
@@ -350,7 +350,7 @@ function CatalogModal({ initialTab, onClose }: { initialTab: ProjectCatalogTab; 
           {data?.canManage ? <button type="button" disabled={!selectedTotal || saving} onClick={() => void deleteSelected()} className="flex h-9 items-center gap-2 rounded-xl border border-rose-300/15 bg-rose-300/[0.055] px-3 text-[10px] font-medium text-rose-100 disabled:cursor-not-allowed disabled:opacity-35"><Trash2 className="size-3.5" /> Xóa đã chọn {selectedTotal ? `(${selectedTotal})` : ""}</button> : null}
         </div>
 
-        <div className="scrollbar-thin flex-1 overflow-y-auto p-5 md:p-6">
+        <div className="asc-modal-scroll scrollbar-thin p-5 md:p-6">
           {loading && !data ? <div className="grid min-h-[420px] place-items-center text-center"><div><LoaderCircle className="mx-auto size-6 animate-spin text-cyan-300/70" /><div className="mt-3 text-xs text-slate-500">Đang tải danh mục Project...</div></div></div> : null}
           {message ? <div className={cn("mb-4 rounded-xl border px-4 py-3 text-xs", message.type === "ok" ? "border-emerald-300/12 bg-emerald-300/[0.045] text-emerald-100/80" : "border-rose-300/15 bg-rose-300/[0.05] text-rose-100/85")}>{message.text}</div> : null}
           {data ? (

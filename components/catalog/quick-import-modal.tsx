@@ -184,10 +184,10 @@ export function QuickCatalogImportModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[270] flex items-center justify-center p-3 md:p-6">
+    <div className="asc-modal-viewport fixed inset-0 z-[270] flex items-center justify-center" role="dialog" aria-modal="true" data-modal-lock="true">
       <button type="button" aria-label="Đóng Import Excel" onClick={() => !applying && onClose()} className="absolute inset-0 bg-black/72 backdrop-blur-md" />
-      <section className="relative flex h-[min(92dvh,940px)] w-full max-w-[1180px] flex-col overflow-hidden rounded-3xl border border-white/[0.09] bg-[#081421] shadow-[0_30px_120px_rgba(0,0,0,.65)]">
-        <header className="flex items-start gap-4 border-b border-white/[0.06] px-5 py-4 md:px-6">
+      <section className="asc-modal-panel relative flex h-[940px] w-full max-w-[1180px] flex-col rounded-3xl border border-white/[0.09] bg-[#081421] shadow-[0_30px_120px_rgba(0,0,0,.65)]">
+        <header className="asc-modal-header flex items-start gap-4 border-b border-white/[0.06] px-5 py-4 md:px-6">
           <div className="grid size-11 shrink-0 place-items-center rounded-2xl border border-emerald-300/14 bg-emerald-300/[0.055]"><FileSpreadsheet className="size-5 text-emerald-200/80" /></div>
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-emerald-300/60">Fast Excel Import • V1.3.2</div>
@@ -198,7 +198,7 @@ export function QuickCatalogImportModal({
           <button type="button" onClick={() => !applying && onClose()} className="grid size-9 place-items-center rounded-xl border border-white/[0.07] text-slate-500 hover:text-white"><X className="size-4" /></button>
         </header>
 
-        <div className="scrollbar-thin flex-1 overflow-y-auto p-5 md:p-6">
+        <div className="asc-modal-scroll scrollbar-thin p-5 md:p-6">
           <div className="grid gap-3 lg:grid-cols-3">
             {sectionOptions.map((item) => (
               <SectionCheckbox key={item.key} item={item} checked={sections.includes(item.key)} disabled={item.key === "contractItems" && sections.includes("contractDetails")} onChange={(checked) => toggleSection(item.key, checked)} />

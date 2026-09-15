@@ -12,6 +12,15 @@ export function createDemoAnalytics(projectId: string, projectCode = "DEMO"): Pr
     range: { from: "2026-06-01", to: "2026-08-26", days: 90 },
     health: { score: 78, status: "watch", issueScore: 82, deliveryScore: 74, overdueScore: 88, dataQualityScore: 93, scheduleScore: 61 },
     summary: { total: 314, open: 86, resolved: 181, released: 47, handedOver: 232, overdue: 11, highPriorityOpen: 19, createdInRange: 108, resolvedInRange: 122, avgAgeDays: 18, avgResolutionDays: 24 },
+    taskSummary: { total: 24, todo: 8, doing: 7, blocked: 2, done: 7, overdue: 3, unassigned: 2, highPriorityOpen: 5, totalEstimatedHours: 156, remainingEstimatedHours: 104, estimateCoverage: 88, completionRate: 29 },
+    taskStatusDistribution: [
+      { code: "todo", label: "Chưa làm", value: 8, percent: 33 }, { code: "doing", label: "Đang làm", value: 7, percent: 29 },
+      { code: "blocked", label: "Bị chặn", value: 2, percent: 8 }, { code: "done", label: "Hoàn tất", value: 7, percent: 29 },
+    ],
+    taskPriorityDistribution: [
+      { code: "critical", label: "Khẩn cấp", value: 2, percent: 8 }, { code: "high", label: "Cao", value: 7, percent: 29 },
+      { code: "medium", label: "Trung bình", value: 11, percent: 46 }, { code: "low", label: "Thấp", value: 4, percent: 17 },
+    ],
     backlogAging: [
       { code: "lt7", label: "< 7 ngày", value: 21, percent: 24 }, { code: "7_14", label: "7–14 ngày", value: 18, percent: 21 },
       { code: "15_30", label: "15–30 ngày", value: 23, percent: 27 }, { code: "gt30", label: "> 30 ngày", value: 24, percent: 28 },

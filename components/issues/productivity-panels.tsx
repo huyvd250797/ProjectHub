@@ -70,13 +70,13 @@ export function ColumnManager({
   }
 
   return (
-    <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm" onMouseDown={(e) => e.currentTarget === e.target && onClose()}>
-      <div className="tech-panel w-full max-w-[720px] overflow-hidden rounded-2xl shadow-2xl">
-        <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+    <div className="asc-modal-viewport fixed inset-0 z-[210] flex items-center justify-center bg-black/65 backdrop-blur-sm" role="dialog" aria-modal="true" data-modal-lock="true" onMouseDown={(e) => e.currentTarget === e.target && onClose()}>
+      <div className="asc-modal-panel tech-panel flex w-full max-w-[720px] flex-col rounded-2xl shadow-2xl">
+        <div className="asc-modal-header flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
           <div><div className="text-sm font-semibold text-white">Cấu hình cột ISSUE</div><div className="mt-1 text-[10px] text-slate-600">Ẩn/hiện • thứ tự • độ rộng • ghim cột • 50/100/500/1000/ALL</div></div>
           <button onClick={onClose} className="grid size-9 place-items-center rounded-xl border border-white/[0.07] text-slate-500 hover:text-white"><X className="size-4" /></button>
         </div>
-        <div className="scrollbar-thin max-h-[65vh] overflow-y-auto p-4">
+        <div className="asc-modal-scroll scrollbar-thin p-4">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
             <div className="text-[10px] text-slate-500">Số ISSUE mỗi trang</div>
             <div className="flex flex-wrap gap-1.5">{[50,100,500,1000,0].map((size) => <button key={size} onClick={() => update({ pageSize: size })} className={cn("h-8 rounded-lg border px-3 text-[10px]", value.pageSize === size ? "border-cyan-300/20 bg-cyan-300/[0.08] text-cyan-100" : "border-white/[0.06] text-slate-500")}>{size === 0 ? "ALL" : size}</button>)}</div>
@@ -103,7 +103,7 @@ export function ColumnManager({
             })}
           </div>
         </div>
-        <div className="flex items-center gap-2 border-t border-white/[0.06] px-5 py-4">
+        <div className="asc-modal-footer flex items-center gap-2 border-t border-white/[0.06] px-5 py-4">
           <button onClick={() => onChange(DEFAULT_ISSUE_PREFERENCES)} className="flex h-9 items-center gap-2 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-500"><RotateCcw className="size-3.5" /> Mặc định</button>
           <button onClick={onClose} className="ml-auto flex h-9 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-[10px] font-semibold text-[#07111f]"><Save className="size-3.5" /> Xong</button>
         </div>
@@ -117,8 +117,8 @@ export function SaveViewModal({ open, onClose, onSave, saving }: { open: boolean
   useEffect(() => { if (open) setName(""); }, [open]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[215] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm" onMouseDown={(e) => e.currentTarget === e.target && onClose()}>
-      <div className="tech-panel w-full max-w-[420px] rounded-2xl p-5 shadow-2xl">
+    <div className="asc-modal-viewport fixed inset-0 z-[215] flex items-center justify-center bg-black/65 backdrop-blur-sm" role="dialog" aria-modal="true" data-modal-lock="true" onMouseDown={(e) => e.currentTarget === e.target && onClose()}>
+      <div className="asc-modal-panel tech-panel w-full max-w-[420px] overflow-y-auto rounded-2xl p-5 shadow-2xl">
         <div className="flex items-start justify-between"><div><div className="text-sm font-semibold text-white">Lưu bộ lọc hiện tại</div><div className="mt-1 text-[10px] text-slate-600">Saved View chỉ hiển thị cho tài khoản của bạn trong project này.</div></div><button onClick={onClose} className="grid size-8 place-items-center text-slate-600"><X className="size-4" /></button></div>
         <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && name.trim() && onSave(name.trim())} placeholder="Ví dụ: ISSUE tôi cần xử lý hôm nay" className="mt-5 h-11 w-full rounded-xl border border-white/[0.08] bg-black/10 px-3.5 text-xs text-slate-200 outline-none placeholder:text-slate-700 focus:border-cyan-300/25" />
         <div className="mt-4 flex justify-end gap-2"><button onClick={onClose} className="h-9 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-500">Hủy</button><button disabled={!name.trim() || saving} onClick={() => onSave(name.trim())} className="h-9 rounded-xl bg-cyan-300 px-4 text-[10px] font-semibold text-[#07111f] disabled:opacity-45">{saving ? "Đang lưu..." : "Lưu View"}</button></div>

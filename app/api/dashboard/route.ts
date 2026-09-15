@@ -28,6 +28,7 @@ function normalizeDashboard(raw: Record<string, unknown>): DashboardData {
   const project = (raw.project ?? {}) as Record<string, unknown>;
   const summary = (raw.summary ?? {}) as Record<string, unknown>;
   const issueKpis = (raw.issueKpis ?? {}) as Record<string, unknown>;
+  const taskKpis = (raw.taskKpis ?? {}) as Record<string, unknown>;
   const attention = (raw.attention ?? {}) as Record<string, unknown>;
   const contract = (raw.contract ?? {}) as Record<string, unknown>;
   const schedule = (raw.schedule ?? {}) as Record<string, unknown>;
@@ -55,6 +56,7 @@ function normalizeDashboard(raw: Record<string, unknown>): DashboardData {
     },
     summary: {
       totalIssues: numberValue(summary.totalIssues),
+      totalTasks: numberValue(summary.totalTasks),
       modules: numberValue(summary.modules),
       subsystems: numberValue(summary.subsystems),
       departments: numberValue(summary.departments),
@@ -69,6 +71,18 @@ function normalizeDashboard(raw: Record<string, unknown>): DashboardData {
       handedOver: numberValue(issueKpis.handedOver),
       notHandedOver: numberValue(issueKpis.notHandedOver),
       overdue: numberValue(issueKpis.overdue),
+    },
+    taskKpis: {
+      todo: numberValue(taskKpis.todo),
+      doing: numberValue(taskKpis.doing),
+      blocked: numberValue(taskKpis.blocked),
+      done: numberValue(taskKpis.done),
+      overdue: numberValue(taskKpis.overdue),
+      unassigned: numberValue(taskKpis.unassigned),
+      totalEstimatedHours: numberValue(taskKpis.totalEstimatedHours),
+      remainingEstimatedHours: numberValue(taskKpis.remainingEstimatedHours),
+      estimateCoverage: numberValue(taskKpis.estimateCoverage),
+      completionRate: numberValue(taskKpis.completionRate),
     },
     attention: {
       overdue: numberValue(attention.overdue),
@@ -204,6 +218,31 @@ export async function GET(request: NextRequest) {
       status: stage.status ? String(stage.status) : null,
       progress: numberValue(stage.progress),
     }));
+  }
+
+  const planningTasks = await supabase
+    .from("project_plan_tasks")
+    .select("status,due_date,owner_person_id,estimated_hours")
+    .eq("project_id", projectId);
+  if (!planningTasks.error && planningTasks.data) {
+    const today = new Date().toISOString().slice(0, 10);
+    const tasks = planningTasks.data as Array<Record<string, unknown>>;
+    const byStatus = (status: string) => tasks.filter((task) => task.status === status).length;
+    const estimatedTasks = tasks.filter((task) => task.estimated_hours !== null && task.estimated_hours !== undefined);
+    const sumHours = (rows: Array<Record<string, unknown>>) => Math.round(rows.reduce((sum, task) => sum + numberValue(task.estimated_hours), 0) * 100) / 100;
+    dashboard.summary.totalTasks = tasks.length;
+    dashboard.taskKpis = {
+      todo: byStatus("todo"),
+      doing: byStatus("doing"),
+      blocked: byStatus("blocked"),
+      done: byStatus("done"),
+      overdue: tasks.filter((task) => task.status !== "done" && Boolean(task.due_date) && String(task.due_date).slice(0, 10) < today).length,
+      unassigned: tasks.filter((task) => !task.owner_person_id).length,
+      totalEstimatedHours: sumHours(tasks),
+      remainingEstimatedHours: sumHours(tasks.filter((task) => task.status !== "done")),
+      estimateCoverage: tasks.length ? Math.round((estimatedTasks.length / tasks.length) * 100) : 0,
+      completionRate: tasks.length ? Math.round((byStatus("done") / tasks.length) * 100) : 0,
+    };
   }
 
   const completionResult = await supabase

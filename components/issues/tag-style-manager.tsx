@@ -77,9 +77,9 @@ export function TagStyleManager({
   }
 
   return (
-    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="tech-panel flex max-h-[88vh] w-full max-w-[980px] flex-col overflow-hidden rounded-2xl shadow-2xl">
-        <div className="flex items-center gap-3 border-b border-white/[0.07] px-5 py-4">
+    <div className="asc-modal-viewport fixed inset-0 z-[220] flex items-center justify-center bg-black/70 backdrop-blur-sm" role="dialog" aria-modal="true" data-modal-lock="true">
+      <div className="asc-modal-panel tech-panel flex w-full max-w-[980px] flex-col rounded-2xl shadow-2xl">
+        <div className="asc-modal-header flex items-center gap-3 border-b border-white/[0.07] px-5 py-4">
           <div className="grid size-10 place-items-center rounded-xl border border-violet-300/15 bg-violet-300/[0.06] text-violet-200"><Paintbrush className="size-4" /></div>
           <div><div className="text-sm font-semibold text-white">Màu tag ISSUE</div><div className="mt-1 text-[10px] text-slate-600">Điều chỉnh riêng màu viền, background và chữ cho từng giá trị.</div></div>
           <button type="button" onClick={onClose} className="ml-auto grid size-9 place-items-center rounded-xl border border-white/[0.07] text-slate-500 hover:text-white"><X className="size-4" /></button>
@@ -89,7 +89,7 @@ export function TagStyleManager({
           <button type="button" onClick={resetGroup} className="ml-auto flex h-9 items-center gap-2 rounded-xl border border-white/[0.07] px-3 text-[10px] text-slate-500 hover:text-slate-200"><RotateCcw className="size-3.5" /> Mặc định nhóm</button>
         </div>
         <div className="border-b border-white/[0.05] px-5 py-3"><input value={query} onChange={(event) => setQuery(event.target.value)} className="field max-w-md" placeholder={`Tìm trong ${GROUPS.find((item) => item.id === group)?.label ?? "tag"}...`} /></div>
-        <div className="scrollbar-thin flex-1 overflow-y-auto p-4 md:p-5">
+        <div className="asc-modal-scroll scrollbar-thin p-4 md:p-5">
           <div className="space-y-2">
             {options.map((option) => {
               const customized = value[group]?.[option.value];
@@ -105,7 +105,7 @@ export function TagStyleManager({
             })}
           </div>
         </div>
-        <div className="flex items-center justify-between border-t border-white/[0.06] px-5 py-4"><div className="text-[9px] text-slate-700">Màu được lưu theo tài khoản và Project.</div><button type="button" onClick={onClose} className="h-9 rounded-xl bg-violet-300 px-4 text-[10px] font-semibold text-[#111026]">Xong</button></div>
+        <div className="asc-modal-footer flex items-center justify-between border-t border-white/[0.06] px-5 py-4"><div className="text-[9px] text-slate-700">Màu được lưu theo tài khoản và Project.</div><button type="button" onClick={onClose} className="h-9 rounded-xl bg-violet-300 px-4 text-[10px] font-semibold text-[#111026]">Xong</button></div>
       </div>
     </div>
   );

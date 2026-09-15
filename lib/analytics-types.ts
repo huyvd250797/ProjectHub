@@ -57,6 +57,22 @@ export type ProjectAnalyticsData = {
     avgAgeDays: number;
     avgResolutionDays: number;
   };
+  taskSummary: {
+    total: number;
+    todo: number;
+    doing: number;
+    blocked: number;
+    done: number;
+    overdue: number;
+    unassigned: number;
+    highPriorityOpen: number;
+    totalEstimatedHours: number;
+    remainingEstimatedHours: number;
+    estimateCoverage: number;
+    completionRate: number;
+  };
+  taskStatusDistribution: AnalyticsBreakdown[];
+  taskPriorityDistribution: AnalyticsBreakdown[];
   backlogAging: Array<{ code: string; label: string; value: number; percent: number }>;
   statusDistribution: AnalyticsBreakdown[];
   priorityDistribution: AnalyticsBreakdown[];

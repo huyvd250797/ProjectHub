@@ -261,15 +261,15 @@ export function MasterProjectConsole() {
         </div>
 
         {showCreate ? (
-          <div className="fixed inset-0 z-[125] flex items-center justify-center p-3 md:p-6">
+          <div className="asc-modal-viewport fixed inset-0 z-[125] flex items-center justify-center" role="dialog" aria-modal="true" data-modal-lock="true">
             <button type="button" aria-label="Đóng form tạo Project" onClick={() => !saving && setShowCreate(false)} className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
-            <form onSubmit={createProject} className="relative w-full max-w-[1040px] overflow-hidden rounded-3xl border border-white/[0.09] bg-[#081421] shadow-[0_28px_100px_rgba(0,0,0,.55)]">
-              <header className="flex items-start gap-4 border-b border-white/[0.06] px-5 py-4 md:px-6">
+            <form onSubmit={createProject} className="asc-modal-panel relative flex w-full max-w-[1040px] flex-col rounded-3xl border border-white/[0.09] bg-[#081421] shadow-[0_28px_100px_rgba(0,0,0,.55)]">
+              <header className="asc-modal-header flex items-start gap-4 border-b border-white/[0.06] px-5 py-4 md:px-6">
                 <div className="grid size-11 shrink-0 place-items-center rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.05]"><BriefcaseBusiness className="size-4.5 text-cyan-200/80" /></div>
                 <div className="min-w-0 flex-1"><div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/60">Master Project Console • V1.3.2</div><h3 className="mt-1 text-lg font-semibold text-white">Tạo Project mới</h3><p className="mt-1 text-[10px] text-slate-500">Nhập thông tin nền tảng. Sau khi tạo, hệ thống sẽ mở Hồ sơ Project để bạn bổ sung đầy đủ thông tin và thành viên.</p></div>
                 <button type="button" disabled={saving} onClick={() => setShowCreate(false)} className="grid size-9 place-items-center rounded-xl border border-white/[0.07] text-slate-500 hover:text-white disabled:opacity-40"><X className="size-4" /></button>
               </header>
-              <div className="grid gap-4 p-5 md:grid-cols-2 md:p-6 xl:grid-cols-3">
+              <div className="asc-modal-scroll scrollbar-thin grid gap-4 p-5 md:grid-cols-2 md:p-6 xl:grid-cols-3">
                 <Field label="Mã Project" className="xl:col-span-1"><input name="code" required maxLength={30} placeholder="VD: EPU" className={inputClass} /></Field>
                 <Field label="Tên dự án" className="md:col-span-1 xl:col-span-2"><input name="name" required maxLength={180} placeholder="Tên Project *" className={inputClass} /></Field>
                 <Field label="Trường / Đơn vị" className="md:col-span-2 xl:col-span-3"><input name="organizationName" maxLength={180} placeholder="Tên trường / đơn vị triển khai" className={inputClass} /></Field>
@@ -279,7 +279,7 @@ export function MasterProjectConsole() {
                 <Field label="Ngày bắt đầu"><DateFormInput name="startDate" className={inputClass} /></Field>
                 <Field label="Ngày kế hoạch kết thúc"><DateFormInput name="dueDate" className={inputClass} /></Field>
               </div>
-              <footer className="flex items-center justify-end gap-2 border-t border-white/[0.06] px-5 py-4 md:px-6">
+              <footer className="asc-modal-footer flex items-center justify-end gap-2 border-t border-white/[0.06] px-5 py-4 md:px-6">
                 <button type="button" disabled={saving} onClick={() => setShowCreate(false)} className="h-10 rounded-xl border border-white/[0.07] px-4 text-xs text-slate-400 hover:bg-white/[0.03] hover:text-white disabled:opacity-40">Hủy</button>
                 <button disabled={saving} className="flex h-10 min-w-[155px] items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 text-xs font-semibold text-[#07111f] disabled:opacity-60">{saving ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}{saving ? "Đang tạo..." : "Tạo & mở hồ sơ"}</button>
               </footer>
@@ -347,10 +347,10 @@ function ProjectDrawer({
   const [tab, setTab] = useState<"profile" | "members">("profile");
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 md:p-6">
+    <div className="asc-modal-viewport fixed inset-0 z-[110] flex items-center justify-center" role="dialog" aria-modal="true" data-modal-lock="true">
       <button aria-label="Đóng" className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={onClose} />
-      <section className="relative flex h-[min(90dvh,940px)] w-full max-w-[1240px] flex-col overflow-hidden rounded-3xl border border-white/[0.09] bg-[#081321] shadow-[0_28px_100px_rgba(0,0,0,.55)]">
-        <div className="flex items-start gap-3 border-b border-white/[0.06] p-5">
+      <section className="asc-modal-panel relative flex h-[940px] w-full max-w-[1240px] flex-col rounded-3xl border border-white/[0.09] bg-[#081321] shadow-[0_28px_100px_rgba(0,0,0,.55)]">
+        <div className="asc-modal-header flex items-start gap-3 border-b border-white/[0.06] p-5">
           <div className="grid size-10 place-items-center rounded-xl border border-cyan-300/12 bg-cyan-300/[0.05]"><BriefcaseBusiness className="size-4 text-cyan-200" /></div>
           <div className="min-w-0 flex-1"><div className="text-[9px] uppercase tracking-[0.18em] text-cyan-300/60">Master Project Management</div><div className="mt-1 truncate text-sm font-semibold text-white">{project.code} • {project.organizationName || project.name}</div><div className="mt-1 truncate text-[10px] text-slate-600">{project.name}</div></div>
           <button disabled={deleting} onClick={() => void onProjectDeleted(project)} className="flex h-9 items-center gap-2 rounded-xl border border-rose-300/12 bg-rose-300/[0.04] px-3 text-[10px] font-medium text-rose-200/75 hover:bg-rose-300/[0.07] disabled:opacity-45"><Trash2 className="size-3.5" /> Xóa Project</button>
@@ -362,7 +362,7 @@ function ProjectDrawer({
           <button onClick={() => setTab("members")} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${tab === "members" ? "bg-cyan-300/[0.08] text-cyan-200" : "text-slate-500 hover:text-slate-300"}`}><UsersRound className="size-3.5" /> Thành viên ({project.memberCount})</button>
         </div>
 
-        <div className="scrollbar-thin flex-1 overflow-y-auto p-5">
+        <div className="asc-modal-scroll scrollbar-thin p-5">
           {tab === "profile" ? <ProjectProfileForm key={`${project.id}-${project.updatedAt}`} project={project} onUpdated={onProjectUpdated} /> : <MembersPanel project={project} onChanged={onMembersChanged} />}
         </div>
       </section>

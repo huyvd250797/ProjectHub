@@ -1,4 +1,15 @@
-# ASC WORKING - V3.8.0
+# ASC WORKING - V3.9.0
+
+## V3.9.0 có gì mới?
+
+### Task Insights & Modal Stability
+
+- Dashboard có **Tổng Task** và nhóm KPI thực thi: chưa làm, đang làm, bị chặn, hoàn tất, quá hạn, chưa phân công, tổng/giờ estimate còn lại và tỷ lệ phủ estimate.
+- Analytics có khu vực **Task Analytics**, phân bổ trạng thái/ưu tiên, tỷ lệ hoàn tất và thống kê estimate; Export cũng mang theo toàn bộ chỉ số Task.
+- Fix dứt điểm Estimate bị lưu thành `null` khi giao diện gửi giá trị dạng số; API chấp nhận cả số và chuỗi số, giữ giới hạn 0–9.999 giờ.
+- Chuẩn hóa modal theo `100dvh`, safe-area, vùng cuộn nội bộ và header/footer cố định để không còn bị cắt trên màn hình thấp hoặc khi browser zoom.
+
+Không có migration mới. Cơ sở dữ liệu hiện hữu cần đã chạy migration V3.8.0: `supabase/migrations/202609150001_v380_execution_task_grid.sql`.
 
 ## V3.8.0 có gì mới?
 

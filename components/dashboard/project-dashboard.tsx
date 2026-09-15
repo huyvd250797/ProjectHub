@@ -6,22 +6,24 @@ import {
   AlertTriangle,
   ArrowRight,
   Building2,
+  Ban,
   CalendarClock,
   CheckCircle2,
   CircleGauge,
   Clock3,
+  ClipboardList,
   Download,
   Eye,
   EyeOff,
   FileStack,
   Layers3,
   ListTodo,
-  LoaderCircle,
   RefreshCw,
   Rocket,
   ShieldCheck,
   UserRoundCheck,
   UsersRound,
+  UserRoundX,
 } from "lucide-react";
 import { useProject } from "@/components/project-context";
 import { PageHeader } from "@/components/page-header";
@@ -204,7 +206,7 @@ export function ProjectDashboard() {
 
   const status = data ? projectStatusLabel[data.project.status] : "Đang tải";
   const health = data ? healthMeta[data.schedule.health] : healthMeta.not_scheduled;
-  const databaseEmpty = Boolean(data?.source === "database" && data.summary.totalIssues === 0 && data.summary.modules === 0);
+  const databaseEmpty = Boolean(data?.source === "database" && data.summary.totalIssues === 0 && data.summary.totalTasks === 0 && data.summary.modules === 0);
 
   const issueCards = useMemo(() => {
     if (!data) return [];
@@ -217,6 +219,20 @@ export function ProjectDashboard() {
       ["Đã bàn giao", data.issueKpis.handedOver, "Khách hàng đã nhận", "/issues?customerStatus=handed_over", ShieldCheck, "cyan"],
       ["Chưa bàn giao", data.issueKpis.notHandedOver, "Cần theo dõi bàn giao", "/issues?customerStatus=not_handed_over", FileStack, "amber"],
       ["Quá hạn", data.issueKpis.overdue, "Due date đã qua", "/issues?overdue=1", AlertTriangle, "rose"],
+    ] as const;
+  }, [data]);
+
+  const taskCards = useMemo(() => {
+    if (!data) return [];
+    return [
+      ["Chưa làm", data.taskKpis.todo, "Task chưa bắt đầu", "/plan", ListTodo, "violet"],
+      ["Đang làm", data.taskKpis.doing, "Task đang thực thi", "/plan", CircleGauge, "cyan"],
+      ["Bị chặn", data.taskKpis.blocked, "Cần tháo gỡ trở ngại", "/plan", Ban, "rose"],
+      ["Hoàn tất", data.taskKpis.done, `${data.taskKpis.completionRate}% tổng task`, "/plan", CheckCircle2, "emerald"],
+      ["Quá hạn", data.taskKpis.overdue, "Chưa done và đã qua hạn", "/plan", AlertTriangle, "rose"],
+      ["Chưa phân công", data.taskKpis.unassigned, "Chưa có người phụ trách", "/plan", UserRoundX, "amber"],
+      ["Tổng estimate", data.taskKpis.totalEstimatedHours, `${data.taskKpis.estimateCoverage}% task có estimate`, "/plan", Clock3, "violet"],
+      ["Estimate còn lại", data.taskKpis.remainingEstimatedHours, "Giờ của task chưa hoàn tất", "/plan", CalendarClock, "amber"],
     ] as const;
   }, [data]);
 
@@ -247,6 +263,11 @@ export function ProjectDashboard() {
         rows: issueCards.map(([label, value, note]) => ({ "KPI": label, "Giá trị": value, "Ghi chú": note })),
       },
       {
+        title: "Task KPI",
+        headers: ["KPI", "Giá trị", "Ghi chú"],
+        rows: taskCards.map(([label, value, note]) => ({ "KPI": label, "Giá trị": value, "Ghi chú": note })),
+      },
+      {
         title: "Project Stages",
         headers: ["Mã", "Stage", "Bắt đầu", "Kết thúc", "Trạng thái", "Tiến độ %"],
         rows: data.stages.map((stage) => ({ "Mã": stage.code, "Stage": stage.name, "Bắt đầu": formatDate(stage.startDate), "Kết thúc": formatDate(stage.endDate), "Trạng thái": stage.status ? stageStatusLabel[stage.status] ?? stage.status : "", "Tiến độ %": stage.progress })),
@@ -271,7 +292,7 @@ export function ProjectDashboard() {
         title={`Dashboard dự án ${selectedProject.code}`}
         description={
           <>
-            Dữ liệu điều hành theo project đang chọn. <span className="font-medium text-slate-300">ASC WORKING</span> là Project Workspace chung; EPU chỉ là một project trong hệ thống.
+            Dữ liệu điều hành ISSUE, Task và tiến độ theo project đang chọn. <span className="font-medium text-slate-300">ASC WORKING</span> là Project Workspace chung; EPU chỉ là một project trong hệ thống.
           </>
         }
         actions={
@@ -326,11 +347,24 @@ export function ProjectDashboard() {
         <div className="space-y-4">
           {databaseEmpty ? <EmptyDatabaseNotice projectCode={data.project.code} /> : null}
 
-          <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <section className="grid grid-cols-2 gap-3 xl:grid-cols-5">
             <KpiCard label="Tổng ISSUE" value={data.summary.totalIssues} note="Theo project hiện tại" href="/issues" icon={ListTodo} accent="cyan" />
+            <KpiCard label="Tổng Task" value={data.summary.totalTasks} note={`${data.taskKpis.completionRate}% đã hoàn tất`} href="/plan" icon={ClipboardList} accent="cyan" />
             <KpiCard label="Module" value={data.summary.modules} note={`${data.summary.subsystems} phân hệ`} href="/contract" icon={Layers3} accent="violet" />
             <KpiCard label="Phòng ban" value={data.summary.departments} note="Đơn vị tham gia dự án" href="/departments" icon={Building2} accent="emerald" />
             <KpiCard label="PLHĐ chi tiết" value={data.summary.contractDetails} note="Node phạm vi hợp đồng" href="/contract" icon={FileStack} accent="amber" />
+          </section>
+
+          <section>
+            <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+              <div><div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/60">Task Control</div><h2 className="mt-1 text-base font-semibold text-white">Thực thi, deadline & estimate</h2></div>
+              <div className="flex items-center gap-2"><span className="rounded-lg border border-white/[0.06] bg-white/[0.025] px-2.5 py-1.5 text-[9px] text-slate-500">Coverage estimate {data.taskKpis.estimateCoverage}%</span><Link href="/plan" className="flex items-center gap-1 text-[10px] font-medium text-cyan-200/70 hover:text-cyan-100">Mở Task <ArrowRight className="size-3" /></Link></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
+              {taskCards.map(([label, value, note, href, icon, accent]) => (
+                <KpiCard key={label} label={label} value={value} note={note} href={href} icon={icon} accent={accent} />
+              ))}
+            </div>
           </section>
 
           <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.08fr_.92fr]">

@@ -42,6 +42,7 @@ function normalize(raw: Record<string, unknown>): ProjectAnalyticsData {
   const health = object(raw.health);
   const summary = object(raw.summary);
   const attention = object(raw.attention);
+  const taskSummary = object(raw.taskSummary);
   return {
     source: "database",
     generatedAt: s(raw.generatedAt || new Date().toISOString()),
@@ -59,6 +60,14 @@ function normalize(raw: Record<string, unknown>): ProjectAnalyticsData {
       overdue: n(summary.overdue), highPriorityOpen: n(summary.highPriorityOpen), createdInRange: n(summary.createdInRange), resolvedInRange: n(summary.resolvedInRange),
       avgAgeDays: n(summary.avgAgeDays), avgResolutionDays: n(summary.avgResolutionDays),
     },
+    taskSummary: {
+      total: n(taskSummary.total), todo: n(taskSummary.todo), doing: n(taskSummary.doing), blocked: n(taskSummary.blocked), done: n(taskSummary.done),
+      overdue: n(taskSummary.overdue), unassigned: n(taskSummary.unassigned), highPriorityOpen: n(taskSummary.highPriorityOpen),
+      totalEstimatedHours: n(taskSummary.totalEstimatedHours), remainingEstimatedHours: n(taskSummary.remainingEstimatedHours),
+      estimateCoverage: n(taskSummary.estimateCoverage), completionRate: n(taskSummary.completionRate),
+    },
+    taskStatusDistribution: normalizeBreakdown(raw.taskStatusDistribution),
+    taskPriorityDistribution: normalizeBreakdown(raw.taskPriorityDistribution),
     backlogAging: array(raw.backlogAging).map((item) => { const row = object(item); return { code: s(row.code), label: s(row.label), value: n(row.value), percent: n(row.percent) }; }),
     statusDistribution: normalizeBreakdown(raw.statusDistribution),
     priorityDistribution: normalizeBreakdown(raw.priorityDistribution),
@@ -68,6 +77,14 @@ function normalize(raw: Record<string, unknown>): ProjectAnalyticsData {
     members: normalizeMembers(raw.members),
     attention: { missingModule: n(attention.missingModule), missingDepartment: n(attention.missingDepartment), missingAssignee: n(attention.missingAssignee), nearDue: n(attention.nearDue) },
   };
+}
+
+function taskBreakdown(rows: Array<Record<string, unknown>>, key: "status" | "priority", labels: Record<string, string>) {
+  const total = rows.length;
+  return Object.entries(labels).map(([code, label]) => {
+    const value = rows.filter((row) => row[key] === code).length;
+    return { code, label, value, percent: total ? Math.round((value / total) * 100) : 0 };
+  });
 }
 
 function rangeStart(range: string | null) {
@@ -105,5 +122,37 @@ export async function GET(request: NextRequest) {
     } satisfies ProjectAnalyticsApiResponse, { status: missing ? 503 : 500 });
   }
   if (!data || typeof data !== "object") return NextResponse.json({ ok: false, code: "PROJECT_NOT_FOUND", message: "Không tìm thấy dữ liệu project hoặc tài khoản không có quyền." } satisfies ProjectAnalyticsApiResponse, { status: 404 });
-  return NextResponse.json({ ok: true, data: normalize(data as Record<string, unknown>) } satisfies ProjectAnalyticsApiResponse);
+
+  const analytics = normalize(data as Record<string, unknown>);
+  const taskResult = await supabase
+    .from("project_plan_tasks")
+    .select("status,priority,due_date,estimated_hours,owner_person_id")
+    .eq("project_id", projectId);
+  if (taskResult.error) {
+    return NextResponse.json({ ok: false, code: "TASK_ANALYTICS_QUERY_FAILED", message: `Không tải được thống kê Task: ${taskResult.error.message}` } satisfies ProjectAnalyticsApiResponse, { status: 500 });
+  }
+
+  const tasks = (taskResult.data ?? []) as Array<Record<string, unknown>>;
+  const today = new Date().toISOString().slice(0, 10);
+  const countStatus = (status: string) => tasks.filter((task) => task.status === status).length;
+  const hours = (rows: Array<Record<string, unknown>>) => Math.round(rows.reduce((sum, task) => sum + n(task.estimated_hours), 0) * 100) / 100;
+  const estimated = tasks.filter((task) => task.estimated_hours !== null && task.estimated_hours !== undefined);
+  analytics.taskSummary = {
+    total: tasks.length,
+    todo: countStatus("todo"),
+    doing: countStatus("doing"),
+    blocked: countStatus("blocked"),
+    done: countStatus("done"),
+    overdue: tasks.filter((task) => task.status !== "done" && Boolean(task.due_date) && String(task.due_date).slice(0, 10) < today).length,
+    unassigned: tasks.filter((task) => !task.owner_person_id).length,
+    highPriorityOpen: tasks.filter((task) => task.status !== "done" && (task.priority === "high" || task.priority === "critical")).length,
+    totalEstimatedHours: hours(tasks),
+    remainingEstimatedHours: hours(tasks.filter((task) => task.status !== "done")),
+    estimateCoverage: tasks.length ? Math.round((estimated.length / tasks.length) * 100) : 0,
+    completionRate: tasks.length ? Math.round((countStatus("done") / tasks.length) * 100) : 0,
+  };
+  analytics.taskStatusDistribution = taskBreakdown(tasks, "status", { todo: "Chưa làm", doing: "Đang làm", blocked: "Bị chặn", done: "Hoàn tất" });
+  analytics.taskPriorityDistribution = taskBreakdown(tasks, "priority", { critical: "Khẩn cấp", high: "Cao", medium: "Trung bình", low: "Thấp" });
+
+  return NextResponse.json({ ok: true, data: analytics } satisfies ProjectAnalyticsApiResponse);
 }

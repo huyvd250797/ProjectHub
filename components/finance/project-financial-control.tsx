@@ -136,16 +136,16 @@ function FinancialMonthModal({
   const margin = revenueAmount > 0 ? Math.round((profit / revenueAmount) * 10000) / 100 : 0;
 
   return (
-    <div className="fixed inset-0 z-[260] grid place-items-center p-3 md:p-6" role="dialog" aria-modal="true" data-modal-lock="true">
+    <div className="asc-modal-viewport fixed inset-0 z-[260] flex items-center justify-center" role="dialog" aria-modal="true" data-modal-lock="true">
       <button type="button" aria-label="Đóng modal" className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <form
         onSubmit={(event) => {
           event.preventDefault();
           onSave(form);
         }}
-        className="tech-panel relative z-10 flex max-h-[92dvh] w-full max-w-[980px] flex-col overflow-hidden rounded-2xl border-cyan-300/15 shadow-[0_30px_100px_rgba(0,0,0,.55)]"
+        className="asc-modal-panel tech-panel relative z-10 flex w-full max-w-[980px] flex-col rounded-2xl border-cyan-300/15 shadow-[0_30px_100px_rgba(0,0,0,.55)]"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-5 py-4">
+        <div className="asc-modal-header flex items-start justify-between gap-4 border-b border-white/[0.07] px-5 py-4">
           <div>
             <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/60">Monthly Financial Control</div>
             <div className="mt-1 text-base font-semibold text-white">{form.id ? "Cập nhật tháng tài chính" : "Thêm tháng tài chính"}</div>
@@ -156,7 +156,7 @@ function FinancialMonthModal({
           </button>
         </div>
 
-        <div className="scrollbar-thin flex-1 overflow-y-auto p-5 md:p-6">
+        <div className="asc-modal-scroll scrollbar-thin p-5 md:p-6">
           <div className="grid gap-4 md:grid-cols-3">
             <label className="block">
               <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">Tháng</span>
@@ -198,7 +198,7 @@ function FinancialMonthModal({
           {error ? <div className="mt-4 rounded-xl border border-rose-300/15 bg-rose-300/[0.06] px-4 py-3 text-xs text-rose-200">{error}</div> : null}
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-white/[0.07] px-5 py-4">
+        <div className="asc-modal-footer flex justify-end gap-2 border-t border-white/[0.07] px-5 py-4">
           <button type="button" onClick={onClose} disabled={saving} className="secure-btn">Hủy</button>
           <button type="submit" disabled={saving || !form.monthDate} className="inline-flex h-9 items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.12] px-4 text-xs font-semibold text-cyan-100 disabled:opacity-40">
             {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Lưu tháng

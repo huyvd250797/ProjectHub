@@ -30,6 +30,48 @@ html.asc-modal-scroll-locked body {
   touch-action: none;
 }
 
+/* V3.9.0 — one viewport contract for every centered modal. */
+.asc-modal-viewport {
+  min-height: 100dvh;
+  overflow: hidden;
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+  padding-right: max(0.5rem, env(safe-area-inset-right));
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  padding-left: max(0.5rem, env(safe-area-inset-left));
+}
+
+.asc-modal-panel {
+  min-height: 0;
+  max-height: calc(100dvh - 1rem) !important;
+  overflow: hidden;
+}
+
+.asc-modal-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.asc-modal-header,
+.asc-modal-footer {
+  flex: 0 0 auto;
+}
+
+@media (min-width: 768px) {
+  .asc-modal-viewport {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+
+  .asc-modal-panel {
+    max-height: calc(100dvh - 2rem) !important;
+  }
+}
+
 body {
   margin: 0;
   color: var(--text);

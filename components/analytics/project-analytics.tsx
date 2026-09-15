@@ -8,12 +8,13 @@ import {
   AlertTriangle,
   ArrowRight,
   BarChart3,
+  Ban,
   CalendarRange,
   CheckCircle2,
+  ClipboardList,
   Clock3,
   Download,
   Gauge,
-  Layers3,
   LoaderCircle,
   RefreshCw,
   ShieldAlert,
@@ -21,6 +22,7 @@ import {
   TrendingDown,
   TrendingUp,
   UsersRound,
+  UserRoundX,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { useProject } from "@/components/project-context";
@@ -121,6 +123,16 @@ function exportAnalytics(data: ProjectAnalyticsData) {
     ["Total ISSUE", String(data.summary.total)], ["Open", String(data.summary.open)], ["Overdue", String(data.summary.overdue)],
     ["Resolved", String(data.summary.resolved)], ["Released", String(data.summary.released)], ["Handed Over", String(data.summary.handedOver)],
     ["High Priority Open", String(data.summary.highPriorityOpen)], ["Average Age Days", String(data.summary.avgAgeDays)], ["Average Resolution Days", String(data.summary.avgResolutionDays)],
+    [], ["Task Metric", "Value"],
+    ["Total Task", String(data.taskSummary.total)], ["Todo", String(data.taskSummary.todo)], ["Doing", String(data.taskSummary.doing)],
+    ["Blocked", String(data.taskSummary.blocked)], ["Done", String(data.taskSummary.done)], ["Overdue", String(data.taskSummary.overdue)],
+    ["Unassigned", String(data.taskSummary.unassigned)], ["High Priority Open", String(data.taskSummary.highPriorityOpen)],
+    ["Estimated Hours", String(data.taskSummary.totalEstimatedHours)], ["Remaining Estimated Hours", String(data.taskSummary.remainingEstimatedHours)],
+    ["Estimate Coverage %", String(data.taskSummary.estimateCoverage)], ["Completion %", String(data.taskSummary.completionRate)],
+    [], ["Task Status", "Value", "Percent"],
+    ...data.taskStatusDistribution.map((row) => [row.label, String(row.value), String(row.percent)]),
+    [], ["Task Priority", "Value", "Percent"],
+    ...data.taskPriorityDistribution.map((row) => [row.label, String(row.value), String(row.percent)]),
     [], ["Top Risk Modules","Total","Open","Overdue","A/B","Risk Score"],
     ...data.topModules.map((row) => [row.name,String(row.total),String(row.open),String(row.overdue),String(row.highPriority),String(row.riskScore)]),
     [], ["Top Risk Departments","Total","Open","Overdue","A/B","Risk Score"],
@@ -159,6 +171,9 @@ export function ProjectAnalytics() {
     ["Thiếu Phòng ban", data.attention.missingDepartment, "/issues?missingDepartment=1", "amber"],
     ["Thiếu phụ trách", data.attention.missingAssignee, "/issues?missingAssignee=1", "amber"],
     ["Gần Due Date", data.attention.nearDue, "/issues?nearDue=7", "cyan"],
+    ["Task quá hạn", data.taskSummary.overdue, "/plan", "rose"],
+    ["Task bị chặn", data.taskSummary.blocked, "/plan", "rose"],
+    ["Task chưa phân công", data.taskSummary.unassigned, "/plan", "amber"],
   ] as const : [], [data]);
 
   const metricCards: Array<[string, number, string, LucideIcon, "cyan" | "rose" | "amber" | "emerald" | "violet"]> = data ? [
@@ -172,12 +187,23 @@ export function ProjectAnalytics() {
     ["Resolution TB", data.summary.avgResolutionDays, "ngày", Gauge, "violet"],
   ] : [];
 
+  const taskMetricCards: Array<[string, number, string, LucideIcon, "cyan" | "rose" | "amber" | "emerald" | "violet"]> = data ? [
+    ["Tổng Task", data.taskSummary.total, "Theo project hiện tại", ClipboardList, "cyan"],
+    ["Chưa làm", data.taskSummary.todo, "Chưa bắt đầu", Clock3, "violet"],
+    ["Đang làm", data.taskSummary.doing, "Đang thực thi", Activity, "cyan"],
+    ["Bị chặn", data.taskSummary.blocked, "Cần tháo gỡ", Ban, "rose"],
+    ["Hoàn tất", data.taskSummary.done, `${data.taskSummary.completionRate}% tổng task`, CheckCircle2, "emerald"],
+    ["Quá hạn", data.taskSummary.overdue, "Chưa hoàn tất", AlertTriangle, "rose"],
+    ["Chưa phân công", data.taskSummary.unassigned, "Thiếu phụ trách", UserRoundX, "amber"],
+    ["Estimate còn lại", data.taskSummary.remainingEstimatedHours, `${data.taskSummary.estimateCoverage}% có estimate`, Gauge, "violet"],
+  ] : [];
+
   return (
     <>
       <PageHeader
         eyebrow="Project Intelligence"
         title="Advanced Analytics & Project Health"
-        description={`Phân tích sức khỏe, xu hướng ISSUE, backlog, rủi ro Module/Phòng ban/nhân sự của ${selectedProject.code}.`}
+        description={`Phân tích sức khỏe, ISSUE, Task, backlog và rủi ro triển khai của ${selectedProject.code}.`}
         actions={<div className="flex items-center gap-2"><ThemedSelect value={range} options={rangeOptions} onChange={setRange} ariaLabel="Khoảng thời gian Analytics" className="w-[150px]" leading={<CalendarRange className="size-3.5" />} /><button onClick={() => setReloadKey((v) => v+1)} className="grid size-10 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-slate-500 hover:text-cyan-200"><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /></button>{data ? <button onClick={() => exportAnalytics(data)} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-[10px] text-slate-400 hover:text-white"><Download className="size-3.5" /> Export</button> : null}</div>}
       />
 
@@ -194,13 +220,24 @@ export function ProjectAnalytics() {
                 <div className="absolute inset-3 rounded-full" style={{ background: `conic-gradient(rgba(46,211,255,.9) 0 ${Math.min(100,data.health.score)}%, rgba(255,255,255,.035) ${Math.min(100,data.health.score)}% 100%)`, mask: "radial-gradient(circle, transparent 57%, black 58%)" }} />
                 <div className="text-center"><div className="text-4xl font-semibold tracking-[-0.06em] text-white">{data.health.score}</div><div className="mt-1 text-[9px] uppercase tracking-[0.18em] text-slate-600">/ 100</div></div>
               </div>
-              <div className="w-full space-y-4"><ScoreBar label="Xử lý ISSUE" value={data.health.issueScore} /><ScoreBar label="Bàn giao" value={data.health.deliveryScore} /><ScoreBar label="Kiểm soát quá hạn" value={data.health.overdueScore} /><ScoreBar label="Chất lượng dữ liệu" value={data.health.dataQualityScore} /><ScoreBar label="Tiến độ kế hoạch" value={data.health.scheduleScore} /></div>
+              <div className="w-full space-y-4"><ScoreBar label="Xử lý ISSUE" value={data.health.issueScore} /><ScoreBar label="Bàn giao" value={data.health.deliveryScore} /><ScoreBar label="Kiểm soát quá hạn" value={data.health.overdueScore} /><ScoreBar label="Chất lượng dữ liệu" value={data.health.dataQualityScore} /><ScoreBar label="Tiến độ kế hoạch" value={data.health.scheduleScore} /><ScoreBar label="Hoàn tất Task" value={data.taskSummary.completionRate} /></div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {metricCards.map(([label,value,note,Icon,tone]) => <div key={label} className="tech-panel rounded-2xl p-4"><div className="flex items-start justify-between"><div><div className="text-[9px] uppercase tracking-[0.15em] text-slate-600">{label}</div><div className="mt-3 text-2xl font-semibold text-white">{number(value)}</div><div className="mt-1 text-[9px] text-slate-600">{note}</div></div><Icon className={`size-4 ${tone === "rose" ? "text-rose-300/70" : tone === "amber" ? "text-amber-300/70" : tone === "emerald" ? "text-emerald-300/70" : tone === "violet" ? "text-violet-300/70" : "text-cyan-300/70"}`} /></div></div>)}
           </div>
+        </section>
+
+        <section>
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-2"><div><div className="text-[9px] uppercase tracking-[0.2em] text-cyan-300/60">Task Analytics</div><h2 className="mt-1.5 text-base font-semibold text-white">Hiệu suất thực thi & estimate</h2></div><div className="flex items-center gap-2"><span className="rounded-lg border border-white/[0.06] bg-white/[0.025] px-2.5 py-1.5 text-[9px] text-slate-500">Tổng estimate {number(data.taskSummary.totalEstimatedHours)} giờ</span><Link href="/plan" className="flex items-center gap-1 text-[10px] text-cyan-200/70 hover:text-cyan-100">Mở Task <ArrowRight className="size-3" /></Link></div></div>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
+            {taskMetricCards.map(([label,value,note,Icon,tone]) => <Link href="/plan" key={label} className="tech-panel tech-panel-hover rounded-2xl p-4"><div className="flex items-start justify-between"><div><div className="text-[9px] uppercase tracking-[0.15em] text-slate-600">{label}</div><div className="mt-3 text-2xl font-semibold text-white">{number(value)}</div><div className="mt-1 text-[9px] text-slate-600">{note}</div></div><Icon className={`size-4 ${tone === "rose" ? "text-rose-300/70" : tone === "amber" ? "text-amber-300/70" : tone === "emerald" ? "text-emerald-300/70" : tone === "violet" ? "text-violet-300/70" : "text-cyan-300/70"}`} /></div></Link>)}
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          {([ ["Trạng thái Task", data.taskStatusDistribution], ["Ưu tiên Task", data.taskPriorityDistribution] ] as const).map(([title, rows]) => <div key={title} className="tech-panel rounded-2xl p-5"><div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold text-white">{title}</h3><ClipboardList className="size-4 text-cyan-300/60" /></div><div className="space-y-3">{rows.map((row) => <div key={row.code}><div className="mb-1.5 flex justify-between text-[10px]"><span className="text-slate-400">{row.label}</span><span className="text-slate-300">{row.value} • {row.percent}%</span></div><div className="h-1.5 overflow-hidden rounded-full bg-white/[0.05]"><div className="h-full rounded-full bg-cyan-300/55" style={{ width: pct(row.percent) }} /></div></div>)}</div></div>)}
         </section>
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_.6fr]">

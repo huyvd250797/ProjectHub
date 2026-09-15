@@ -62,9 +62,8 @@ function parseNumber(value: unknown, fallback: number) {
 }
 
 function parseOptionalHours(value: unknown) {
-  const normalized = nullableText(value);
-  if (!normalized) return null;
-  const parsed = Number(normalized);
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = typeof value === "number" ? value : Number(requiredText(value));
   return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : Number.NaN;
 }
 

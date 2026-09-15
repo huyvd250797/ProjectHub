@@ -279,10 +279,10 @@ export function IssueDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-[140] flex items-center justify-center p-3 md:p-6">
+    <div className="asc-modal-viewport fixed inset-0 z-[140] flex items-center justify-center" role="dialog" aria-modal="true" data-modal-lock="true">
       <button type="button" aria-label="Đóng" onClick={onClose} className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
-      <section className="relative flex h-[min(90dvh,920px)] w-full max-w-[1180px] flex-col overflow-hidden rounded-3xl border border-white/[0.09] bg-[#07111f] shadow-[0_28px_100px_rgba(0,0,0,0.55)]">
-        <div className="glow-line flex items-start gap-4 border-b border-white/[0.06] px-5 py-5 md:px-6">
+      <section className="asc-modal-panel relative flex h-[920px] w-full max-w-[1180px] flex-col rounded-3xl border border-white/[0.09] bg-[#07111f] shadow-[0_28px_100px_rgba(0,0,0,0.55)]">
+        <div className="asc-modal-header glow-line flex items-start gap-4 border-b border-white/[0.06] px-5 py-5 md:px-6">
           <div className="min-w-0 flex-1">
             <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300/60">ISSUE Productivity</div>
             <h2 className="mt-1.5 text-lg font-semibold tracking-[-0.025em] text-white">{title}</h2>
@@ -317,7 +317,7 @@ export function IssueDrawer({
           </div>
         ) : null}
 
-        <div className="scrollbar-thin flex-1 overflow-y-auto px-5 py-5 md:px-6">
+        <div className="asc-modal-scroll scrollbar-thin px-5 py-5 md:px-6">
           {loadingDetail ? (
             <div className="grid min-h-[300px] place-items-center">
               <div className="text-center"><LoaderCircle className="mx-auto size-6 animate-spin text-cyan-300/70" /><div className="mt-3 text-xs text-slate-500">Đang tải chi tiết...</div></div>
@@ -417,7 +417,7 @@ export function IssueDrawer({
           )}
         </div>
 
-        <div className="flex items-center gap-2 border-t border-white/[0.06] bg-[#07111f]/95 px-5 py-4 md:px-6">
+        <div className="asc-modal-footer flex items-center gap-2 border-t border-white/[0.06] bg-[#07111f]/95 px-5 py-4 md:px-6">
           {!createMode && canArchive && source === "database" ? (
             <button type="button" disabled={archiving || saving} onClick={deleteIssue} className="flex h-10 items-center gap-2 rounded-xl border border-rose-300/12 bg-rose-300/[0.04] px-3 text-xs font-medium text-rose-200/70 hover:bg-rose-300/[0.07] disabled:opacity-45">
               {archiving ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />} {archiving ? "Đang xóa..." : "Xóa ISSUE"}

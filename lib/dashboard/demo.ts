@@ -21,6 +21,7 @@ export function createDemoDashboard(project: WorkspaceProject): DashboardData {
     },
     summary: {
       totalIssues: 313,
+      totalTasks: 24,
       modules: 90,
       subsystems: 12,
       departments: 9,
@@ -35,6 +36,18 @@ export function createDemoDashboard(project: WorkspaceProject): DashboardData {
       handedOver: 198,
       notHandedOver: 115,
       overdue: 6,
+    },
+    taskKpis: {
+      todo: 8,
+      doing: 7,
+      blocked: 2,
+      done: 7,
+      overdue: 3,
+      unassigned: 2,
+      totalEstimatedHours: 156,
+      remainingEstimatedHours: 104,
+      estimateCoverage: 88,
+      completionRate: 29,
     },
     attention: {
       overdue: 6,

@@ -50,6 +50,7 @@ export type DashboardData = {
   project: DashboardProject;
   summary: {
     totalIssues: number;
+    totalTasks: number;
     modules: number;
     subsystems: number;
     departments: number;
@@ -64,6 +65,18 @@ export type DashboardData = {
     handedOver: number;
     notHandedOver: number;
     overdue: number;
+  };
+  taskKpis: {
+    todo: number;
+    doing: number;
+    blocked: number;
+    done: number;
+    overdue: number;
+    unassigned: number;
+    totalEstimatedHours: number;
+    remainingEstimatedHours: number;
+    estimateCoverage: number;
+    completionRate: number;
   };
   attention: {
     overdue: number;
