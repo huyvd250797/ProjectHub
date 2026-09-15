@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { DateInput } from "@/components/ui/date-input";
 import type {
@@ -278,7 +279,9 @@ export function IssueDrawer({
     }
   }
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div className="asc-modal-viewport fixed inset-0 z-[140] flex items-center justify-center" role="dialog" aria-modal="true" data-modal-lock="true">
       <button type="button" aria-label="Đóng" onClick={onClose} className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
       <section className="asc-modal-panel relative flex h-[920px] w-full max-w-[1180px] flex-col rounded-3xl border border-white/[0.09] bg-[#07111f] shadow-[0_28px_100px_rgba(0,0,0,0.55)]">
@@ -431,6 +434,7 @@ export function IssueDrawer({
           ) : null}
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }

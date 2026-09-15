@@ -8,7 +8,7 @@ const fail = (label, detail = "") => checks.push({ ok: false, label, detail });
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-pkg.version === "3.9.0" ? pass("Package version", "3.9.0") : fail("Package version", `Expected 3.9.0, got ${pkg.version}`);
+pkg.version === "3.9.1" ? pass("Package version", "3.9.1") : fail("Package version", `Expected 3.9.1, got ${pkg.version}`);
 
 for (const rel of [
   "app/(workspace)/command-center/page.tsx",
@@ -269,6 +269,8 @@ for (const rel of [
   "docs/UAT_V380_EXECUTION_TASK_GRID_CHECKLIST.md",
   "docs/V3.9.0-SCOPE.md",
   "docs/UAT_V390_TASK_INSIGHTS_MODAL_CHECKLIST.md",
+  "docs/V3.9.1-SCOPE.md",
+  "docs/UAT_V391_ISSUE_MODAL_DASHBOARD_ORDER_CHECKLIST.md",
   "components/ui/performance-warmup.tsx",
   "lib/export-data.ts",
 ]) {
@@ -1140,6 +1142,23 @@ for (const token of ["asc-modal-viewport", "asc-modal-panel", "asc-modal-scroll"
   modalStabilityV390.includes(token) ? pass(`V3.9.0 Modal stability: ${token}`) : fail(`V3.9.0 Modal stability: ${token}`);
 }
 
+const issueModalV391 = fs.readFileSync(path.join(root, "components/issues/issue-drawer.tsx"), "utf8");
+for (const token of ["createPortal", "document.body", "asc-modal-viewport", "asc-modal-scroll", "asc-modal-footer"]) {
+  issueModalV391.includes(token) ? pass(`V3.9.1 ISSUE modal portal: ${token}`) : fail(`V3.9.1 ISSUE modal portal: ${token}`);
+}
+
+const globalCssV391 = fs.readFileSync(path.join(root, "app/globals.css"), "utf8");
+globalCssV391.includes("animation: asc-page-in 180ms ease-out;") && !globalCssV391.includes("animation: asc-page-in 180ms ease-out both;")
+  ? pass("V3.9.1 transform containing-block fix")
+  : fail("V3.9.1 transform containing-block fix");
+
+const dashboardOrderV391 = fs.readFileSync(path.join(root, "components/dashboard/project-dashboard.tsx"), "utf8");
+const issueControlIndexV391 = dashboardOrderV391.indexOf(">ISSUE Control<");
+const taskControlIndexV391 = dashboardOrderV391.indexOf(">Task Control<");
+issueControlIndexV391 >= 0 && taskControlIndexV391 > issueControlIndexV391
+  ? pass("V3.9.1 Dashboard order: ISSUE Control before Task Control")
+  : fail("V3.9.1 Dashboard order: ISSUE Control before Task Control");
+
 const performanceMigrationV340 = fs.readFileSync(path.join(root, "supabase/migrations/202609080003_v340_performance_large_data_indexes.sql"), "utf8");
 for (const token of ["issues_project_active_issue_no_idx", "contract_items_project_tree_idx", "people_project_active_lookup_idx", "project_plan_tasks_project_stage_due_idx", "project_financial_months_project_month_idx", "resource_assignment_events_project_item_idx", "changed_at desc", "if not exists"]) {
   performanceMigrationV340.toLowerCase().includes(token.toLowerCase()) ? pass(`V3.4.0 Performance index: ${token}`) : fail(`V3.4.0 Performance index: ${token}`);
@@ -1167,7 +1186,7 @@ for (const token of ["loadDataIntegrityReport", "data_integrity", "Data Integrit
   readinessV330.includes(token) ? pass(`V3.3.0 Readiness: ${token}`) : fail(`V3.3.0 Readiness: ${token}`);
 }
 
-console.log("\nASC WORKING V3.9.0 - Task Insights & Modal Stability Preflight\n");
+console.log("\nASC WORKING V3.9.1 - ISSUE Modal Viewport Hotfix Preflight\n");
 for (const item of checks) console.log(`${item.ok ? "PASS" : "FAIL"}  ${item.label}${item.detail ? ` - ${item.detail}` : ""}`);
 const failures = checks.filter((item) => !item.ok);
 console.log(`\n${checks.length - failures.length}/${checks.length} checks passed.`);

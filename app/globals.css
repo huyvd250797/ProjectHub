@@ -147,7 +147,7 @@ textarea {
 }
 
 .asc-page-enter {
-  animation: asc-page-in 180ms ease-out both;
+  animation: asc-page-in 180ms ease-out;
 }
 
 .asc-skeleton {

@@ -1,4 +1,15 @@
-# ASC WORKING - V3.9.0
+# ASC WORKING - V3.9.1
+
+## V3.9.1 có gì mới?
+
+### ISSUE Modal Viewport Hotfix
+
+- Modal tạo/chỉnh ISSUE được render trực tiếp vào `document.body`, không còn bị ảnh hưởng bởi vùng nội dung có animation/transform hoặc vị trí cuộn của trang.
+- Animation chuyển trang không giữ `transform` sau khi chạy xong, tránh tạo containing block làm lệch các modal `position: fixed` khác.
+- Header và footer modal ISSUE luôn nằm trong viewport; chỉ thân biểu mẫu cuộn độc lập.
+- Dashboard chuyển **Task Control** xuống ngay dưới **ISSUE Control**.
+
+Không có migration database mới.
 
 ## V3.9.0 có gì mới?
 

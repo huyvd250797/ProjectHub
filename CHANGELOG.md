@@ -1,5 +1,18 @@
 # Changelog
 
+## V3.9.1 - ISSUE Modal Viewport Hotfix
+
+### Fixed
+
+- Render modal tạo/chỉnh ISSUE bằng React portal tại `document.body` để `position: fixed` luôn bám viewport thật.
+- Không giữ `transform` sau animation trang, loại bỏ containing block làm modal lệch theo vùng nội dung đang cuộn.
+- Footer modal ISSUE luôn hiển thị; nội dung dài cuộn trong thân modal.
+
+### Changed
+
+- Dashboard đặt Task Control ngay dưới ISSUE Control.
+- Không có migration database mới.
+
 ## V3.9.0 - Task Insights & Modal Stability
 
 ### Added
