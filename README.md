@@ -1,4 +1,16 @@
-# ASC WORKING - V3.7.1
+# ASC WORKING - V3.8.0
+
+## V3.8.0 có gì mới?
+
+### Execution Task Grid
+
+- Chuyển màn **Execution Tasks** từ danh sách card sang grid chuyên nghiệp gồm: Mã task, Tên task, Mô tả, Thuộc stage, Deadline, Estimate, Trạng thái task, Ưu tiên và Người phụ trách.
+- Mã task tự tăng ổn định theo từng Project với định dạng `TASK-0001`, `TASK-0002`...
+- Có ô tìm kiếm toàn bộ task và bộ lọc ngay dưới từng cột.
+- Kéo tiêu đề để đổi vị trí cột, kéo mép phải để resize; layout được ghi nhớ riêng theo từng Project và có nút reset.
+- Fix lưu/đọc/hiển thị Estimate; migration mới cũng bổ sung `estimated_hours` nếu môi trường trước đó chưa chạy migration V2.5.0.
+
+Migration cần chạy: `supabase/migrations/202609150001_v380_execution_task_grid.sql`.
 
 ## V3.7.1 có gì mới?
 

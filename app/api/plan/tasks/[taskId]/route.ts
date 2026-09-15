@@ -47,13 +47,15 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ tas
     updated_by: user.id,
   };
   if (input.sortOrder !== null) update.sort_order = input.sortOrder;
-  const { data, error } = await supabase.from("project_plan_tasks").update(update).eq("project_id", input.projectId).eq("id", taskId).select("id").maybeSingle();
+  const { data, error } = await supabase.from("project_plan_tasks").update(update).eq("project_id", input.projectId).eq("id", taskId).select("id,task_no,estimated_hours").maybeSingle();
   if (error) {
     const missing = isPlanningMigrationMissing(error.message);
     return NextResponse.json({ ok: false, code: missing ? "V170_MIGRATION_REQUIRED" : "TASK_UPDATE_FAILED", message: missing ? "Hãy chạy migration V1.7.0 trước khi sửa task kế hoạch." : `Không cập nhật được task: ${error.message}` } satisfies PlanningMutationResponse, { status: missing ? 503 : 500 });
   }
   if (!data) return NextResponse.json({ ok: false, code: "TASK_NOT_FOUND", message: "Task không tồn tại hoặc không thuộc Project." } satisfies PlanningMutationResponse, { status: 404 });
-  return NextResponse.json({ ok: true, message: `Đã cập nhật task ${input.title}.` } satisfies PlanningMutationResponse);
+  const taskCode = `TASK-${String(data.task_no).padStart(4, "0")}`;
+  const estimate = data.estimated_hours === null ? "chưa có estimate" : `${Number(data.estimated_hours).toLocaleString("vi-VN")} giờ`;
+  return NextResponse.json({ ok: true, message: `Đã cập nhật ${taskCode} • ${input.title} • ${estimate}.` } satisfies PlanningMutationResponse);
 }
 
 export async function DELETE(request: NextRequest, context: { params: Promise<{ taskId: string }> }) {

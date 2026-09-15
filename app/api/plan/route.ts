@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ok: false,
       code: missing ? "V170_MIGRATION_REQUIRED" : "PLAN_LOAD_FAILED",
-      message: missing ? "Module Kế hoạch cần chạy lần lượt migration V1.6.0, V1.6.1 và 202609030003_v170_plan_execution_tracking.sql trên Supabase." : message,
+      message: missing ? "Module Kế hoạch chưa đủ schema. Hãy chạy các migration còn thiếu đến 202609150001_v380_execution_task_grid.sql trên Supabase." : message,
     } satisfies ProjectPlanApiResponse, { status: missing ? 503 : 500 });
   }
 }

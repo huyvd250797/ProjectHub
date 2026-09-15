@@ -1,5 +1,22 @@
 # Changelog
 
+## V3.8.0 - Execution Task Grid
+
+### Added
+
+- Grid Execution Task đầy đủ 9 cột nghiệp vụ và cột thao tác.
+- Mã task tự tăng theo từng Project, định dạng hiển thị `TASK-0001`.
+- Tìm kiếm toàn cục, filter từng cột, resize, kéo thả đổi vị trí cột và lưu layout trên trình duyệt.
+
+### Fixed
+
+- Estimate được ghi xuống `estimated_hours`, đọc lại từ API và hiển thị rõ theo đơn vị giờ trong grid.
+- API tạo/cập nhật trả thông báo kèm mã task và estimate vừa lưu để dễ xác nhận.
+
+### Database
+
+- Migration mới: `supabase/migrations/202609150001_v380_execution_task_grid.sql`.
+
 ## V3.7.1 - Search, Modal & Deadline Fix
 
 ### Added

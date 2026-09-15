@@ -151,6 +151,7 @@ export function normalizePlanTask(raw: Record<string, unknown>): ProjectPlanTask
   const baselineDueDate = nullableText(raw.baseline_due_date) ?? dueDate;
   return {
     id: String(raw.id ?? ""),
+    taskNo: numberValue(raw.task_no),
     title: String(raw.title ?? ""),
     description: nullableText(raw.description),
     stageId: nullableText(raw.stage_id),
@@ -207,7 +208,7 @@ export function normalizePlanReminder(raw: Record<string, unknown>): ProjectPlan
 }
 
 export function isPlanningMigrationMissing(message: string) {
-  return /project_master_plans|project_milestones|project_plan_tasks|project_milestone_checklist_items|project_plan_reminders|duration_days|owner_person_id|date_mode|estimated_hours|baseline_start_date|baseline_end_date|baseline_due_date|is_critical|snapshot_project_timeline_baseline_v320|recalculate_project_plan_v16[01]|schema cache|does not exist/i.test(message);
+  return /project_master_plans|project_milestones|project_plan_tasks|project_milestone_checklist_items|project_plan_reminders|duration_days|owner_person_id|date_mode|estimated_hours|task_no|baseline_start_date|baseline_end_date|baseline_due_date|is_critical|snapshot_project_timeline_baseline_v320|recalculate_project_plan_v16[01]|schema cache|does not exist/i.test(message);
 }
 
 export async function loadProjectPlan(
@@ -236,7 +237,7 @@ export async function loadProjectPlan(
       .order("sort_order", { ascending: true }),
     supabase
       .from("project_plan_tasks")
-      .select("id,title,description,stage_id,status,priority,due_date,baseline_due_date,estimated_hours,completed_at,owner_person_id,sort_order,created_at,updated_at,stage:project_stages!project_plan_tasks_stage_id_fkey(id,name),owner:people!project_plan_tasks_owner_person_id_fkey(id,full_name)")
+      .select("id,task_no,title,description,stage_id,status,priority,due_date,baseline_due_date,estimated_hours,completed_at,owner_person_id,sort_order,created_at,updated_at,stage:project_stages!project_plan_tasks_stage_id_fkey(id,name),owner:people!project_plan_tasks_owner_person_id_fkey(id,full_name)")
       .eq("project_id", projectId)
       .order("due_date", { ascending: true, nullsFirst: false })
       .order("sort_order", { ascending: true }),

@@ -33,6 +33,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { useProject } from "@/components/project-context";
 import { AutoGeneratePlanModal, MasterPlanModal, MilestoneChecklistModal, MilestoneModal, PlanReminderModal, PlanTaskModal, StageModal } from "@/components/planning/plan-modals";
+import { TaskGrid } from "@/components/planning/task-grid";
 import { PlanTimeline } from "@/components/planning/plan-timeline";
 import { nextScheduleDate, normalizeScheduleStart, parseDateOnly } from "@/lib/planning/schedule";
 import type {
@@ -145,8 +146,8 @@ function exportPlan(data: ProjectPlanData) {
     ...data.milestones.map((milestone) => [milestone.title, milestone.dueDate, milestoneStatusMeta[milestone.status].label, milestone.stageName ?? "", milestone.ownerName ?? "", milestone.description ?? ""]),
     [],
     ["EXECUTION TASKS"],
-    ["Tên task", "Stage", "Deadline", "Giờ ước tính", "Trạng thái", "Ưu tiên", "Phụ trách", "Mô tả"],
-    ...data.tasks.map((task) => [task.title, task.stageName ?? "", task.dueDate ?? "", task.estimatedHours ?? "", taskStatusMeta[task.status].label, taskPriorityMeta[task.priority].label, task.ownerName ?? "", task.description ?? ""]),
+    ["Mã task", "Tên task", "Stage", "Deadline", "Giờ ước tính", "Trạng thái", "Ưu tiên", "Phụ trách", "Mô tả"],
+    ...data.tasks.map((task) => [`TASK-${String(task.taskNo).padStart(4, "0")}`, task.title, task.stageName ?? "", task.dueDate ?? "", task.estimatedHours ?? "", taskStatusMeta[task.status].label, taskPriorityMeta[task.priority].label, task.ownerName ?? "", task.description ?? ""]),
     [],
     ["MILESTONE CHECKLIST"],
     ["Milestone", "Checklist", "Hoàn tất"],
@@ -210,6 +211,7 @@ function TaskRow({
       <div className={cn("mt-1 size-2.5 shrink-0 rounded-full", status.dot)} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[9px] font-semibold text-cyan-300/65">TASK-{String(task.taskNo).padStart(4, "0")}</span>
           <span className="text-xs font-medium text-slate-300">{task.title}</span>
           <span className={cn("rounded-md border px-2 py-1 text-[8px]", status.tone)}>{status.label}</span>
           <span className={cn("rounded-md border px-2 py-1 text-[8px]", priority.tone)}>{priority.label}</span>
@@ -220,7 +222,7 @@ function TaskRow({
           <span className="flex items-center gap-1.5"><Layers3 className="size-3" /> {task.stageName || "Task độc lập"}</span>
           <span className="flex items-center gap-1.5"><CalendarDays className="size-3" /> {displayDate(task.dueDate)}</span>
           <span className="flex items-center gap-1.5"><UserRound className="size-3" /> {task.ownerName || "Chưa phân công"}</span>
-          <span>{task.estimatedHours === null ? "Chưa ước tính giờ" : `${task.estimatedHours.toLocaleString("vi-VN")}h estimated`}</span>
+          <span>{task.estimatedHours === null || task.estimatedHours === undefined ? "Chưa ước tính giờ" : `${Number(task.estimatedHours).toLocaleString("vi-VN")}h estimated`}</span>
         </div>
       </div>
       {canEdit ? <div className="flex shrink-0 gap-2">{task.status !== "done" ? <button type="button" disabled={action === `done-task-${task.id}`} onClick={() => onDone(task)} className="flex h-8 items-center gap-1.5 rounded-lg border border-emerald-300/12 bg-emerald-300/[0.04] px-2.5 text-[9px] text-emerald-200 hover:bg-emerald-300/[0.08]">{action === `done-task-${task.id}` ? <LoaderCircle className="size-3 animate-spin" /> : <CheckCircle2 className="size-3" />} Done</button> : null}<button type="button" onClick={() => onEdit(task)} className="grid size-8 place-items-center rounded-lg border border-white/[0.07] text-slate-500 hover:text-cyan-200"><Edit3 className="size-3.5" /></button><button type="button" disabled={action === `delete-task-${task.id}`} onClick={() => onDelete(task)} className="grid size-8 place-items-center rounded-lg border border-rose-300/10 text-slate-600 hover:text-rose-200">{action === `delete-task-${task.id}` ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}</button></div> : null}
@@ -592,7 +594,7 @@ export function PlanWorkspace() {
           {view === "tasks" ? (
             <div className="tech-panel overflow-hidden rounded-2xl">
               <div className="flex flex-col gap-3 border-b border-white/[0.07] p-4 md:flex-row md:items-center md:justify-between"><div><div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">Execution Tasks</div><h2 className="mt-1.5 text-sm font-semibold text-white">Task thực thi theo stage</h2><p className="mt-1 text-[10px] text-slate-600">Theo dõi deadline, ưu tiên, người phụ trách và trạng thái từng đầu việc trong kế hoạch.</p></div>{data.canEdit ? <button type="button" onClick={() => setTaskEditor(null)} className="flex h-9 items-center gap-2 rounded-xl border border-cyan-300/18 bg-cyan-300/[0.075] px-3 text-[10px] text-cyan-100"><Plus className="size-3.5" /> Thêm task</button> : null}</div>
-              {data.tasks.length ? <div>{data.tasks.map((task) => <TaskRow key={task.id} task={task} canEdit={data.canEdit} action={action} onEdit={setTaskEditor} onDelete={(item) => void deleteTask(item)} onDone={(item) => void completeTask(item)} />)}</div> : <div className="grid min-h-72 place-items-center px-6 text-center"><div><ClipboardList className="mx-auto size-7 text-slate-700" /><div className="mt-3 text-sm font-medium text-slate-300">Chưa có Execution Task</div><div className="mt-1 text-xs text-slate-600">Thêm task nhỏ để bám tiến độ từng stage.</div>{data.canEdit ? <button type="button" onClick={() => setTaskEditor(null)} className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl border border-cyan-300/18 bg-cyan-300/[0.07] px-3 text-[10px] text-cyan-100"><Plus className="size-3.5" /> Thêm task đầu tiên</button> : null}</div></div>}
+              {data.tasks.length ? <TaskGrid key={selectedProject.id} projectId={selectedProject.id} tasks={data.tasks} stages={data.stages} people={data.people} canEdit={data.canEdit} action={action} onEdit={setTaskEditor} onDelete={(item) => void deleteTask(item)} onDone={(item) => void completeTask(item)} /> : <div className="grid min-h-72 place-items-center px-6 text-center"><div><ClipboardList className="mx-auto size-7 text-slate-700" /><div className="mt-3 text-sm font-medium text-slate-300">Chưa có Execution Task</div><div className="mt-1 text-xs text-slate-600">Thêm task nhỏ để bám tiến độ từng stage.</div>{data.canEdit ? <button type="button" onClick={() => setTaskEditor(null)} className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl border border-cyan-300/18 bg-cyan-300/[0.07] px-3 text-[10px] text-cyan-100"><Plus className="size-3.5" /> Thêm task đầu tiên</button> : null}</div></div>}
             </div>
           ) : null}
 

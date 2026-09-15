@@ -85,6 +85,7 @@ export type ProjectMilestone = {
 
 export type ProjectPlanTask = {
   id: string;
+  taskNo: number;
   title: string;
   description: string | null;
   stageId: string | null;

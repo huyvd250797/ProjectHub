@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
   try { if (sortOrder === null) sortOrder = await nextPlanTaskSortOrder(supabase, input.projectId, input.stageId); }
   catch (error) { return NextResponse.json({ ok: false, code: "TASK_SORT_FAILED", message: error instanceof Error ? error.message : "Không xác định được thứ tự task." } satisfies PlanningMutationResponse, { status: 500 }); }
 
-  const { error } = await supabase.from("project_plan_tasks").insert({
+  const { data: savedTask, error } = await supabase.from("project_plan_tasks").insert({
     project_id: input.projectId,
     title: input.title,
     description: input.description,
@@ -56,10 +56,12 @@ export async function POST(request: NextRequest) {
     sort_order: sortOrder,
     created_by: user.id,
     updated_by: user.id,
-  });
+  }).select("id,task_no,estimated_hours").single();
   if (error) {
     const missing = isPlanningMigrationMissing(error.message);
     return NextResponse.json({ ok: false, code: missing ? "V170_MIGRATION_REQUIRED" : "TASK_CREATE_FAILED", message: missing ? "Hãy chạy migration V1.7.0 trước khi tạo task kế hoạch." : `Không tạo được task: ${error.message}` } satisfies PlanningMutationResponse, { status: missing ? 503 : 500 });
   }
-  return NextResponse.json({ ok: true, message: `Đã thêm task ${input.title}.` } satisfies PlanningMutationResponse, { status: 201 });
+  const taskCode = `TASK-${String(savedTask.task_no).padStart(4, "0")}`;
+  const estimate = savedTask.estimated_hours === null ? "chưa có estimate" : `${Number(savedTask.estimated_hours).toLocaleString("vi-VN")} giờ`;
+  return NextResponse.json({ ok: true, message: `Đã thêm ${taskCode} • ${input.title} • ${estimate}.` } satisfies PlanningMutationResponse, { status: 201 });
 }
